@@ -10,7 +10,7 @@
 #' - None
 #'
 #' External dependencies:
-#' - `local-area-boundary.shp`: Shapefile of Vancouver's local areas
+#' 
 
 source("R/01_startup.R")
 library(cancensus)
