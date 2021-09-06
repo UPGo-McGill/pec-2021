@@ -11,8 +11,7 @@
 #' - `match_changes.qsm`
 #'
 #' Script dependencies:
-#' - `07_registration_scrape.R`
-#' - `08_ltr_data_import.R`
+#' - ``
 #'
 #' External dependencies:
 #' - Access to the UPGo database
@@ -31,13 +30,12 @@ handlers(global = TRUE)
 # Load previous data ------------------------------------------------------
 
 qload("output/str_raw.qsm", nthreads = availableCores())
-ltr <- qread("output/ltr_raw.qs", nthreads = availableCores())
 rm(daily, host, exchange_rates)
 
 
 # Specify location on drive to download photos ----------------------------
 
-dl_location <- "/Volumes/Data 2/Scrape photos/toronto"
+dl_location <- "/Volumes/Data 2/Scrape photos/toronto" #PEC
 
 
 # Get AB image URLs -------------------------------------------------------
@@ -62,72 +60,6 @@ ab_urls <- ab_urls[!ab_ids %in% ab_paths]
 ab_ids <- ab_ids[!ab_ids %in% ab_paths]
 
 
-# Get KJ image urls -------------------------------------------------------
-
-# Get KJ urls
-kj_urls <-
-  ltr %>%
-  st_drop_geometry() %>%
-  filter(str_starts(id, "kj-")) %>%
-  group_by(id) %>%
-  slice(1) %>%
-  ungroup() %>%
-  pull(photos)
-
-# Get KJ IDs
-kj_ids <-
-  ltr %>%
-  st_drop_geometry() %>%
-  filter(str_starts(id, "kj-")) %>%
-  group_by(id) %>%
-  slice(1) %>%
-  ungroup() %>%
-  pull(id)
-
-# Remove already downloaded images
-kj_paths <-
-  list.files(paste0(dl_location, "/kj")) %>%
-  str_remove(".(jpg|jpeg|JPG|JPEG)") %>%
-  str_remove("-[:digit:]$")
-
-kj_urls <- kj_urls[!kj_ids %in% kj_paths]
-kj_ids <- kj_ids[!kj_ids %in% kj_paths]
-
-
-# Get CL image urls -------------------------------------------------------
-
-# Get CL urls
-cl_urls <-
-  ltr %>%
-  st_drop_geometry() %>%
-  filter(str_starts(id, "cl-")) %>%
-  group_by(id) %>%
-  slice(1) %>%
-  ungroup() %>%
-  pull(photos)
-
-# Get CL IDs
-cl_ids <-
-  ltr %>%
-  st_drop_geometry() %>%
-  filter(str_starts(id, "cl-")) %>%
-  group_by(id) %>%
-  slice(1) %>%
-  ungroup() %>%
-  pull(id)
-
-# Remove already downloaded images
-cl_paths <-
-  list.files(paste0(dl_location, "/cl")) %>%
-  str_remove(".(jpg|jpeg|JPG|JPEG)") %>%
-  str_remove("-[:digit:]$")
-
-cl_urls <- cl_urls[!cl_ids %in% cl_paths]
-cl_ids <- cl_ids[!cl_ids %in% cl_paths]
-
-rm(property, ltr)
-
-
 # Make download subfolders ------------------------------------------------
 
 if (!dir.exists(dl_location)) dir.create(dl_location,
@@ -135,14 +67,6 @@ if (!dir.exists(dl_location)) dir.create(dl_location,
 
 if (!dir.exists(paste0(dl_location, "/ab"))) {
   dir.create(paste0(dl_location, "/ab"))
-}
-
-if (!dir.exists(paste0(dl_location, "/cl"))) {
-  dir.create(paste0(dl_location, "/cl"))
-}
-
-if (!dir.exists(paste0(dl_location, "/kj"))) {
-  dir.create(paste0(dl_location, "/kj"))
 }
 
 
@@ -153,24 +77,12 @@ foreach(i = seq_along(ab_urls)) %dopar% {
     dl_location, "/ab/", ab_ids[[i]], "-", seq_along(ab_urls[[i]]), ".jpg")))
 }
 
-foreach(i = seq_along(cl_urls)) %dopar% {
-  try(download.file(cl_urls[[i]], paste0(
-    dl_location, "/cl/", cl_ids[[i]], "-", seq_along(cl_urls[[i]]), ".jpg")))
-}
-
-foreach(i = seq_along(kj_urls)) %dopar% {
-  try(download.file(kj_urls[[i]], paste0(
-    dl_location, "/kj/", kj_ids[[i]], "-", seq_along(kj_urls[[i]]), ".jpg")))
-}
-
 
 # Get new paths -----------------------------------------------------------
 
 ab_paths <- list.files(paste0(dl_location, "/ab"), full.names = TRUE)
-cl_paths <- list.files(paste0(dl_location, "/cl"), full.names = TRUE)
-kj_paths <- list.files(paste0(dl_location, "/kj"), full.names = TRUE)
 
-rm(dl_location, ab_urls, ab_ids, cl_urls, cl_ids, kj_urls, kj_ids)
+rm(dl_location, ab_urls, ab_ids)
 
 
 # Get signatures ----------------------------------------------------------
@@ -183,20 +95,8 @@ ab_sigs_new <-
 ab_sigs <- c(ab_sigs, ab_sigs_new)
 qsavem(ab_sigs, file = "output/img_sigs.qsm", nthreads = availableCores())
 
-cl_sigs_new <-
-  create_signature(cl_paths[!cl_paths %in% vctrs::field(cl_sigs, "file")])
-cl_sigs <- c(cl_sigs, cl_sigs_new)
-qsavem(ab_sigs, cl_sigs, file = "output/img_sigs.qsm",
-       nthreads = availableCores())
-
-kj_sigs_new <-
-  create_signature(kj_paths[!kj_paths %in% vctrs::field(kj_sigs, "file")])
-kj_sigs <- c(kj_sigs, kj_sigs_new)
-qsavem(ab_sigs, cl_sigs, kj_sigs, file = "output/img_sigs.qsm",
-       nthreads = availableCores())
-
-rm(ab_paths, cl_paths, kj_paths)
-rm(ab_sigs_new, cl_sigs_new, kj_sigs_new)
+rm(ab_paths)
+rm(ab_sigs_new)
 
 
 # Match images ------------------------------------------------------------
@@ -217,55 +117,13 @@ ab_matches <- integrate_changes(ab_matches, ab_changes)
 qsavem(ab_matches, file = "output/matches_raw.qsm", nthreads = availableCores())
 rm(ab_matrix)
 
-cl_matrix <- match_signatures(ab_sigs, cl_sigs)
-cl_matches <- identify_matches(cl_matrix)
-cl_matches_new <- cl_matches
-
-cl_matches <-
-  cl_matches %>%
-  relocate(correlation, .after = y_sig)
-
-cl_matches <-
-  cl_matches_new %>%
-  anti_join(cl_matches, by = c("x_sig", "y_sig")) %>%
-  mutate(confirmed = FALSE) %>%
-  bind_rows(cl_matches)
-
-cl_changes <- compare_images(cl_matches)
-cl_matches <- integrate_changes(cl_matches, cl_changes)
-qsavem(ab_matches, cl_matches, file = "output/matches_raw.qsm",
-       nthreads = availableCores())
-rm(cl_matrix)
-
-kj_matrix <- match_signatures(ab_sigs, kj_sigs)
-kj_matches <- identify_matches(kj_matrix)
-kj_matches_new <- kj_matches
-
-kj_matches <-
-  kj_matches %>%
-  relocate(correlation, .after = y_sig)
-
-kj_matches <-
-  kj_matches_new %>%
-  anti_join(kj_matches, by = c("x_sig", "y_sig")) %>%
-  mutate(confirmed = FALSE) %>%
-  bind_rows(kj_matches)
-
-kj_changes <- compare_images(kj_matches)
-kj_matches <- integrate_changes(kj_matches, kj_changes) %>%
-  relocate(correlation, .after = y_sig)
-
-qsavem(ab_matches, cl_matches, kj_matches, file = "output/matches_raw.qsm",
-       nthreads = availableCores())
-rm(kj_matrix)
-
 qload("output/matches_raw_old.qsm", nthreads = 32)
 
 
 
 # Save output -------------------------------------------------------------
 
-qsavem(ab_matches, cl_matches, kj_matches, file = "output/matches_raw.qsm",
+qsavem(ab_matches, file = "output/matches_raw.qsm",
        nthreads = availableCores())
-qsavem(ab_changes, cl_changes, kj_changes, file = "output/match_changes.qsm",
+qsavem(ab_changes, file = "output/match_changes.qsm",
        nthreads = availableCores())
