@@ -21,7 +21,7 @@ library(osmdata)
 
 province <-
   get_census("CA16", regions = list(PR = "35"), geo_format = "sf") %>%
-  st_transform(32617) %>%
+  st_transform(32618) %>%
   select(geometry)
 
 # PEC -------------------------------------------------------------
@@ -30,7 +30,7 @@ city <-
   get_census(
     dataset = "CA16", regions = list(CSD = "3513020"), level = "CSD",
     geo_format = "sf") %>%
-  st_transform(32617) %>%
+  st_transform(32618) %>%
   select(GeoUID, Dwellings) %>%
   set_names(c("GeoUID", "dwellings", "geometry")) %>%
   st_set_agr("constant")
@@ -42,7 +42,7 @@ DA <-
   get_census(
     dataset = "CA16", regions = list(CSD = "3513020"), level = "DA",
     geo_format = "sf") %>%
-  st_transform(32617) %>%
+  st_transform(32618) %>%
   select(GeoUID, Dwellings) %>%
   set_names(c("GeoUID", "dwellings", "geometry")) %>%
   st_set_agr("constant")
@@ -61,7 +61,7 @@ streets <-
    streets$osm_lines) %>%
  as_tibble() %>%
  st_as_sf() %>%
- st_transform(32617) %>%
+ st_transform(32618) %>%
  st_set_agr("constant") %>% 
  st_intersection(city)
 
