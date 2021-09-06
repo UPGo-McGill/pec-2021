@@ -8,7 +8,7 @@
 #' - `ltr_processed.qs` (updated)
 #'
 #' Script dependencies:
-#' - `10_ltr_listing_match.R`
+#' - ``
 #'
 #' External dependencies:
 #' - None
@@ -20,9 +20,8 @@ library(furrr)
 # Load previous data ------------------------------------------------------
 
 qload("output/str_processed.qsm", nthreads = availableCores())
-ltr <- qread("output/ltr_processed.qs", nthreads = availableCores())
 qload("output/matches_processed.qs", nthreads = availableCores())
-dl_location <- "/Volumes/Data 2/Scrape photos/toronto"
+dl_location <- "/Volumes/Data 2/Scrape photos/toronto" #PEC
 
 
 # Clean up ab_matches -----------------------------------------------------
@@ -195,31 +194,7 @@ rm(group_matches, property_change_collapsed, property_change_table,
    property_to_delete)
 
 
-# Trim LTR data -----------------------------------------------------------
-
-property_map <-
-  property %>%
-  st_drop_geometry() %>%
-  select(property_ID, all_PIDs) %>%
-  unnest(all_PIDs)
-
-ltr <-
-  ltr %>%
-  mutate(property_ID =
-           future_map(property_ID, ~{
-             tibble(all_PIDs = .x) %>%
-               left_join(property_map, by = "all_PIDs") %>%
-               mutate(property_ID = if_else(is.na(property_ID), all_PIDs,
-                                            property_ID)) %>%
-               pull(property_ID) %>%
-               unique()
-             }, .progress = TRUE))
-
-rm(property_map)
-
-
 # Save output -------------------------------------------------------------
 
 qsavem(property, daily, host, file = "output/str_processed.qsm",
        nthreads = availableCores())
-qsave(ltr, file = "output/ltr_processed.qs", nthreads = availableCores())

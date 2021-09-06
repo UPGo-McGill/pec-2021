@@ -15,8 +15,6 @@
 #'
 #' External dependencies:
 #' - Access to the UPGo database
-#' - Listings scraped from Kijiji and Craigslist with upgo::upgo_scrape_kj and
-#'   upgo::upgo_scrape_cl
 
 source("R/01_startup.R")
 library(matchr)

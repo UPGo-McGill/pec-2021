@@ -11,8 +11,7 @@
 #'
 #' External dependencies:
 #' - Access to the UPGo database
-#' - Old versions of the AirDNA property file to fix problems with last scraped
-#'   dates
+
 
 source("R/01_startup.R")
 
