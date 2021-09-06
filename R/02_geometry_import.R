@@ -16,6 +16,16 @@ source("R/01_startup.R")
 library(cancensus)
 library(osmdata)
 
+## ELECTORAL WARDS (EW)
+#' https://www.thecounty.ca/wp-content/uploads/2020/08/Current-Ten-Ward-Map.pdf
+#' There are boundaries called Electoral Wards in Prince Edward County.
+#' There is no .shp available (that I found of). We can possibly take the PDF
+#' and create polygons with a raster manipulation since colors are very distinct.
+#' We are using the same projection and coordinate system (UTM 18N), but I can't
+#' quite superpose our polygon with theirs. TBD
+#' 
+#' We can call the dataframe "EW", and each line an "electoral_ward"
+
 
 # ON province -------------------------------------------------------------
 

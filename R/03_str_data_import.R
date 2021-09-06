@@ -100,13 +100,14 @@ property <-
 # Add area to property file
 property <-
   property %>%
-  st_join(select(WD, -dwellings))
+  st_join(select(EW, # when we figure out electoral ward boundaries
+                 -dwellings))
 
 # Add area to daily file
 daily <-
   property %>%
   st_drop_geometry() %>%
-  select(property_ID, ward) %>%
+  select(property_ID, electoral_ward) %>%
   left_join(daily, ., by = "property_ID")
 
 
