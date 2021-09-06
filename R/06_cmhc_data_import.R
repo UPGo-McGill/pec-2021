@@ -12,7 +12,7 @@
 #'
 #' External dependencies:
 #' - `CMHC_NBHD_2016-mercWGS84.shp`: CMHC neighbourhood shapefile
-#' - `van_units.csv`, `van_avg_rent.csv` & `van_vacancy.csv`: Tables downloaded
+#' - `pec_units.csv`, `pec_avg_rent.csv` & `pec_vacancy.csv`: Tables downloaded
 #'   from CMHC housing market information portal
 #'   (https://www03.cmhc-schl.gc.ca/hmip-pimh/)
 
@@ -23,79 +23,81 @@ library(unpivotr)
 
 # Download XLSX files if necessary ----------------------------------------
 
-# # National units
-# download.file(c(
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
-#     "rms-1-urban-units-rental-universe-by-bedroom-type-2015-10.xlsx?",
-#     "rev=953481b3-42bd-4ecc-98d8-9747624f94ff"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
-#     "rms-1-urban-units-rental-universe-by-bedroom-type-2016-10.xlsx?",
-#     "rev=c74ecdb7-2d3b-4da5-a4eb-428579041dc5"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
-#     "rms-1-urban-units-rental-universe-by-bedroom-type-2017-10.xlsx?",
-#     "rev=1eb7624c-c220-4194-89e8-dc4883fb3da2"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
-#     "urban-rental-market-survey-data/2018/urban-rental-market-survey-data-",
-#     "number-units-2018-10-en.xlsx?rev=62f1b6b0-a004-41b0-bfe4-39fadf86f49b"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
-#     "urban-rental-market-survey-data-number-units/urban-rental-market-",
-#     "survey-data-number-units-2019.xlsx?rev=c86bcd61-72d3-42b7-a782-",
-#     "f076e9edbc7d")),
-#   destfile = paste0("data/cmhc/annual_units_", 2015:2019, ".xlsx"))
-#
-# # National average rents
-# download.file(c(
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-#     "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
-#     "units-2015-en.xlsx?rev=e694194d-2d82-41dd-9ff5-3fde3e8a2bbe"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-#     "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
-#     "units-2016-en.xlsx?rev=f7244d07-08d9-41ce-b150-08733d6ac975"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-#     "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
-#     "units-2017-en.xlsx?rev=4fffc203-9cf2-4c77-8c32-8c1eee9495e8"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-#     "average-apartment-rents-vacant-occupied-urban-rental-market-survey/",
-#     "average-rents-vacant-occupied-units-2018-en.xlsx?",
-#     "rev=bafb8c36-28a2-4817-a629-eb4826206ebf"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
-#     "average-rents-vacant-occupied-units/average-rents-vacant-occupied-units-",
-#     "2019-en.xlsx?rev=8dbefa49-8770-4d89-bc1a-0e11060ed3b7")),
-#   destfile = paste0("data/cmhc/annual_avg_rent_", 2015:2019, ".xlsx"))
-#
-# # National vacancy
-# download.file(c(
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
-#     "rms-3-urban-vacancy-rates-by-bedroom-type-2015-10.xlsx?",
-#     "rev=4f908e16-717e-4ed8-8eef-e6ca941cdc27"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
-#     "rms-3-urban-vacancy-rates-by-bedroom-type-2016-10.xlsx?",
-#     "rev=95ee1335-6b23-43ba-b3c4-e8b5e7433a3f"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
-#     "rms-3-urban-vacancy-rates-by-bedroom-type-2017-10.xlsx?",
-#     "rev=6bfe023e-691e-421b-a41f-4f9ff4204661"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
-#     "urban-rental-market-survey-data/2018/urban-rental-market-survey-data-",
-#     "vacancy-rates-2018-10-en.xlsx?rev=7427253e-44d0-4ec6-a62c-7afc7c249855"),
-#   paste0(
-#     "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
-#     "urban-rental-market-survey-data/2019/urban-rental-market-survey-data-",
-#     "vacancy-rates-2019.xlsx?rev=15373968-504f-42e8-a277-b1633b21553d")),
-#   destfile = paste0("data/cmhc/annual_vacancy_", 2015:2019, ".xlsx"))
+safe_download <- safely(~ download.file(.x , .y, mode = "wb"))
+
+# National units
+walk2(c(
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-1-urban-units-rental-universe-by-bedroom-type-2015-10.xlsx?",
+    "rev=953481b3-42bd-4ecc-98d8-9747624f94ff"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-1-urban-units-rental-universe-by-bedroom-type-2016-10.xlsx?",
+    "rev=c74ecdb7-2d3b-4da5-a4eb-428579041dc5"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-1-urban-units-rental-universe-by-bedroom-type-2017-10.xlsx?",
+    "rev=1eb7624c-c220-4194-89e8-dc4883fb3da2"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
+    "urban-rental-market-survey-data/2018/urban-rental-market-survey-data-",
+    "number-units-2018-10-en.xlsx?rev=62f1b6b0-a004-41b0-bfe4-39fadf86f49b"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
+    "urban-rental-market-survey-data-number-units/urban-rental-market-",
+    "survey-data-number-units-2019.xlsx?rev=c86bcd61-72d3-42b7-a782-",
+    "f076e9edbc7d")), 
+  paste0("data/cmhc/annual_units_", 2015:2019, ".xlsx"), safe_download)
+
+# National average rents
+walk2(c(
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+    "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
+    "units-2015-en.xlsx?rev=e694194d-2d82-41dd-9ff5-3fde3e8a2bbe"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+    "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
+    "units-2016-en.xlsx?rev=f7244d07-08d9-41ce-b150-08733d6ac975"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+    "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
+    "units-2017-en.xlsx?rev=4fffc203-9cf2-4c77-8c32-8c1eee9495e8"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+    "average-apartment-rents-vacant-occupied-urban-rental-market-survey/",
+    "average-rents-vacant-occupied-units-2018-en.xlsx?",
+    "rev=bafb8c36-28a2-4817-a629-eb4826206ebf"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
+    "average-rents-vacant-occupied-units/average-rents-vacant-occupied-units-",
+    "2019-en.xlsx?rev=8dbefa49-8770-4d89-bc1a-0e11060ed3b7")),
+  paste0("data/cmhc/annual_avg_rent_", 2015:2019, ".xlsx"), safe_download)
+
+# National vacancy
+walk2(c(
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-3-urban-vacancy-rates-by-bedroom-type-2015-10.xlsx?",
+    "rev=4f908e16-717e-4ed8-8eef-e6ca941cdc27"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-3-urban-vacancy-rates-by-bedroom-type-2016-10.xlsx?",
+    "rev=95ee1335-6b23-43ba-b3c4-e8b5e7433a3f"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-3-urban-vacancy-rates-by-bedroom-type-2017-10.xlsx?",
+    "rev=6bfe023e-691e-421b-a41f-4f9ff4204661"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
+    "urban-rental-market-survey-data/2018/urban-rental-market-survey-data-",
+    "vacancy-rates-2018-10-en.xlsx?rev=7427253e-44d0-4ec6-a62c-7afc7c249855"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
+    "urban-rental-market-survey-data/2019/urban-rental-market-survey-data-",
+    "vacancy-rates-2019.xlsx?rev=15373968-504f-42e8-a277-b1633b21553d")),
+  paste0("data/cmhc/annual_vacancy_", 2015:2019, ".xlsx"), safe_download)
 
 
 # Helper functions to import tables ---------------------------------------
@@ -104,20 +106,22 @@ import_web_table <- function(data, var_name, quality = TRUE) {
 
   data <-
     data %>%
-    rename(date = X1) %>%
+    rename(date = 1) %>%
     mutate(date = as.numeric(str_extract(date, "[:digit:]*")))
 
   if (!quality) {
     data %>%
       select(1:6) %>%
       pivot_longer(-date, names_to = "bedroom", values_to = "var") %>%
-      rename({{var_name}} := var)
+      rename({{var_name}} := var) %>% 
+      filter(!is.na(date))
 
   } else {
     data %>%
       select(1:11) %>%
+      mutate(across(.cols = names(data)[1:5 * 2], as.numeric)) %>% 
       rename_with(~paste0(names(data)[1:5 * 2], " - quality"),
-                  c(1:5 * 2 + 1)) %>%
+                  c(1:5 * 2 + 1)) %>% 
       pivot_longer(c(where(is.numeric), -date), names_to = "bedroom",
                    values_to = "var") %>%
       pivot_longer(c(where(is.character), -bedroom), names_to = "temp",
@@ -125,7 +129,8 @@ import_web_table <- function(data, var_name, quality = TRUE) {
       mutate(temp = str_remove(temp, " - quality")) %>%
       filter(bedroom == temp) %>%
       select(-temp) %>%
-      rename({{var_name}} := var)
+      rename({{var_name}} := var) %>% 
+      filter(!is.na(date))
   }
 }
 
@@ -293,10 +298,10 @@ import_annual_vacancy <- function(data, year) {
 
 # Process annual city tables ----------------------------------------------
 
-city_units <- read_csv("data/cmhc/to_units.csv", skip = 2, n_max = 30,
+city_units <- read_csv("data/cmhc/pec_units.csv", skip = 2, n_max = 30,
                        col_types = "cnnnnnl")
-city_avg_rent <- read_csv("data/cmhc/to_avg_rent.csv", skip = 2, n_max = 30)
-city_vacancy <- read_csv("data/cmhc/to_vacancy.csv", skip = 2, n_max = 30)
+city_avg_rent <- read_csv("data/cmhc/pec_avg_rent.csv", skip = 2, n_max = 30)
+city_vacancy <- read_csv("data/cmhc/pec_vacancy.csv", skip = 2, n_max = 30)
 
 city_avg_rent <- city_avg_rent %>% import_web_table(avg_rent)
 city_units <- city_units %>% import_web_table(units, quality = FALSE)
@@ -315,7 +320,7 @@ annual_vacancy <- paste0("data/cmhc/annual_vacancy_", 2015:2019, ".xlsx") %>%
 
 annual_avg_rent <-
   annual_avg_rent %>%
-  map_dfr(import_annual_avg_rent) %>%
+  map_dfr(import_annual_avg_rent) %>% # Does not work: The xlsx only includes CMAs.
   filter(CMA == "Toronto CMA", zone <= 17) %>%
   select(-CMA)
 
