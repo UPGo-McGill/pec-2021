@@ -5,10 +5,9 @@
 #'
 #' Output:
 #' - `str_processed.qsm` (updated)
-#' - `str_bc_processed.qsm`
 #'
 #' Script dependencies:
-#' - `04_str_bc_data_import.R`
+#' - `03_str_data_import.R`
 #' - `11_str_listing_match.R`
 #'
 #' External dependencies:
