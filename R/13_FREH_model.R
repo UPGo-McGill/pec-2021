@@ -5,7 +5,6 @@
 #'
 #' Output:
 #' - `str_processed.qsm` (updated)
-#' - `str_bc_processed.qsm` (updated)
 #' - `FREH_model.qsm`
 #'
 #' Script dependencies:
