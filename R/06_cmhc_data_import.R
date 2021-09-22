@@ -51,28 +51,56 @@ walk2(c(
   paste0("data/cmhc/annual_units_", 2015:2019, ".xlsx"), safe_download)
 
 # National average rents
+
+# These links lead to average rents per zone of CMAs.
+
+# walk2(c(
+#   paste0(
+#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+#     "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
+#     "units-2015-en.xlsx?rev=e694194d-2d82-41dd-9ff5-3fde3e8a2bbe"),
+#   paste0(
+#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+#     "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
+#     "units-2016-en.xlsx?rev=f7244d07-08d9-41ce-b150-08733d6ac975"),
+#   paste0(
+#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+#     "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
+#     "units-2017-en.xlsx?rev=4fffc203-9cf2-4c77-8c32-8c1eee9495e8"),
+#   paste0(
+#     "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
+#     "average-apartment-rents-vacant-occupied-urban-rental-market-survey/",
+#     "average-rents-vacant-occupied-units-2018-en.xlsx?",
+#     "rev=bafb8c36-28a2-4817-a629-eb4826206ebf"),
+#   paste0(
+#     "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
+#     "average-rents-vacant-occupied-units/average-rents-vacant-occupied-units-",
+#     "2019-en.xlsx?rev=8dbefa49-8770-4d89-bc1a-0e11060ed3b7")),
+#   paste0("data/cmhc/annual_avg_rent_", 2015:2019, ".xlsx"), safe_download)
+
+# These links lead to average rent for Centres of 10,000+ inhabitants
+
 walk2(c(
   paste0(
-    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-    "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
-    "units-2015-en.xlsx?rev=e694194d-2d82-41dd-9ff5-3fde3e8a2bbe"),
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-6-urban-average-rent-by-bedroom-type-2015-10.xlsx?",
+    "rev=cb3f0491-5733-4124-a20e-c88149f1c557"),
   paste0(
-    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-    "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
-    "units-2016-en.xlsx?rev=f7244d07-08d9-41ce-b150-08733d6ac975"),
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-6-urban-average-rent-by-bedroom-type-2016-10.xlsx?",
+    "rev=e2be863c-51ea-4f43-92a4-649f7b88316f"),
   paste0(
-    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-    "average-apartment-rents-vacant-occupied/average-rents-vacant-occupied-",
-    "units-2017-en.xlsx?rev=4fffc203-9cf2-4c77-8c32-8c1eee9495e8"),
-  paste0(
-    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/xls/data-tables/",
-    "average-apartment-rents-vacant-occupied-urban-rental-market-survey/",
-    "average-rents-vacant-occupied-units-2018-en.xlsx?",
-    "rev=bafb8c36-28a2-4817-a629-eb4826206ebf"),
+    "https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/",
+    "rms-6-urban-average-rent-by-bedroom-type-2017-10.xlsx?",
+    "rev=a8645457-9c9d-468c-a2d7-905456ba3f9c"),
   paste0(
     "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
-    "average-rents-vacant-occupied-units/average-rents-vacant-occupied-units-",
-    "2019-en.xlsx?rev=8dbefa49-8770-4d89-bc1a-0e11060ed3b7")),
+    "urban-rental-market-survey-data/2018/urban-rental-market-survey-data-",
+    "average-rents-urban-centres-2018-10-en.xlsx?rev=8c23d8c9-8f2d-4091-995f-6d6ecdc0ebd9"),
+  paste0(
+    "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/",
+    "urban-rental-market-survey-data/2019/urban-rental-market-survey-data-",
+    "average-rents-urban-centres-2019.xlsx?rev=a86c330c-61a4-4b9d-a3b1-20d51039e05d")),
   paste0("data/cmhc/annual_avg_rent_", 2015:2019, ".xlsx"), safe_download)
 
 # National vacancy
@@ -314,9 +342,9 @@ city_vacancy <- city_vacancy %>% import_web_table(vacancy) %>%
 annual_avg_rent <- paste0("data/cmhc/annual_avg_rent_", 2015:2019, ".xlsx") %>%
   map(xlsx_cells)
 annual_units <- paste0("data/cmhc/annual_units_", 2015:2019, ".xlsx") %>%
-  map(xlsx_cells, "Neighbourhood - Quartier")
+  map(xlsx_cells, "CSD - SDR")
 annual_vacancy <- paste0("data/cmhc/annual_vacancy_", 2015:2019, ".xlsx") %>%
-  map(xlsx_cells, "Neighbourhood - Quartier")
+  map(xlsx_cells, "CSD - SDR")
 
 annual_avg_rent <-
   annual_avg_rent %>%
@@ -332,62 +360,16 @@ zones <-
 annual_units <-
   annual_units %>%
   map2_dfr(2015:2019, import_annual_units) %>%
-  filter(centre == "Toronto", neighbourhood == "Total") %>%
-  select(-province, -centre, -neighbourhood) %>%
-  mutate(zone = case_when(
-    str_detect(zone, coll("Toronto (Central)")) ~ 1,
-    str_detect(zone, coll("Toronto (East)")) ~ 2,
-    str_detect(zone, coll("Toronto (North)")) ~ 3,
-    str_detect(zone, coll("Toronto (West)")) ~ 4,
-    str_detect(zone, coll("Etobicoke (South)")) ~ 5,
-    str_detect(zone, coll("Etobicoke (Central)")) ~ 6,
-    str_detect(zone, coll("Etobicoke (North)")) ~ 7,
-    str_detect(zone, coll("York")) ~ 8,
-    str_detect(zone, coll("East York")) ~ 9,
-    str_detect(zone, coll("Scarborough (Central)")) ~ 10,
-    str_detect(zone, coll("Scarborough (North)")) ~ 11,
-    str_detect(zone, coll("Scarborough (East)")) ~ 12,
-    str_detect(zone, coll("North York (Southeast)")) ~ 13,
-    str_detect(zone, coll("North York (Northeast)")) ~ 14,
-    str_detect(zone, coll("North York (Southwest)")) ~ 15,
-    str_detect(zone, coll("North York (N.Central)")) ~ 16,
-    str_detect(zone, coll("North York (Northwest)")) ~ 17,
-    TRUE ~ NA_real_
-  )) %>%
-  left_join(zones, by = "zone") %>%
-  relocate(zone_name, .after = zone) %>%
-  filter(zone <= 17) %>%
-  arrange(date, zone, dwelling_type, bedroom)
+  filter(centre %in% c("Prince Edward County (CY)", "Prince Edward County CY"), neighbourhood == "Total", zone == "Total") %>%
+  select(-province, -centre, -neighbourhood, -zone) %>%
+  arrange(date, bedroom)
 
 annual_vacancy <-
   annual_vacancy %>%
   map2_dfr(2015:2019, import_annual_vacancy) %>%
-  filter(centre == "Toronto", neighbourhood == "Total") %>%
-  select(-province, -centre, -neighbourhood) %>%
-  mutate(zone = case_when(
-    str_detect(zone, coll("Toronto (Central)")) ~ 1,
-    str_detect(zone, coll("Toronto (East)")) ~ 2,
-    str_detect(zone, coll("Toronto (North)")) ~ 3,
-    str_detect(zone, coll("Toronto (West)")) ~ 4,
-    str_detect(zone, coll("Etobicoke (South)")) ~ 5,
-    str_detect(zone, coll("Etobicoke (Central)")) ~ 6,
-    str_detect(zone, coll("Etobicoke (North)")) ~ 7,
-    str_detect(zone, coll("York")) ~ 8,
-    str_detect(zone, coll("East York")) ~ 9,
-    str_detect(zone, coll("Scarborough (Central)")) ~ 10,
-    str_detect(zone, coll("Scarborough (North)")) ~ 11,
-    str_detect(zone, coll("Scarborough (East)")) ~ 12,
-    str_detect(zone, coll("North York (Southeast)")) ~ 13,
-    str_detect(zone, coll("North York (Northeast)")) ~ 14,
-    str_detect(zone, coll("North York (Southwest)")) ~ 15,
-    str_detect(zone, coll("North York (N.Central)")) ~ 16,
-    str_detect(zone, coll("North York (Northwest)")) ~ 17,
-    TRUE ~ NA_real_
-  )) %>%
-  left_join(zones, by = "zone") %>%
-  relocate(zone_name, .after = zone) %>%
-  filter(zone <= 17) %>%
-  arrange(date, zone, dwelling_type, bedroom)
+  filter(centre %in% c("Prince Edward County (CY)", "Prince Edward County CY"), neighbourhood == "Total", zone == "Total") %>%
+  select(-province, -centre, -neighbourhood, -zone) %>%
+  arrange(date, bedroom)
 
 
 # Process shapefile -------------------------------------------------------

@@ -1,0 +1,88 @@
+# Seasonality pattern of STR in PEC meets COVID-19
+
+<style type="text/css">
+  body{
+  font-family: Futura, Helvetica, Arial;
+}
+</style>
+
+<br>
+
+```{r setup, include = FALSE, echo = FALSE}
+
+library(here)
+source(here("R", "01_startup.R"))
+
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+# Function for checking file modifications
+mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
+
+# Set this to TRUE to output PDF figures
+build_figures <- FALSE
+
+qload(here("output", "/geometry.qsm"))
+qload(here("output", "/str_processed.qsm"))
+
+```
+
+```{r, include = T}
+
+library(kableExtra)
+
+monthly_fulltime_str = function(start_date, end_date, cut = 25) {
+daily %>% 
+    filter(status != "B",
+           date >= start_date, date < end_date) %>% 
+    mutate(month_year = zoo::as.yearmon(date,"%Y-%m-%d"),
+           num_month = month(date),
+           num_month = case_when(str_detect(num_month, pattern = "\\d{2}") ~ as.character(num_month),
+                                 TRUE ~ as.character(str_glue("0{num_month}")))) %>% 
+    count(property_ID, month_year, num_month) %>% 
+    filter(n>cut) %>% 
+    count(month_year, num_month) %>% 
+    arrange(num_month) %>% 
+    mutate(month = str_glue("{num_month} ({format(month_year, '%b')})")) %>% 
+    group_by(month) %>% 
+    summarize(fulltime_properties = round(mean(n)))
+}
+
+precovid <- monthly_fulltime_str("2019-03-01", "2020-03-01") %>% 
+  rename(precovid_fulltime = fulltime_properties)
+
+first_year_covid <- monthly_fulltime_str("2020-03-01", "2021-03-01") %>% 
+  rename(covid_fulltime = fulltime_properties)
+
+variation_df <- 
+  left_join(precovid, first_year_covid) %>% 
+  mutate(variation = (covid_fulltime - precovid_fulltime) / precovid_fulltime)
+
+var_less_most_busy <- 
+  scales::percent((max(precovid$precovid_fulltime) -
+                     min(precovid$precovid_fulltime))/
+                    min(precovid$precovid_fulltime))
+
+correlation <- cor(variation_df$variation, variation_df$covid_fulltime) %>% 
+  round(digits = 2)
+
+
+variation_df %>% 
+  mutate(variation = scales::percent(variation)) %>% 
+  rename(Month = month,
+         "Pre-COVID (1 year)" = precovid_fulltime,
+         "COVID's first year" = covid_fulltime,
+         "Variation (%)" = variation) %>% 
+  kbl(caption = "Monthly average of full-time STR",
+      align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down")
+
+```
+
+The previous table shows the average number of properties fully dedicated to the STR market on a monthly basis. To be considered as such, a property needs to have 25 days of either availability or reservation during the month. During the year previous to the global outbreak of the COVID-19, the number of full-time STR on a monthly basis ranged between `r min(precovid$precovid_fulltime)` and `r max(precovid$precovid_fulltime)`. The table showcases a strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months. TKTK COMPARISON WITH OTHER REGIONAL TOURISTIC DESTINATION.
+
+The global outbreak lead to a major decrease in the number of STR operated on a full-time basis in Prince Edward County. April, the full month of data following the declaration by the World health organization (WHO) that the COVID-19 was a pandemic, underwent a decrease of `r scales::percent(pull(variation_df[4,4]))` in the number of STR operated on a full-time basis. It means not only that there was less reservation, but also that hosts were either blocking their calendars or deleting their listings. The month of march seems to be the less impacted, probably because the WHO only declared the COVID-19 outbreak a global pandemic on March 11th, and hosts took some time to adjust.
+
+We found a very strong positive correlation (r = `r correlation`) between the number of full-time STR (monthly) during the first year after the outbreak, and the variation column. Indeed, the busiest month of that year were also those with the smallest decrease in the number of full-time STR on the territory. For example, the monthly peak of full-time STR after the outbreak was in September, and this month has seen a `r scales::percent(variation_df$variation[09], accuracy = 0.02)` decrease compared to the previous year. However, in the less busy month after the pandemic outbreak, February 2021, there was a decrease of `r scales::percent(variation_df$variation[02], accuracy = 0.02)` compared to the previous year.
