@@ -29,6 +29,8 @@ qload(here("output", "/str_processed.qsm"))
 
 ```
 
+## Market supply's seasonal characteristics meets COVID-19
+
 ```{r, include = T}
 
 library(kableExtra)
@@ -77,14 +79,76 @@ variation_df %>%
          "Variation (%)" = variation) %>% 
   kbl(caption = "Full-time STR on monthly basis",
       align = "lrrrrr") %>% 
-  kable_styling(latex_options="scale_down")
+  kable_styling(latex_options="scale_down") %>%
+  column_spec(2,
+              background = spec_color(variation_df$precovid_fulltime[1:12], alpha = 0.4, end = 0.7))
 
 ```
 
-The previous table shows the average number of properties fully dedicated to the STR market on a monthly basis. To be considered as such, a property needs to have 25 days of either availability or reservation during the month. During the year previous to the global outbreak of the COVID-19, the number of full-time STR on a monthly basis ranged between `r min(precovid$precovid_fulltime)` and `r max(precovid$precovid_fulltime)`. The table showcases a strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months. TKTK COMPARISON WITH OTHER REGIONAL TOURISTIC DESTINATION.
+The previous table shows the average number of properties fully dedicated to the STR market on a monthly basis. To be considered as such, a property needs to have 25 days of either availability or reservation during the month. During the year previous to the global outbreak of the COVID-19, the number of full-time STR on a monthly basis ranged between `r min(precovid$precovid_fulltime)` and `r max(precovid$precovid_fulltime)`. The table showcases a strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months.
 
 The global outbreak lead to a major decrease in the number of STR operated on a full-time basis in Prince Edward County. April, the full month of data following the declaration by the World health organization (WHO) that the COVID-19 was a pandemic, underwent a decrease of `r scales::percent(pull(variation_df[4,4]))` in the number of STR operated on a full-time basis. It means not only that there was less reservation, but also that hosts were either blocking their calendars or deleting their listings. The month of march seems to be the less impacted, probably because the WHO only declared the COVID-19 outbreak a global pandemic on March 11th, and hosts took some time to adjust.
 
 We found a very strong positive correlation (r = `r correlation`) between the number of full-time STR (monthly) during the first year after the outbreak, and the variation column. Indeed, the busiest month of that year were also those with the smallest decrease in the number of full-time STR on the territory. For example, the monthly peak of full-time STR after the outbreak was in September, and this month has seen a `r scales::percent(variation_df$variation[09], accuracy = 0.02)` decrease compared to the previous year. However, in the less busy month after the pandemic outbreak, February 2021, there was a decrease of `r scales::percent(variation_df$variation[02], accuracy = 0.02)` compared to the previous year.
 
-However, regulations were starting on November 2019, 
+## Market demand's seasonal characteristics meets COVID-19
+
+While the seasonal pattern in the number of full-time STR looks strong, the pattern is even stronger when looking at the actual demand in STR. We can get a taste of it by summing the number of reservations in a month. 
+
+```{r, include = T}
+
+monthly_reservations = function(start_date, end_date) {
+  daily %>% 
+    filter(status == "R",
+           date >= start_date, date < end_date) %>% 
+    mutate(month_year = zoo::as.yearmon(date,"%Y-%m-%d"),
+           num_month = month(date),
+           num_month = case_when(str_detect(num_month, pattern = "\\d{2}") ~ as.character(num_month),
+                                 TRUE ~ as.character(str_glue("0{num_month}")))) %>% 
+    count(date, month_year, num_month) %>% 
+    arrange(num_month) %>% 
+    mutate(month = str_glue("{num_month} ({format(month_year, '%b')})")) %>% 
+    group_by(month) %>% 
+    summarize(fulltime_properties = round(sum(n)))
+  
+}
+
+precovid <- monthly_reservations("2019-03-01", "2020-03-01") %>% 
+  rename(precovid_fulltime = fulltime_properties)
+
+first_year_covid <- monthly_reservations("2020-03-01", "2021-03-01") %>% 
+  rename(covid_fulltime = fulltime_properties)
+
+variation_df <- 
+  left_join(precovid, first_year_covid) %>% 
+  mutate(variation = (covid_fulltime - precovid_fulltime) / precovid_fulltime)
+
+var_less_most_busy <- 
+  scales::percent((max(precovid$precovid_fulltime) -
+                     min(precovid$precovid_fulltime))/
+                    min(precovid$precovid_fulltime))
+
+variation_df %>% 
+  mutate(variation = scales::percent(variation)) %>% 
+  rename(Month = month,
+         "Pre-COVID (1 year)" = precovid_fulltime,
+         "COVID's first year" = covid_fulltime,
+         "Variation (%)" = variation) %>% 
+  kbl(caption = "Total number of reserved nights, monthly",
+      align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down") %>%
+  column_spec(2,
+              background = spec_color(variation_df$precovid_fulltime[1:12], alpha = 0.4, end = 0.7))
+
+```
+
+During the year preceding to the global outbreak of the COVID-19, the number of reserved nights on a monthly basis ranged between `r min(precovid$precovid_fulltime)` and `r max(precovid$precovid_fulltime)`. Therefore, the table showcases a very strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months. 
+
+The two previous tables show an overall decrease in offer and demand due to the pandemic. It should be noted, however, that the decline is more significant on the supply side of the market. While the growth of year-on-year demand in March and April might be due to pre-pandemic reservations that might or might not have been honored, there was a stagnation and growth in the number of reserved night in the following fall. There were less STR operating on a full-time basis in these months, and yet more reserved nights than during the same months the previous year.
+
+While local hosts may have been more reluctant to share their homes, the pandemic may have stimulated demand in Ontario for STR local vacation homes.
+
+TKTK COMPARISON WITH OTHER REGIONAL TOURISTIC DESTINATION.
+
+## A short-lasting regulation
+
