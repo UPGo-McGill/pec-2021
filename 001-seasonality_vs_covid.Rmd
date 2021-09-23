@@ -29,6 +29,156 @@ qload(here("output", "/str_processed.qsm"))
 
 ```
 
+## Seasonal patterns and trends, pre-disruptions (regulations and COVID-19)
+
+```{r, include = T}
+
+pre_disruptions_reservations <- 
+  daily %>%
+  filter(status == "R",
+         date >= "2017-06-01", date < "2019-11-04") %>% 
+  count(date) %>% 
+  mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE))
+
+max_2017 <- 
+  pre_disruptions_reservations %>% 
+  filter(date < "2018-01-01") %>% 
+  arrange(-n) %>% slice(1)
+
+max_2019 <- 
+  pre_disruptions_reservations %>% 
+  arrange(-n) %>% slice(1)
+
+pre_disruptions_reservations  %>% 
+  ggplot(aes(date, n))+
+  geom_line() +
+  theme_minimal()+
+  ggtitle("Daily number of reserved nights (7-day rolling average)")+
+  geom_segment(aes(x = pull(max_2017[1,1]), y = pull(max_2017[1,2]) + 50, xend = pull(max_2019[1,1]), yend = pull(max_2019[1,2]) + 50),
+                  arrow = arrow(length = unit(0.3, "inches")),
+               color = col_palette[1])+
+  ylim(0,1050)+
+  ylab("Reserved nights")+
+  xlab(NULL)
+
+  
+monthly_percentage_reservations <- 
+  daily %>%
+  filter(status == "R",
+         date >= "2017-11-01", date < "2019-11-01") %>% 
+  count(date) %>% 
+  mutate(month_year = zoo::as.yearmon(date,"%Y-%m-%d"),
+         num_month = month(date),
+         num_month = case_when(str_detect(num_month, pattern = "\\d{2}") ~ as.character(num_month),
+                               TRUE ~ as.character(str_glue("0{num_month}")))) %>% 
+  mutate(month = str_glue("{num_month} ({format(month_year, '%b')})")) %>% 
+  group_by(month_year, month) %>% 
+  summarize(n = sum(n)) %>% 
+  group_by(month) %>% 
+  summarize(n = mean(n)) %>% 
+  mutate(per = n/sum(n))
+
+summer_months <- 
+monthly_percentage_reservations %>% 
+  slice(6:9) %>% 
+  summarize(scales::percent(sum(per))) %>% 
+  pull()
+
+summer_months_total <- 
+daily %>%
+  filter(status == "R",
+         date >= "2017-01-01", date < "2019-11-01") %>% 
+  count(date) %>% 
+  mutate(year = year(date),
+         num_month = month(date)) %>%
+  group_by(year, num_month) %>%
+  summarize(n = sum(n)) %>% 
+  filter(str_detect(num_month, pattern = "6|7|8|9")) %>%
+  group_by(year) %>% 
+  summarize(n = sum(n))
+
+
+first_yoy <- scales::percent(pull((summer_months_total[2,2] - summer_months_total[1,2]) / summer_months_total[1,2]))
+
+second_yoy <- scales::percent(pull((summer_months_total[3,2] - summer_months_total[2,2]) / summer_months_total[2,2]))
+
+
+```
+
+The previous graph shows not only an upward trend of the STR market in Prince Edward County, but also a strong seasonality pattern. The market usually sees its higher peaks in August and its lowest point in February, with a small peak in the holiday season. Overall, the summer months (June, July, August and September) account for `r summer_months` of the total number of reservations in a year, which showcases the strong seasonality pattern.
+
+The arrow on the plot emphasizes the growth trend of the STR market in PEC before the disruptions that are the regulations and the COVID-19 pandemic. Between 2017 and 2018, summer months have seen an increase of `r first_yoy`, while the number was `r second_yoy` between summer months of 2018 and 2019.
+
+## A short-lasting regulation
+
+``` {r include = T}
+
+daily %>%
+  filter(status == "R",
+         date >= "2019-03-01") %>% 
+  count(date) %>% 
+  mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE)) %>% 
+  ggplot(aes(date, n))+
+  annotate("segment", x = key_date_covid, xend = key_date_covid,
+           y = -Inf, yend = Inf, alpha = 0.3) +
+  annotate("curve", x = as.Date("2020-08-01"), xend = key_date_covid + days(10),
+           y = 850, yend = 700, curvature = -.2, lwd = 0.25,
+           arrow = arrow(length = unit(0.05, "inches"))) +
+  annotate("text", x = as.Date("2020-08-01"), y = 900,
+           label = "COVID-19 \noutbreak") +
+  annotate("segment", x = key_date_regulations, xend = key_date_regulations,
+           y = -Inf, yend = Inf, alpha = 0.3) +
+  annotate("curve", x = as.Date("2019-06-01"), xend = key_date_regulations - days(10),
+           y = 995, yend = 900, curvature = -.2, lwd = 0.25,
+           arrow = arrow(length = unit(0.05, "inches"))) +
+  annotate("text", x = as.Date("2019-04-01"), y = 1000,
+           label = "Regulations")+
+  geom_line() +
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  theme_minimal()+
+  ggtitle("Daily number of reserved nights (7-day rolling average)")
+
+
+
+
+monthly_reservations = function(start_date, end_date) {
+  daily %>% 
+    filter(status == "R",
+           date >= start_date, date < end_date) %>% 
+    mutate(month_year = zoo::as.yearmon(date,"%Y-%m-%d"),
+           num_month = month(date),
+           num_month = case_when(str_detect(num_month, pattern = "\\d{2}") ~ as.character(num_month),
+                                 TRUE ~ as.character(str_glue("0{num_month}")))) %>% 
+    count(date, month_year, num_month) %>% 
+    arrange(num_month) %>% 
+    mutate(month = str_glue("{num_month} ({format(month_year, '%b')})")) %>% 
+    group_by(month) %>% 
+    summarize(reservations = round(sum(n)))
+  
+}
+
+precovid <- monthly_reservations(key_date_regulations - years(1), key_date_regulations) %>% 
+  rename(pre_reservations = reservations)
+
+first_year_covid <- monthly_reservations(key_date_regulations, "2020-03-01") %>% 
+  rename(covid_reservations = reservations)
+
+variation_df <- 
+  left_join(precovid, first_year_covid) %>% 
+  mutate(variation = (covid_reservations - pre_reservations) / pre_reservations) %>% 
+  filter(!is.na(variation))
+
+total_prior_reg <- sum(variation_df[,2]) %>% prettyNum(big.mark = ",")
+total_post_reg <- sum(variation_df[,3]) %>% prettyNum(big.mark = ",")
+
+variation_reg <- scales::percent((sum(variation_df[,3])-sum(variation_df[,2]))/sum(variation_df[,2]))
+
+```
+Tthere is not a lot data available to see the impact of the STR regulation officially introduced on November 4th 2019. Indeed, we can only look at four full months of data before the pandemic hit. These are the months between the two vertical lines on the previous graph. 
+
+The short-lasting regulation did not cause a decrease in the STR's activity in Prince Edward County. It is actually the opposite. The total number of reservations in the four months between November 2019 and March 2020 was `r total_post_reg`, while it was `r total_prior_reg` during the same four months a year prior. We have thus seen an increase of `r variation_reg` in the total number of reservations, during the four months of data between the formalization of the regulation and the COVID-19 pandemic.
+
+
 ## Market supply's seasonal characteristics meets COVID-19
 
 ```{r, include = T}
@@ -97,48 +247,32 @@ While the seasonal pattern in the number of full-time STR looks strong, the patt
 
 ```{r, include = T}
 
-monthly_reservations = function(start_date, end_date) {
-  daily %>% 
-    filter(status == "R",
-           date >= start_date, date < end_date) %>% 
-    mutate(month_year = zoo::as.yearmon(date,"%Y-%m-%d"),
-           num_month = month(date),
-           num_month = case_when(str_detect(num_month, pattern = "\\d{2}") ~ as.character(num_month),
-                                 TRUE ~ as.character(str_glue("0{num_month}")))) %>% 
-    count(date, month_year, num_month) %>% 
-    arrange(num_month) %>% 
-    mutate(month = str_glue("{num_month} ({format(month_year, '%b')})")) %>% 
-    group_by(month) %>% 
-    summarize(fulltime_properties = round(sum(n)))
-  
-}
-
 precovid <- monthly_reservations("2019-03-01", "2020-03-01") %>% 
-  rename(precovid_fulltime = fulltime_properties)
+  rename(precovid_reservations = reservations)
 
 first_year_covid <- monthly_reservations("2020-03-01", "2021-03-01") %>% 
-  rename(covid_fulltime = fulltime_properties)
+  rename(covid_reservations = reservations)
 
 variation_df <- 
   left_join(precovid, first_year_covid) %>% 
-  mutate(variation = (covid_fulltime - precovid_fulltime) / precovid_fulltime)
+  mutate(variation = (covid_reservations - precovid_reservations) / precovid_reservations)
 
 var_less_most_busy <- 
-  scales::percent((max(precovid$precovid_fulltime) -
-                     min(precovid$precovid_fulltime))/
-                    min(precovid$precovid_fulltime))
+  scales::percent((max(precovid$precovid_reservations) -
+                     min(precovid$precovid_reservations))/
+                    min(precovid$precovid_reservations))
 
 variation_df %>% 
   mutate(variation = scales::percent(variation)) %>% 
   rename(Month = month,
-         "Pre-COVID (1 year)" = precovid_fulltime,
-         "COVID's first year" = covid_fulltime,
+         "Pre-COVID (1 year)" = precovid_reservations,
+         "COVID's first year" = covid_reservations,
          "Variation (%)" = variation) %>% 
   kbl(caption = "Total number of reserved nights, monthly",
       align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") %>%
   column_spec(2,
-              background = spec_color(variation_df$precovid_fulltime[1:12], alpha = 0.4, end = 0.7))
+              background = spec_color(variation_df$precovid_reservations[1:12], alpha = 0.4, end = 0.7))
 
 ```
 
@@ -149,6 +283,3 @@ The two previous tables show an overall decrease in offer and demand due to the 
 While local hosts may have been more reluctant to share their homes, the pandemic may have stimulated demand in Ontario for STR local vacation homes.
 
 TKTK COMPARISON WITH OTHER REGIONAL TOURISTIC DESTINATION.
-
-## A short-lasting regulation
-
