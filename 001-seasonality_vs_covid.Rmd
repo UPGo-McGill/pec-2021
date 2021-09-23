@@ -60,7 +60,6 @@ pre_disruptions_reservations  %>%
   ylim(0,1050)+
   ylab("Reserved nights")+
   xlab(NULL)
-
   
 monthly_percentage_reservations <- 
   daily %>%
@@ -283,3 +282,44 @@ The two previous tables show an overall decrease in offer and demand due to the 
 While local hosts may have been more reluctant to share their homes, the pandemic may have stimulated demand in Ontario for STR local vacation homes.
 
 TKTK COMPARISON WITH OTHER REGIONAL TOURISTIC DESTINATION.
+
+```{r, include = T}
+
+per_res_month <- 
+daily %>%
+  filter(status == "R",
+         date >= "2018-01-01", date < "2021-01-01") %>% 
+  count(date) %>% 
+  mutate(year = year(date),
+         month = month(date)) %>%
+  # filter(!month %in% c(1,2)) %>% 
+  group_by(year, month) %>% 
+  summarize(n = sum(n)) %>% 
+  group_by(year) %>% 
+  mutate(yearly_per = n/sum(n)) 
+
+peaks_yearly_per <- 
+per_res_month %>% 
+  arrange(-yearly_per) %>% 
+  group_by(year) %>% 
+  slice(1) %>% 
+  mutate(yearly_per = scales::percent(yearly_per))
+
+per_res_month %>% 
+  mutate(date= as.Date(str_glue("{year}-{month}-{15}"))) %>% 
+  ggplot()+
+  geom_line(aes(x=date, y=yearly_per))+
+  scale_y_continuous(labels = scales::percent)+
+  annotate("segment", x = key_date_covid, xend = key_date_covid,
+           y = -Inf, yend = Inf, alpha = 0.3) +
+  annotate("curve", x = as.Date("2020-06-01"), xend = key_date_covid + days(10),
+           y = 0.18, yend = 0.18, curvature = -.2, lwd = 0.25,
+           arrow = arrow(length = unit(0.05, "inches"))) +
+  annotate("text", x = as.Date("2020-08-01"), y = 0.18,
+           label = "COVID-19 \noutbreak") +
+  theme_minimal()+
+  ylab("% of reservations happening each month, yearly")
+
+```
+
+In the two full years prior to the global pandemic, the percentage of reserved nights made in each month of the year appeared to be stable, with August being the peak month with approximately 20% of the annual total of reserved nights. The pandemic disrupted this pattern. Indeed, in August 2020, the figure dropped to `r pull(peaks_yearly_per[3,4])`. As the rest of the COVID year received less reservations, the January and February months of 2020 (before COVID) looks inlated as the rest of the year received less reservations than they should have without the pandemic happening. Their "normality" being higher might push the August peak down, relatively. However, even when January and February months are taken out of the equation, the usual very strong seasonality pattern is different, weaker, in times of COVID. 
