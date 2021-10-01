@@ -1,0 +1,160 @@
+# Registration analysis
+
+<style type="text/css">
+  body{
+  font-family: Futura, Helvetica, Arial;
+}
+</style>
+
+<br>
+
+```{r setup, include = FALSE, echo = FALSE}
+
+library(here)
+source(here("R", "01_startup.R"))
+
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+# Function for checking file modifications
+mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
+
+# Set this to TRUE to output PDF figures
+build_figures <- FALSE
+
+qload(here("output", "/geometry.qsm"))
+qload(here("output", "/str_processed.qsm"))
+STA <- qread(here("output", "/STA.qs"))
+
+
+```
+
+
+``` {r include = T}
+# Get properties active during the period when the registration was into effect
+library(kableExtra)
+
+start_reg <- as.Date("2019-11-04")
+end_reg <- as.Date("2020-09-04")
+
+reg_property <- 
+  property %>% 
+  filter(last_active >= start_reg) %>% 
+  filter(created <= end_reg) %>% 
+  st_transform(32617)
+
+ids <- 
+  STA %>% 
+  st_buffer(dist = 200) %>% 
+  st_intersection(.,reg_property) %>% 
+  st_drop_geometry() %>% 
+  count(id) %>% 
+  filter(n>1) %>% 
+  pull(id)
+
+id_no_dups <- 
+  STA %>% 
+  st_buffer(dist = 200) %>% 
+  st_intersection(.,reg_property) %>% 
+  st_drop_geometry() %>% 
+  count(id) %>% 
+  filter(n>1) %>% 
+  pull(id)
+
+STA %>% 
+  st_buffer(dist = 200) %>% 
+  st_intersection(.,reg_property) %>% 
+  st_drop_geometry() %>% 
+  filter(id %in% ids) %>% 
+  filter(bedrooms == bedrooms.1) %>% 
+  View()
+
+
+
+
+# Number of registrations emitted per ward 
+STA %>% 
+  st_drop_geometry() %>% 
+  count(ward) %>% 
+  arrange(desc(n)) %>% 
+  rename(Ward = ward,
+         `Number of STA licenses emitted` = n) %>% 
+  kbl(caption = paste0("Number of STA licenses emitted by ward"),
+      align = "lrrrr") %>%
+  kable_styling(latex_options = "scale_down")
+
+# Number of licenses granted per day
+STA %>% 
+  st_drop_geometry() %>% 
+  count(declare_date) %>% 
+  ggplot(aes(declare_date, n)) +
+  geom_col(lwd = 0, fill = col_palette[2]) +
+  scale_x_date(name = NULL, date_breaks = "2 months")+
+  scale_y_continuous(name = NULL) +
+  theme_minimal()+
+  labs(title = "Number of STA licenses emitted per day")
+
+# PR vs SR licenses
+STA %>% 
+  st_drop_geometry() %>% 
+  filter(!is.na(principal_residence)) %>% 
+  count(principal_residence) %>% 
+  mutate(principal_residence = ifelse(principal_residence == FALSE, "Secondary residence", "Principal residence")) %>% 
+  ggplot(aes(x="", y=n, fill=principal_residence))+
+  geom_bar(width = 1, stat = "identity")+
+  scale_fill_manual(name = "Residence status",
+                    values = col_palette[c(1,2)])+
+  coord_polar("y", start=0)+
+  theme_void()+
+  labs(title = "STA licenses by residence status")
+
+# Price per STA
+STA %>% 
+  st_drop_geometry() %>% 
+  filter(!is.na(principal_residence)) %>% 
+  group_by(principal_residence) %>% 
+  summarize(n = n(),
+            mean_fee = mean(fee, na.rm = TRUE)) %>% 
+  mutate(mean_fee = scales::dollar(mean_fee, 0.01)) %>% 
+  rename(`Residence status` = principal_residence,
+         `Number of licenses` = n,
+         `Mean fee ($)` = mean_fee) %>% 
+  kbl(caption = paste0("STA licenses by residence status"),
+      align = "lrrrr") %>%
+  kable_styling(latex_options = "scale_down")
+
+STA %>% 
+  st_drop_geometry() %>% 
+  group_by(bedrooms) %>% 
+  summarize(n =n(),
+            mean_fee = mean(fee, na.rm = TRUE)) %>% 
+  mutate(mean_fee = scales::dollar(mean_fee, 0.01)) %>% 
+  rename(`Number of bedrooms` = bedrooms,
+         `Number of licenses` = n,
+         `Mean fee ($)` = mean_fee) %>% 
+  kbl(caption = paste0("STA licenses by number of bedrooms"),
+      align = "lrrrr") %>%
+  kable_styling(latex_options = "scale_down")
+
+```
+
+
+```{r, include = T}
+
+
+```
+
+
+```{r, include = T}
+
+
+```
+
+
+```{r, include = T}
+
+
+```
+
