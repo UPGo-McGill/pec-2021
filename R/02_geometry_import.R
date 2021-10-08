@@ -23,6 +23,18 @@ EW <-
   st_transform(32617) %>% 
   select(NAME, MUNITYP) %>% 
   set_names(c("ward", "type", "geometry"))
+
+EW <- 
+  DA %>%
+  select(dwellings) %>%
+  st_interpolate_aw(EW, extensive = TRUE) %>%
+  st_drop_geometry() %>%
+  select(dwellings) %>%
+  cbind(EW, .) %>%
+  as_tibble() %>%
+  mutate(dwellings = round(dwellings, digit = 0)) %>% 
+  st_as_sf() %>%
+  arrange(ward)
   
 
 # Zoning --------------------------------------------------------------------
