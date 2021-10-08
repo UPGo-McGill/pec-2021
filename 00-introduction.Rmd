@@ -1,13 +1,14 @@
 # Introduction {-}
 
-In January 2021, the Urban Politics and Governance research group (UPGo) at McGill University was commissioned by the City of Toronto to conduct market research and analysis on the impact of the City’s January 2021 regulations on short-term rentals, the impact of the COVID-19 pandemic on the short-term rental market in the City of Toronto, and the financial circumstances under which short-term rentals are returning—and could be encouraged to return—to the long-term market. This report will shed light on the following topics: 
+In September 2021, the Urban Politics and Governance research group (UPGo) at McGill University was commissioned by Prince Edward County to conduct market research and analysis on short-term rentals (STRs) in the county, the impact of short-term rental accommodations (STAs) on the County's housing sector and the various pathways to reinstating the County's STA registration system post pandemic. To do so, this report will shed light on the following topics: 
 
-- A general market overview of short-term rentals (STRs) in Toronto, including the volume, revenue, type, size and distribution of units, the presence of dedicated commercial operations, and the impact of COVID-19 on short-term rentals.
-- The impact of STRs on Toronto’s housing market, in particular the number of housing units taken off the long-term market. This analysis is also complemented by the impacts of the COVID-19 on STR listings that are operated on a full-time basis in Toronto.
-- Information about STRs returning to the LTR market, including the number of listings that have returned; their spatial distribution, size and asking rents; the extent to which they are commercial operations or casual home sharing operations; and whether they are likely to return to the STR market when conditions improve.
-- The impact of the City of Toronto’s new STR registration system on the operations of short-term rentals in the City.
-- The asking rents under which commercial STRs have returned to the long-term market, and what rents would be necessary to induce additional such conversions.
+- A summary analysis of the housing sector in Prince Edward County, including average rents and property prices, availability of housing, affordability, geographic distinctions and current challenges.
+- A general market overview of short-term rentals (STRs) in Prince Edward County, including the volume, revenue, type, size and distribution of units, the presence of dedicated commercial operations, and the impact of COVID-19 on short-term rentals.
+- An analysis of seasonality in Prince Edward County, with specifics on reservations and revenues, and also the impact of seasonality on towns and villages in the County.
+- The impact of STRs on Prince Edward County’s housing market, in particular the number of housing units taken off the long-term market during both the high and low seasons.
+- The impact of the County’s new STA registration system on the operations of short-term rentals in Prince Edward County.
+- The various pathways available to reinstate the STA registration systems following the covid-related hiatus.
 
-Data and methodology are discussed in the Appendix, and all the code used to generate the analysis in the report is available online at https://github.com/UPGo-McGill/toronto-report.
+Data and methodology are discussed in the Appendix, and all the code used to generate the analysis in the report is available online at https://github.com/UPGo-McGill/pec-2021.
 
 \newpage
