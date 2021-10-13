@@ -16,11 +16,22 @@ source("R/01_startup.R")
 library(cancensus)
 library(osmdata)
 
+# PEC DAs -------------------------------------------------------------
+
+DA <-
+  get_census(
+    dataset = "CA16", regions = list(CSD = "3513020"), level = "DA",
+    geo_format = "sf") %>%
+  st_transform(32618) %>%
+  select(GeoUID, Dwellings) %>%
+  set_names(c("GeoUID", "dwellings", "geometry")) %>%
+  st_set_agr("constant")
+
 # ELECTORAL WARDS (EW) ------------------------------------------------------
 
 EW <- 
   read_sf("data/McGill/Wards.shp") %>% 
-  st_transform(32617) %>% 
+  st_transform(32618) %>% 
   select(NAME, MUNITYP) %>% 
   set_names(c("ward", "type", "geometry"))
 
@@ -100,7 +111,7 @@ streets <-
    streets$osm_lines) %>%
  as_tibble() %>%
  st_as_sf() %>%
- st_transform(32617) %>%
+ st_transform(32618) %>%
  st_set_agr("constant") %>% 
  st_intersection(city)
 
