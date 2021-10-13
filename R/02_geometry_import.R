@@ -16,11 +16,22 @@ source("R/01_startup.R")
 library(cancensus)
 library(osmdata)
 
+# PEC DAs -------------------------------------------------------------
+
+DA <-
+  get_census(
+    dataset = "CA16", regions = list(CSD = "3513020"), level = "DA",
+    geo_format = "sf") %>%
+  st_transform(32618) %>%
+  select(GeoUID, Dwellings) %>%
+  set_names(c("GeoUID", "dwellings", "geometry")) %>%
+  st_set_agr("constant")
+
 # ELECTORAL WARDS (EW) ------------------------------------------------------
 
 EW <- 
   read_sf("data/McGill/Wards.shp") %>% 
-  st_transform(32617) %>% 
+  st_transform(32618) %>% 
   select(NAME, MUNITYP) %>% 
   set_names(c("ward", "type", "geometry"))
 
@@ -35,13 +46,12 @@ EW <-
   mutate(dwellings = round(dwellings, digit = 0)) %>% 
   st_as_sf() %>%
   arrange(ward)
-  
 
 # Zoning --------------------------------------------------------------------
 
 ZN <- 
   read_sf("data/McGill/Zoning.shp") %>% 
-  st_transform(32617) %>% 
+  st_transform(32618) %>% 
   select(ZONING, ZONE, WARD, BYLAW, FileNumber) %>% 
   set_names(c("zoning", "zone", "ward", "bylaw", "file_number", "geometry")) %>% 
   mutate(ward = case_when(ward == 1 ~ "Picton",
@@ -60,7 +70,7 @@ ZN <-
 
 province <-
   get_census("CA16", regions = list(PR = "35"), geo_format = "sf") %>%
-  st_transform(32617) %>%
+  st_transform(32618) %>%
   select(geometry)
 
 # PEC ---------------------------------------------------------------------
@@ -69,19 +79,7 @@ city <-
   get_census(
     dataset = "CA16", regions = list(CSD = "3513020"), level = "CSD",
     geo_format = "sf") %>%
-  st_transform(32617) %>%
-  select(GeoUID, Dwellings) %>%
-  set_names(c("GeoUID", "dwellings", "geometry")) %>%
-  st_set_agr("constant")
-
-
-# PEC DAs -------------------------------------------------------------
-
-DA <-
-  get_census(
-    dataset = "CA16", regions = list(CSD = "3513020"), level = "DA",
-    geo_format = "sf") %>%
-  st_transform(32617) %>%
+  st_transform(32618) %>%
   select(GeoUID, Dwellings) %>%
   set_names(c("GeoUID", "dwellings", "geometry")) %>%
   st_set_agr("constant")
@@ -100,7 +98,7 @@ streets <-
    streets$osm_lines) %>%
  as_tibble() %>%
  st_as_sf() %>%
- st_transform(32617) %>%
+ st_transform(32618) %>%
  st_set_agr("constant") %>% 
  st_intersection(city)
 
