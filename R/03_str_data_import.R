@@ -111,7 +111,16 @@ daily <-
   left_join(daily, ., by = "property_ID")
 
 
+# Get rid of non-housing listings -----------------------------------------
+
+daily_all <- 
+  daily
+
+daily <- 
+  daily |> 
+  filter(housing)
+
 # Save output -------------------------------------------------------------
 
-qsavem(property, daily, host, exchange_rates, file = "output/str_raw.qsm",
-       nthreads = availableCores())
+qsavem(property, daily, daily_all, host, exchange_rates, 
+       file = "output/str_raw.qsm", nthreads = availableCores())
