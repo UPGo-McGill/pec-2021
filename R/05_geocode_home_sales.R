@@ -1,31 +1,31 @@
 #### 03 REGISTRATION DATA IMPORT ########################################################
 
 #' Output:
-#' - `STA.qs`
+#' - `home_sales.qs`
 #'
 #' Script dependencies:
 #' - none
 
 source("R/01_startup.R")
 
-# STA import --------------------------------------------------------------
 
-STA <- read_sf("data/McGill/STA.shp") %>% 
-  transmute(id = LicenceID, 
-            created = created_da,
-            expiry = Expiry,
-            address = StreetAdd,
-            bedrooms = NumBeds,
-            num_units = NumUnits_1,
-            max_guests = MaxOccupan,
-            entire_apt = WholeHome,
-            status = Status) %>% 
-  mutate(entire_apt = ifelse(entire_apt == 0, FALSE, TRUE))
+# Import home sales -------------------------------------------------------
+
+home_sales <- 
+  read_xlsx("data/home_sales.xlsx") |>
+  set_names(c("MLS", "PIN", "address", "ward", "list_price", "sale_price",
+              "listing_date", "sale_date", "DOM", "new_con",
+              "water")) |> 
+  mutate(sale_date = as.Date(sale_date),
+         listing_date = sale_date - DOM,
+         new_con = if_else(new_con == "Yes", TRUE, FALSE),
+         water = if_else(water == "Yes", TRUE, FALSE))
 
 
 # Uniform street address --------------------------------------------------
 
-STA <- STA %>% 
+home_sales <- 
+  home_sales %>%
   mutate(address = str_to_lower(address), 
          address = str_remove(address, "\\.")) %>% 
   mutate(address = str_replace(address, " road", " rd"),
@@ -46,7 +46,20 @@ STA <- STA %>%
   mutate(address = str_trim(str_to_lower(address))) 
 
 
+# Geocode -----------------------------------------------------------------
+
+home_sales <- 
+  home_sales %>% 
+  mutate(address = str_glue("{address}, prince edward county")) %>%
+  ggmap::mutate_geocode(address) %>%
+  mutate(address = str_remove(address, ", prince edward county"))
+
+home_sales <- 
+  home_sales %>% 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>% 
+  st_transform(32617)
+
+
 # Save --------------------------------------------------------------------
 
-qsave(STA, file = "output/STA.qs", nthreads = availableCores())
-
+qsave(home_sales, file = "output/home_sales.qs")
