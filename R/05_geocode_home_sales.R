@@ -50,8 +50,8 @@ home_sales <-
 
 home_sales <- 
   home_sales %>% 
-  mutate(address = str_glue("{address}, prince edward county")) %>%
-  ggmap::mutate_geocode(address) %>%
+  mutate(address = as.character(str_glue("{address}, prince edward county"))) %>%
+  ggmap::mutate_geocode(location = address) %>%
   mutate(address = str_remove(address, ", prince edward county"))
 
 home_sales <- 
