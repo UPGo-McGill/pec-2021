@@ -12,10 +12,10 @@ library(readxl)
 # Import home sales -------------------------------------------------------
 
 home_sales <- 
-  read_xlsx("data/home_sales.xlsx") |>
+  read_xlsx("data/home_sales.xlsx") %>%  
   set_names(c("MLS", "PIN", "address", "ward", "list_price", "sale_price",
               "listing_date", "sale_date", "DOM", "new_con",
-              "water")) |> 
+              "water")) %>% 
   mutate(sale_date = as.Date(sale_date),
          listing_date = sale_date - DOM,
          new_con = if_else(new_con == "Yes", TRUE, FALSE),
@@ -43,7 +43,14 @@ home_sales <-
                              TRUE ~ address),# ROAD 3 ROAD, take the second rd off...
          address = str_remove(address, " n$"),
          address = str_remove(address, " highway$")) %>% 
-  mutate(address = str_trim(str_to_lower(address))) 
+  mutate(address = str_trim(str_to_lower(address))) %>% 
+  mutate(ward = str_remove(ward, "\\sWard")) %>% 
+  mutate(ward = ifelse(ward == "Ameliasburg", "Ameliasburgh", ward),
+         ward = ifelse(ward == "Sophiasburg", "Sophiasburgh", ward),
+         ward = ifelse(ward == "North Marysburg", "North Marysburgh", ward),
+         ward = ifelse(ward == "South Marysburg", "South Marysburgh", ward),
+         ward = ifelse(ward == "zz-Prince Edward", NA, ward))
+
 
 
 # Geocode -----------------------------------------------------------------
