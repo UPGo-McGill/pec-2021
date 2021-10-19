@@ -164,7 +164,7 @@ variation_reg <- scales::percent((sum(variation_df[,3])-sum(variation_df[,2]))/s
 
 There is not a lot of data available to see the impact of the STR regulation officially introduced on November 4th 2019. Indeed, we can only look at four full months of data before the pandemic hit. These are the months between the two vertical lines on the previous graph. 
 
-The short-lasting regulation did not cause a decrease in the STR's activity in Prince Edward County. It is actually the opposite. The total number of reservations in the four months between November 2019 and March 2020 was `r total_post_reg`, while it was `r total_prior_reg` during the same four months a year prior. We have thus seen an increase of `r variation_reg` in the total number of reservations, during the four months of data between the formalization of the regulation and the COVID-19 pandemic.
+The short-lasting regulation did not cause a decrease in the STR's activity in Prince Edward County. It appears that the regulation has had no effect on the STR market, and the increase in activity seen on the graph for that winter season, compared to previous winters, is an increase in activity observed everywhere Airbnb operates. The total number of reservations in the four months between November 2019 and March 2020 was `r total_post_reg`, while it was `r total_prior_reg` during the same four months a year prior. We have thus seen an increase of `r variation_reg` in the total number of reservations, during the four months of data between the formalization of the regulation and the COVID-19 pandemic.
 
 
 ## Market supply's seasonal characteristics meets COVID-19

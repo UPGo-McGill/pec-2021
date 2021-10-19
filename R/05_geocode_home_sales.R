@@ -7,7 +7,7 @@
 #' - none
 
 source("R/01_startup.R")
-
+library(readxl)
 
 # Import home sales -------------------------------------------------------
 
