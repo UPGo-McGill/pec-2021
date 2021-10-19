@@ -36,8 +36,8 @@ end_2020 <- as.Date("2020-05-31")
 start_2021 <- as.Date("2020-06-01")
 end_2021 <- as.Date("2021-05-31")
 
-key_date_regulations <- as.Date("2019-04-14")
-key_date_covid <- as.Date("2020-03-11")
+key_date_regulations <- as.Date("2019-11-01")
+key_date_covid <- as.Date("2020-03-14")
 
 col_palette <-
   c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
