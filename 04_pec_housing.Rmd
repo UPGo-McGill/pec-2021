@@ -1,0 +1,234 @@
+# The housing situation in Prince Edward County
+
+<style type="text/css">
+  body{
+  font-family: Futura, Helvetica, Arial;
+}
+</style>
+
+<br>
+
+```{r setup, include = FALSE, echo = FALSE}
+
+library(here)
+source(here("R", "01_startup.R"))
+
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+# Function for checking file modifications
+mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
+
+# Set this to TRUE to output PDF figures
+build_figures <- TRUE
+
+```
+
+```{r housing_objects, cache=TRUE, cache.lazy=FALSE}
+
+qload(here("output", "home_sales.qsm"), nthreads = availableCores())
+qload(here("output", "geometry.qsm"), nthreads = availableCores())
+
+DA_housing <- 
+  cancensus::get_census(
+    dataset = "CA16", regions = list(CSD = c("3513020")), level = "DA",
+    vectors = c("v_CA16_4836", "v_CA16_4838", "v_CA16_4837", "v_CA16_4901", 
+                "v_CA16_4899", "v_CA16_4894", "v_CA16_6698", "v_CA16_6692", 
+                "v_CA16_6725", "v_CA16_6719", "v_CA16_4896", "v_CA16_4892"),
+    geo_format = "sf") %>% 
+  st_transform(32618) %>% 
+  select(-c(`Shape Area`:Households, CSD_UID:`Area (sq km)`)) %>% 
+  set_names(c("dwellings", "GeoUID", "parent_tenure", "renter", "owner", "average_rent",
+              "p_thirty_renter", "average_ho_cost", "average_value_dwellings", "p_thirty_owner", 
+              "mobility_one_year", "parent_mobility_one_year", "mobility_five_years", 
+              "parent_mobility_five_years", "geometry")) %>% 
+  mutate(p_mobility_one_year = mobility_one_year/parent_mobility_one_year,
+         p_mobility_five_years = mobility_five_years/parent_mobility_five_years,
+         p_thirty_renter = p_thirty_renter / 100,
+         p_thirty_owner = p_thirty_owner / 100) %>% 
+  select(GeoUID, dwellings, renter, owner, average_rent, average_ho_cost, average_value_dwellings,
+         p_thirty_renter, p_thirty_owner, p_mobility_one_year, p_mobility_five_years) %>% 
+  as_tibble() %>% 
+  st_as_sf(agr = "constant")
+
+# Apply spatial interpolation to get census data by ward
+
+EW_housing <- 
+  DA_housing %>% 
+  mutate(area = st_area(geometry)) %>% 
+  st_set_agr("constant") %>% 
+  mutate(thirty_renter = p_thirty_renter * renter,
+         thirty_owner = p_thirty_owner * owner,
+         mobility_one_year = p_mobility_one_year * dwellings,
+         mobility_five_years = p_mobility_five_years * dwellings) %>% 
+  select(GeoUID, dwellings, owner, renter, average_rent, average_ho_cost, average_value_dwellings,
+         thirty_renter, thirty_owner, mobility_one_year, mobility_five_years, area)
+
+avg_list <- str_subset(names(EW_housing), "average|p_") %>% 
+  str_subset("total", negate = TRUE)
+
+agg_list <-
+  setdiff(names(EW_housing), c("GeoUID", "geometry", "area")) %>% 
+  setdiff(avg_list)
+
+round_list <- c("average_rent", "average_ho_cost", "average_value_dwellings", "dwellings", "renter", "owner")
+
+EW_housing <- 
+  EW %>% 
+  select(ward) %>% 
+  st_transform(32618) %>% 
+  st_set_agr("constant") %>% 
+  st_intersection(., EW_housing) %>% 
+  mutate(area_prop = st_area(geometry) / area) %>% 
+  mutate(across(all_of(agg_list), ~{.x * units::drop_units(area_prop)})) %>% 
+  select(-GeoUID, -area, -area_prop) %>% 
+  st_drop_geometry() %>% 
+  group_by(ward) %>% 
+  summarize(
+    average_rent = weighted.mean(average_rent, renter, na.rm = TRUE),
+    average_ho_cost = weighted.mean(average_ho_cost, owner, na.rm = TRUE),
+    average_value_dwellings = weighted.mean(average_value_dwellings, owner, na.rm = TRUE),
+    across(all_of(agg_list), sum, na.rm = TRUE)) %>% 
+  mutate(p_thirty_renter = thirty_renter / renter,
+         p_thirty_owner = thirty_owner / owner,
+         p_mobility_one_year = mobility_one_year / dwellings,
+         p_mobility_five_years = mobility_five_years / dwellings) %>% 
+  select(-thirty_renter, -thirty_owner, -mobility_one_year, - mobility_five_years) %>% 
+  mutate(across(all_of(round_list), ~round(., digit = 0))) %>% 
+  left_join(., EW %>% select(ward), by = "ward") %>% 
+  st_as_sf() %>% 
+  st_transform(32618)
+
+rm(agg_list, avg_list, round_list)
+
+```
+
+**TKTK**
+
+<br>
+
+## The housing context in Prince Edward County
+
+In the past years, Prince Edward County's housing market experienced numerous changes. The rise of short-term rental platforms has put pressure on the county's housing stock, with housing units being dedicated to tourist accommodations on a full-time basis. Average rents have been increasing, and vacancy rates are remaining under unhealthy levels. The Covid-19 pandemic exacerbated challenges regarding housing affordability in the county by bringing in an influx of new buyers looking for a second home, in part due to remote work. The following section provides an assessment of the housing situation in the county for both homeowners and renters, with a specific focus on affordability and availability. The common definition of housing that is affordable for which the costs do not exceed 30% of the household's disposable income, or what the Canadian Mortgage and Housing Corporation defines as the shelter cost-income ratio (2020). Additionally, a healthy rental market is considered one in which the vacancy rate is of 3% of above (ACTO 2021).
+
+## Being a homeowner in Prince Edward County
+
+```{r para_1, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+p_thirty_owner_bloomfield <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(desc(p_thirty_owner)) %>% 
+  slice(1) %>% 
+  pull(p_thirty_owner) %>%   
+  scales::percent(accuracy = 0.1)
+
+p_thirty_owner_athol <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(p_thirty_owner) %>% 
+  slice(1) %>% 
+  pull(p_thirty_owner) %>%   
+  scales::percent(accuracy = 0.1)
+
+```
+
+
+``` {r make_fig_1_1}
+
+figure_1_1_fun <- function(regular = "", condensed = "") {
+  
+  left_map <- 
+    DA_housing %>% 
+    ggplot() +
+    geom_sf(data = province, colour = "transparent", fill = "grey93") +
+    geom_sf(aes(fill = p_thirty_owner), colour = "white") +
+    geom_sf(data = water, fill = "white", colour = "transparent") +
+    scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+                         na.value = "grey80",
+                         limits = c(0.05, 0.25), oob = scales::squish, 
+                         labels = scales::percent)  +
+    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+                                  title.vjust = 1)) + 
+    gg_bbox(DA_housing) +
+    theme_void() +
+    theme(text = element_text(family = regular, face = "plain"),
+          legend.title = element_text(family = regular, face = "bold",
+                                      size = 7),
+          legend.title.align = 0.9,
+          legend.text = element_text(family = regular, size = 5),
+          panel.border = element_rect(colour = "white", size = 2))
+  
+  right_map <- 
+    EW_housing %>% 
+    ggplot() +
+    geom_sf(data = province, colour = "transparent", fill = "grey93") +
+    geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
+    geom_sf(data = water, fill = "white", colour = "transparent") +
+    scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+                         na.value = "grey80",
+                         limits = c(0.1, 0.2), oob = scales::squish, 
+                         labels = scales::percent)  +
+    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+                                  title.vjust = 1)) + 
+    gg_bbox(DA_housing) +
+    theme_void() +
+    theme(text = element_text(family = regular, face = "plain"),
+          legend.title = element_text(family = regular, face = "bold",
+                                      size = 7),
+          legend.title.align = 0.9,
+          legend.text = element_text(family = regular, size = 5),
+          panel.border = element_rect(colour = "white", size = 2))
+  
+  left_map + right_map + plot_layout(guide = "collect") & 
+    theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_1.pdf"), 
+         plot = figure_1_1_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_1.pdf"))
+}
+
+```
+
+From 2008 to 2018, the median home price in the county has almost doubled, going from $205K to $395K, an increase equivalent to seven times that of the increase in median household incomes (The County Foundation 2018). The influx of new homes in Prince Edward County is limited, with only 4.2% of housing units having been built between 2011-2016. By contrast, 61.0% of all homes in Prince Edward County were built prior to 1980. Based on the affordability measure above, 17.3% of homeowners are considered housing stressed. This percentage varies between ward, with Bloomfield having `r p_thirty_owner_bloomfield` of owners households spending more than 30% of their incomes on housing and Athol having the least housing-stressed households, with `r p_thirty_owner_athol`. Figure  \@ref(fig:fig-1-1) shows the geographic distribution of owner households in situation of housing stress by dissemination area (left) and by ward (right). The ward map displays a distinction between the level of housing stress between Western and Eastern wards.
+
+``` {r fig-1-1, include = TRUE, fig.cap = '(ref:fig-1-1)', fig.align = "center"}
+
+figure_1_1_fun()
+
+```
+
+(ref:fig-1-1) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
+
+```{r para_2, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+p_thirty_owner_bloomfield <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(desc(p_thirty_owner)) %>% 
+  slice(1) %>% 
+  pull(p_thirty_owner) %>%   
+  scales::percent(accuracy = 0.1)
+
+p_thirty_owner_athol <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(p_thirty_owner) %>% 
+  slice(1) %>% 
+  pull(p_thirty_owner) %>%   
+  scales::percent(accuracy = 0.1)
+
+```
+
+With a relatively stable number of housing units available, the county is experiencing additional pressure in the past few years, which cannot be measured through 2016 census data. Two external market forces, namely short-term rentals and secondary home purchases by households from urban areas, have caused property prices to increases. According to Charles Dowdall, the largest year-over-year increases in housing sale prices occurred in the June 2020-June 2021 period, with an increase of 79.9%. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the county from 2016, totaling 3,017 sales. Figure TKTK below summarizes the number of residential real estate sales in the county, starting on 6 January 2016.
+
+
+
+\newpage

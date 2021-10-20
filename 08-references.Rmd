@@ -1,5 +1,7 @@
 # References {-}
 
+ACTO. (2021). Tenant protection and rent regulation in Ontario. Advocacy Centre for Tenants Ontario. https://www.acto.ca/production/wp-content/uploads/2019/07/Factsheet_March2021.pdf
+
 Airbnb. (2020). Extenuating circumstances policy and the coronavirus. Airbnb. https://www.airbnb.ca/help/article/2701/extenuating-circumstances-policy-and-the-coronavirus-covid19
 
 Barron, K., Kung, E., & Proserpio, D. (2017). The Effect of Home-Sharing on House Prices and Rents: Evidence from Airbnb. https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3006832 
@@ -11,6 +13,8 @@ City of Vancouver. 2020a. Short-term rental business licence. City of Vancouver.
 City of Vancouver. 2020b. Short-term rental highlights report. City of Vancouver. Online: https://vancouver.ca/files/cov/short-term-rental-highlights-report.pdf 
 
 City of Vancouver. 2019. One year review of short-term rental (STR) program. City of Vancouver. Online: https://council.vancouver.ca/20191106/documents/cfsc1.pdf 
+
+CMHC. (21 January 2021). New affordability metric assesses household ability to afford basis goods. Accessed October 2021. https://www.cmhc-schl.gc.ca/en/blog/2020-housing-observer/new-affordability-metric-assesses-household-ability-afford-basic-goods
 
 CMHC. (nd). Methodology for rental market survey. Accessed July 2020.  https://www03.cmhc-schl.gc.ca/hmip-pimh/en/TableMapChart/RmsMethodology
 
@@ -25,5 +29,7 @@ Horn, K., & Merante, M. (2017). Is home sharing driving up rents? Evidence from 
 McSheffrey, E. (2020, June 8). The New Reality: As bookings plummet, short-term hosts court long-term tenants during COVID-19. Global News https://globalnews.ca/news/6992034/short-term-rentals-long-term-tenants-coronavirus-covid-19/
 
 RCLALQ (2020). La flambée des loyers. Enquête sur les prix des logements à louer au Québec. [Report] Regroupement des comités logement et associations de locataires du Québec. https://rclalq.qc.ca/publications/enquete-flambee-des-loyers/ 
+
+The County Foundation. (2018). Vital Signs: Working together to build a place where everyone belongs. Accessed October 2021. https://thecountyfoundation.ca/vital-signs-report-2018-update/
 
 Wachsmuth, D., & Weisler, A. (2018). Airbnb and the rent gap: Gentrification through the Sharing Economy. Environmental and Planning A: Economy and Space, 50(6), 1147-1170. https://doi.org/10.1177/0308518X18778038 
