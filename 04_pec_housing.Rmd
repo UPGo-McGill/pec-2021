@@ -227,8 +227,154 @@ p_thirty_owner_athol <-
 
 ```
 
-With a relatively stable number of housing units available, the county is experiencing additional pressure in the past few years, which cannot be measured through 2016 census data. Two external market forces, namely short-term rentals and secondary home purchases by households from urban areas, have caused property prices to increases. According to Charles Dowdall, the largest year-over-year increases in housing sale prices occurred in the June 2020-June 2021 period, with an increase of 79.9%. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the county from 2016, totaling 3,017 sales. Figure TKTK below summarizes the number of residential real estate sales in the county, starting on 6 January 2016.
 
+``` {r make_fig_1_2}
+
+figure_1_2_fun <- function(regular = "", condensed = "") {
+  
+home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year_month = format(sale_date, "%Y-%m")) %>% 
+  mutate(year_month = paste0(year_month, "-01")) %>% 
+  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
+  group_by(year_month) %>% 
+  summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
+  ggplot() +
+  geom_line(aes(year_month, n), color = col_palette[5])+
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
+               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
+  theme_minimal() +
+  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
+        text = element_text(family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_2.pdf"), 
+         plot = figure_1_2_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_2.pdf"))
+}
+
+```
+
+With a relatively stable number of housing units available, the county is experiencing additional pressure in the past few years, which cannot be measured through 2016 census data. Two external market forces, namely short-term rentals and secondary home purchases by households from urban areas, have caused property prices to increases. According to Charles Dowdall, the largest year-over-year increases in housing sale prices occurred in the June 2020-June 2021 period, with an increase of 79.9%. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the county from 2016, totaling 3,017 sales. Figure \@ref(fig:fig-1-2) below summarizes the number of residential real estate sales in the county, starting on 6 January 2016.
+
+``` {r fig-1-2, include = TRUE, fig.cap = '(ref:fig-1-2)', fig.align = "center"}
+
+figure_1_2_fun()
+
+```
+
+(ref:fig-1-2) _Monthly number of property sales in Prince Edward County_
+
+```{r para_3, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+peak_housing_sale <- 
+  home_sales %>% 
+   st_drop_geometry() %>% 
+   mutate(year_month = format(sale_date, "%Y-%m")) %>% 
+   mutate(year_month = paste0(year_month, "-01")) %>% 
+   mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
+   group_by(year_month) %>% 
+   summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
+   arrange(desc(n)) %>% 
+   slice(1) %>% 
+   pull(n)
+
+second_peak_housing_sale <- 
+  home_sales %>% 
+   st_drop_geometry() %>% 
+   mutate(year_month = format(sale_date, "%Y-%m")) %>% 
+   mutate(year_month = paste0(year_month, "-01")) %>% 
+   mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
+   group_by(year_month) %>% 
+   summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
+   arrange(desc(n)) %>% 
+   slice(2) %>% 
+   pull(n)
+
+dec_2020_sale_price <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year_month = format(sale_date, "%Y-%m")) %>% 
+  mutate(year_month = paste0(year_month, "-01")) %>% 
+  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
+  group_by(year_month) %>% 
+  summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
+  arrange(desc(mean_sale)) %>% 
+  slice(1) %>% 
+  pull(mean_sale) %>% 
+  round(digit = -2) %>% 
+  prettyNum(",") %>% 
+  paste0("$", .)
+
+home_sales_variation <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year_month = format(sale_date, "%Y-%m")) %>% 
+  mutate(year_month = paste0(year_month, "-01")) %>% 
+  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
+  group_by(year_month) %>% 
+  summarize("Number of sales" = n(), "Average sale price" = mean(sale_price, na.rm=TRUE)) %>% 
+  mutate(across(where(is.numeric), 
+                function(x) slide_dbl(x, ~{(.x[13] - .x[1]) / .x[1]}, 
+                                      .before = 12, .complete = FALSE))) %>% 
+  pivot_longer(-year_month, names_to = "var", values_to = "value") %>% 
+  group_by(var) %>% 
+  mutate(value = slide_dbl(value, mean, .before = 0, .complete = TRUE)) %>% 
+  ungroup() %>% 
+  filter(year_month >= "2017-01-01")
+
+yoy_sale_2021 <- 
+  home_sales_variation %>% 
+  filter(var == "Average sale price") %>% 
+  arrange(desc(value)) %>% 
+  slice(2) %>% 
+  pull(value) %>% 
+  scales::percent(0.1)
+
+```
+
+``` {r make_fig_1_3}
+
+figure_1_3_fun <- function(regular = "", condensed = "") {
+  
+home_sales_variation %>% 
+  ggplot(aes(year_month, value, colour = var)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  geom_line(lwd = 1, na.rm = TRUE) +
+  scale_x_date(name = NULL) +
+  scale_y_continuous(name = NULL, limits = c(-1, NA), 
+                     labels = scales::percent) +
+  scale_color_manual(name = NULL, values = col_palette[c(1, 3)]) +
+  theme_minimal() +
+  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
+        text = element_text(family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_3.pdf"), 
+         plot = figure_1_3_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_3.pdf"))
+}
+
+```
+
+There is a high increase in the number of residential sales starting in the second half of 2020, with the peak of real estate sales being in July 2020, with a total of `r peak_housing_sale` property sales, followed by `r second_peak_housing_sale` in September of 2020. This peak in property sales has also been accompanied by large increases in average sale prices, with a peak average sale price in December 2020 of `r dec_2020_sale_price`. This number is a staggering year-over-year increase of `r yoy_sale_2021` compared to the same month the year before. Figure \@ref(fig:fig-1-3) summarizes the year-over-year changes in the number of sales and sale price per month.
+
+``` {r fig-1-3, include = TRUE, fig.cap = '(ref:fig-1-3)', fig.align = "center"}
+
+figure_1_3_fun()
+
+```
+
+(ref:fig-1-3) _Year-over-year changes in monthly real estate sales and average sale prices_
 
 
 \newpage
