@@ -377,6 +377,57 @@ DOM <-
   group_by(year_month) %>% 
   summarize(avg_DOM = mean(DOM, na.rm=TRUE))
 
+DOM_2019 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  group_by(year) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  filter(year == 2019) %>% 
+  pull(avg_dom)
+
+DOM_2020 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  group_by(year) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  filter(year == 2020) %>% 
+  pull(avg_dom)
+
+DOM_2021 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  group_by(year) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  filter(year == 2021) %>% 
+  pull(avg_dom)
+
+diff_2020 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  mutate(diff_price = sale_price - list_price) %>% 
+  group_by(year) %>% 
+  summarize(diff_price = round(mean(diff_price, na.rm=TRUE), digit=-1)) %>% 
+  filter(year == 2020) %>% 
+  pull(diff_price) %>% 
+  prettyNum(",") %>% 
+  paste0("$", .)
+
+diff_2021 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  mutate(diff_price = sale_price - list_price) %>% 
+  group_by(year) %>% 
+  summarize(diff_price = round(mean(diff_price, na.rm=TRUE), digit=-1)) %>% 
+  filter(year == 2021) %>% 
+  pull(diff_price) %>% 
+  prettyNum(",") %>% 
+  paste0("$", .)
+
 
 ```
 
@@ -422,7 +473,7 @@ if (build_figures) {
 
 ```
 
-There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices.The number of days on the market nad the difference between asking price and sale price are two indicators of a hot real estate market. Figure \@ref(fig:fig-1-4) shows a
+There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices.The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figure \@ref(fig:fig-1-4) shows both of those indicators. The that the average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`
 
 ``` {r fig-1-4, include = TRUE, fig.cap = '(ref:fig-1-4)', fig.align = "center"}
 
@@ -431,5 +482,7 @@ figure_1_4_fun()
 ```
 
 (ref:fig-1-4) _Monthly averages for days on the market (right) and difference between asking and sale prices (left)_
+
+
 
 \newpage
