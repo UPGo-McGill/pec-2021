@@ -64,7 +64,7 @@ home_sales <-
 home_sales <- 
   home_sales %>% 
   st_as_sf(coords = c("lon", "lat"), crs = 4326) %>% 
-  st_transform(32617)
+  st_transform(32618)
 
 
 # Save --------------------------------------------------------------------

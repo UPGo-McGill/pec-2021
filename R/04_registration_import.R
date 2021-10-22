@@ -20,7 +20,8 @@ STA <- read_sf("data/McGill/STA.shp") %>%
             max_guests = MaxOccupan,
             entire_apt = WholeHome,
             status = Status) %>% 
-  mutate(entire_apt = ifelse(entire_apt == 0, FALSE, TRUE))
+  mutate(entire_apt = ifelse(entire_apt == 0, FALSE, TRUE)) %>% 
+  st_transform(32618)
 
 
 # Uniform street address --------------------------------------------------
