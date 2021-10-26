@@ -208,6 +208,53 @@ daily <- daily %>% select(-year, -month)
 # # Outcome: 0.860
 
 
+# FREH_6 since strr_FREH is having issues for these arguments -------------
+
+# The strong seasonality in PEC makes a 3 months model based on the yearly FREH
+# impossible. The next loop rolls over 180 days and considers FREH on every date
+# if it has more than th * 180 days of activity.
+
+th <- 0.9
+
+daily <- 
+  daily %>% 
+  mutate(FREH_6 = as.logical(NA))
+
+for(i in 1:length(as.Date(min(daily$date)):as.Date(max(daily$date)))) { # Number of days
+  
+  # date ranges for the rolling window of 180 days.
+  start_date <- (as.Date(min(daily$date))+days(i))
+  end_date <- (as.Date(min(daily$date))+days(i)) + days(180)
+  
+  freh_prop <- 
+    daily %>% 
+    filter(date > start_date, 
+           date <= end_date) %>% 
+    group_by(property_ID) %>% 
+    filter(sum(status %in% c("A", "R")) >= 180*th) %>% 
+    pull(property_ID) %>% unique()
+  
+  # Consider as FREH, at the certain date, every properties that had 180*th 
+  # days of activity
+  daily <- 
+    daily %>% 
+    mutate(FREH_6 = ifelse(property_ID %in% freh_prop &
+                             date == end_date, TRUE, FREH_6))
+  
+}
+
+
+daily <- 
+  daily %>% 
+  mutate(FREH_6 = ifelse(is.na(FREH_6), F, FREH_6))
+
+# Visualize:
+# daily %>% 
+#   filter(FREH_6) %>% 
+#   count(date) %>% 
+#   ggplot()+
+#   geom_line(aes(date, n))
+
 # Save output -------------------------------------------------------------
 
 qsavem(property, daily, GH, file = "output/str_processed.qsm",
