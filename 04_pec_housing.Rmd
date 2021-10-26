@@ -31,25 +31,27 @@ build_figures <- TRUE
 qload(here("output", "home_sales.qsm"), nthreads = availableCores())
 qload(here("output", "geometry.qsm"), nthreads = availableCores())
 
+
 DA_housing <- 
   cancensus::get_census(
     dataset = "CA16", regions = list(CSD = c("3513020")), level = "DA",
     vectors = c("v_CA16_4836", "v_CA16_4838", "v_CA16_4837", "v_CA16_4901", 
                 "v_CA16_4899", "v_CA16_4894", "v_CA16_6698", "v_CA16_6692", 
-                "v_CA16_6725", "v_CA16_6719", "v_CA16_4896", "v_CA16_4892"),
+                "v_CA16_6725", "v_CA16_6719", "v_CA16_4896", "v_CA16_4892",
+                "v_CA16_4986", "v_CA16_4984"),
     geo_format = "sf") %>% 
   st_transform(32618) %>% 
   select(-c(`Shape Area`:Households, CSD_UID:`Area (sq km)`)) %>% 
   set_names(c("dwellings", "GeoUID", "parent_tenure", "renter", "owner", "average_rent",
               "p_thirty_renter", "average_ho_cost", "average_value_dwellings", "p_thirty_owner", 
               "mobility_one_year", "parent_mobility_one_year", "mobility_five_years", 
-              "parent_mobility_five_years", "geometry")) %>% 
+              "parent_mobility_five_years", "at_hh_inc", "parent_hh", "geometry")) %>% 
   mutate(p_mobility_one_year = mobility_one_year/parent_mobility_one_year,
          p_mobility_five_years = mobility_five_years/parent_mobility_five_years,
          p_thirty_renter = p_thirty_renter / 100,
          p_thirty_owner = p_thirty_owner / 100) %>% 
   select(GeoUID, dwellings, renter, owner, average_rent, average_ho_cost, average_value_dwellings,
-         p_thirty_renter, p_thirty_owner, p_mobility_one_year, p_mobility_five_years) %>% 
+         p_thirty_renter, p_thirty_owner, p_mobility_one_year, p_mobility_five_years, at_hh_inc, parent_hh) %>% 
   as_tibble() %>% 
   st_as_sf(agr = "constant")
 
@@ -64,9 +66,9 @@ EW_housing <-
          mobility_one_year = p_mobility_one_year * dwellings,
          mobility_five_years = p_mobility_five_years * dwellings) %>% 
   select(GeoUID, dwellings, owner, renter, average_rent, average_ho_cost, average_value_dwellings,
-         thirty_renter, thirty_owner, mobility_one_year, mobility_five_years, area)
+         thirty_renter, thirty_owner, mobility_one_year, mobility_five_years, at_hh_inc, parent_hh, area)
 
-avg_list <- str_subset(names(EW_housing), "average|p_") %>% 
+avg_list <- str_subset(names(EW_housing), "average|p_|inc") %>% 
   str_subset("total", negate = TRUE)
 
 agg_list <-
@@ -90,12 +92,13 @@ EW_housing <-
     average_rent = weighted.mean(average_rent, renter, na.rm = TRUE),
     average_ho_cost = weighted.mean(average_ho_cost, owner, na.rm = TRUE),
     average_value_dwellings = weighted.mean(average_value_dwellings, owner, na.rm = TRUE),
+    at_hh_inc = weighted.mean(at_hh_inc, parent_hh, na.rm = TRUE),
     across(all_of(agg_list), sum, na.rm = TRUE)) %>% 
   mutate(p_thirty_renter = thirty_renter / renter,
          p_thirty_owner = thirty_owner / owner,
          p_mobility_one_year = mobility_one_year / dwellings,
          p_mobility_five_years = mobility_five_years / dwellings) %>% 
-  select(-thirty_renter, -thirty_owner, -mobility_one_year, - mobility_five_years) %>% 
+  select(-thirty_renter, -thirty_owner, -mobility_one_year, - mobility_five_years, -parent_hh) %>% 
   mutate(across(all_of(round_list), ~round(., digit = 0))) %>% 
   left_join(., EW %>% select(ward), by = "ward") %>% 
   st_as_sf() %>% 
@@ -206,7 +209,7 @@ figure_1_1_fun()
 
 (ref:fig-1-1) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
 
-## The state of the real estate market in Prince Edward County
+## The current state of the real estate market in Prince Edward County
 
 ``` {r make_fig_1_2}
 
@@ -308,14 +311,109 @@ home_sales_variation <-
   ungroup() %>% 
   filter(year_month >= "2017-01-01")
 
-yoy_sale_2021 <- 
-  home_sales_variation %>% 
-  filter(var == "Average sale price") %>% 
-  arrange(desc(value)) %>% 
-  slice(2) %>% 
-  pull(value) %>% 
-  scales::percent(0.1)
+n_sale_2016 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2016) %>% 
+  pull(n)
 
+avg_sale_2016 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2016) %>% 
+  pull(avg) %>%
+  scales::dollar(accuracy = 10)
+
+n_sale_2019 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2019) %>% 
+  pull(n)
+
+avg_sale_2019 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2019) %>% 
+  pull(avg) %>%
+  scales::dollar(accuracy = 10)
+
+n_sale_2020 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2020) %>% 
+  pull(n)
+
+avg_sale_2020 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2020) %>% 
+  pull(avg) %>%
+  scales::dollar(accuracy = 10)
+
+n_sale_2021 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2021) %>% 
+  pull(n)
+
+avg_sale_2021 <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  filter(sale_date == 2021) %>% 
+  pull(avg) %>%
+  scales::dollar(accuracy = 10)
+
+
+```
+
+``` {r tab-1-1, include = TRUE}
+
+library(kableExtra)
+
+home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
+  mutate(avg = scales::dollar(avg)) %>% 
+  set_names(c("Year", "Number of property sales", "Average sale price")) %>% 
+  kbl(caption = "Yearly sales portrait in Prince Edward County",
+      align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down")
+  
 ```
 
 ``` {r make_fig_1_3}
@@ -346,7 +444,9 @@ if (build_figures) {
 
 ```
 
-There is a high increase in the number of residential sales starting in the second half of 2020, with the peak of real estate sales being in July 2020, with a total of `r peak_housing_sale` property sales, followed by `r second_peak_housing_sale` in September of 2020. This peak in property sales has also been accompanied by large increases in average sale prices, with a peak average sale price in December 2020 of `r dec_2020_sale_price`. This number is a staggering year-over-year increase of `r yoy_sale_2021` compared to the same month the year before. Figure \@ref(fig:fig-1-3) summarizes the year-over-year changes in the number of sales and sale price per month.
+The housing market in Prince Edward County has experienced both a growth in the number of property sales and an increase in the average sale prices of the properties. In 2016, there were `r n_sale_2016` property sales in the County, with an average sale price of  `r avg_sale_2016`. The number of sales decreased between 2017 and 2019 to reach `r n_sale_2019` sales. The highest recorded number of sales occurred in 2020, with  `r n_sale_2020`. Additionally, the average sale price of properties has constantly been increasing since 2016, to reach `r avg_sale_2019` in 2019, `r avg_sale_2020` in 2020 and `r avg_sale_2021` in 2021. Table \@ref(tab:tab-1-1) below summarizes the number and avergae sale prices per year.
+
+There is a high increase in the number of residential sales starting in the second half of 2020, with the peak of real estate sales being in July 2020, with a total of `r peak_housing_sale` property sales, followed by `r second_peak_housing_sale` in September of 2020. This peak in property sales has also been accompanied by large increases in average sale prices, with a peak average sale price in December 2020 of `r dec_2020_sale_price`. This number is a staggering year-over-year increase of `r yoy_sale_2021` compared to the same month the year before. Figure \@ref(fig:fig-1-3) summarizes the year-over-year changes in the number of sales and sale price per month. 
 
 ``` {r fig-1-3, include = TRUE, fig.cap = '(ref:fig-1-3)', fig.align = "center"}
 
@@ -473,7 +573,7 @@ if (build_figures) {
 
 ```
 
-There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figure \@ref(fig:fig-1-4) shows both of those indicators. The that the average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`
+There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figure \@ref(fig:fig-1-4) shows both of those indicators. The average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`.
 
 ``` {r fig-1-4, include = TRUE, fig.cap = '(ref:fig-1-4)', fig.align = "center"}
 
@@ -508,6 +608,31 @@ second <-
   filter(!is.na(second_time_year)) %>% 
   rename(year=second_time_year)
 
+second_2017 <- 
+  second %>% 
+  filter(year == 2017) %>% 
+  pull(n_second)
+
+second_2018 <- 
+  second %>% 
+  filter(year == 2018) %>% 
+  pull(n_second)
+
+second_2019 <- 
+  second %>% 
+  filter(year == 2019) %>% 
+  pull(n_second)
+
+second_2020 <- 
+  second %>% 
+  filter(year == 2020) %>% 
+  pull(n_second)
+
+second_2021 <- 
+  second %>% 
+  filter(year == 2021) %>% 
+  pull(n_second)
+
 third <- 
   multiple_sales %>% 
   mutate(second_time_year = year(second_time),
@@ -517,6 +642,11 @@ third <-
   summarize(n_third = n()) %>% 
   filter(!is.na(third_time_year))%>% 
   rename(year=third_time_year)
+
+third_2021 <- 
+  third %>% 
+  filter(year == 2021) %>% 
+  pull(n_third)
 
 fourth <- 
   multiple_sales %>% 
@@ -530,21 +660,192 @@ fourth <-
 
 ```
 
-``` {r tab-1-1, include = TRUE}
+``` {r tab-1-2, include = TRUE}
 
 library(kableExtra)
 
 left_join(second, third) %>% 
   left_join(., fourth) %>% 
   set_names(c("Year of sale", 
-              "Second time",
-              "Third time",
-              "Fourth time")) %>% 
+              "Sold for the second time",
+              "Sold for the third time",
+              "Sold for the fourth time")) %>% 
   kbl(caption = "Properties sold multiple times between 2016 and 2021",
       align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") 
 
   
 ```
+
+Out of the 3,017 sales which occurred in Prince Edward, a total of 213 residential properties were sold more than one time during 2016 and 2021 (Table \@ref(tab:tab-1-2)). This quick turnover is an indicator of the state of the homeownership market: whereas houses are usually bought for long term living situations, it is not uncommon in hot property markets to see properties being sold multiple times in a short timespan. To explore this situation in Prince Edward County, we have looked at the addresses that came up more than once in the sales database, and grouped this number per year. The number of properties sold for a second time was similar in 2017 and 2018, respectively with `r second_2017` and `r second_2018`. The number increased by more than 50% between 2018 and 2019 to reach `r second_2019`. 2020 is the year with the most recorded second sales, reaching `r second_2020`, more than twice that of the year before. This phenomenon was less pronounced in 2021, with only `r second_2021` second time sales, but with the most properties being sold for a third time, reaching `r third_2021`. The most times a single property was sold in this time period is four times, although observed only once. While the limited date range of this dataset poses issues as to the comparability in between years (i.e. there are more years between 2021 and 2016 to record a second sale, compared to 2017 and 2016, for example), it provides another indicator of the state of the housing market in Prince Edward County. Combined with an overall increasing number of sales and average sale prices, positive differences between the list price and the sale price and shrinking time on the market, we can observe that Prince Edward County has been faced with a booming homeownership market since 2016, which is also the year of the last available census data. 
+
+## Affording to live in Prince Edward County since 2016
+
+```{r para_6, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+sale_price_by_ward <- 
+  home_sales %>% 
+  filter(sale_date >="2020-01-01") %>% 
+  st_drop_geometry() %>% 
+  left_join(., EW, by = "ward") %>% 
+  filter(!is.na(ward)) %>% 
+  st_as_sf() %>% 
+  group_by(ward) %>% 
+  summarize(avg_sale_price_2021 = mean(sale_price, na.rm=TRUE))
+
+sale_price_2020_2017 <- 
+  home_sales %>% 
+  filter(sale_date >="2017-01-01", sale_date <= "2018-12-31") %>% 
+  st_drop_geometry() %>% 
+  left_join(., EW, by = "ward") %>% 
+  filter(!is.na(ward)) %>% 
+  st_as_sf() %>% 
+  group_by(ward) %>% 
+  summarize(avg_sale_price_1718 = mean(sale_price, na.rm=TRUE)) %>%
+  st_drop_geometry() %>% 
+  left_join(., sale_price_by_ward, by = "ward") %>% 
+  st_as_sf()
+
+north_avg_price <- 
+  sale_price_by_ward %>% 
+  st_drop_geometry() %>%
+  arrange(desc(avg_sale_price)) %>% 
+  slice(1) %>% 
+  pull(avg_sale_price) %>% 
+  scales::dollar(10)
+
+athol_avg_price <- 
+  sale_price_by_ward %>% 
+  st_drop_geometry() %>%
+  arrange(avg_sale_price) %>% 
+  slice(1) %>% 
+  pull(avg_sale_price) %>% 
+  scales::dollar(10)
+
+#https://www.wallstreetmojo.com/mortgage-formula/
+
+affordable_homeownership_2021 <- 
+  sale_price_2020_2017 %>% 
+  st_drop_geometry() %>% 
+  mutate(downpayment = avg_sale_price_2021*0.2,
+         P = avg_sale_price_2021 - downpayment,
+         amortization = 25,
+         mortgage_rate = 0.0175) %>% 
+  mutate(r = mortgage_rate/12,
+         n = amortization*12) %>% 
+  mutate(monthly_mortgage_payments = P*r*(((1+r)^n)
+                                          /
+                                          (((1+r)^n)-1)
+                                          )
+         ) %>% 
+  mutate(maintenance_cost = 700,
+         total_mortgage_payments = (monthly_mortgage_payments+maintenance_cost)*12,
+         affordable_income_2021 = total_mortgage_payments/0.3) %>% 
+  left_join(., st_drop_geometry(EW_housing) %>% select(ward, at_hh_inc), by="ward") %>% 
+  mutate(diff_affordable_real_2021 = at_hh_inc-affordable_income_2021) %>% 
+  select(ward, avg_sale_price_2021, at_hh_inc, diff_affordable_real_2021)
+
+affordable_homeownership_1718 <- 
+  sale_price_2020_2017 %>% 
+  st_drop_geometry() %>% 
+  mutate(downpayment = avg_sale_price_1718*0.2,
+         P = avg_sale_price_1718 - downpayment,
+         amortization = 25,
+         mortgage_rate = 0.0175) %>% 
+  mutate(r = mortgage_rate/12,
+         n = amortization*12) %>% 
+  mutate(monthly_mortgage_payments = P*r*(((1+r)^n)
+                                          /
+                                            (((1+r)^n)-1)
+  )
+  ) %>% 
+  mutate(maintenance_cost = 700,
+         total_mortgage_payments = (monthly_mortgage_payments+maintenance_cost)*12,
+         affordable_income_1718 = total_mortgage_payments/0.3) %>% 
+  left_join(., st_drop_geometry(EW_housing) %>% select(ward, at_hh_inc), by="ward") %>% 
+  mutate(diff_affordable_real_1718 = at_hh_inc-affordable_income_1718) %>% 
+  select(ward, avg_sale_price_1718, at_hh_inc, diff_affordable_real_1718)
+
+diff_picton_1718 <- 
+  affordable_homeownership_1718 %>% 
+  filter(ward=="Picton") %>% 
+  pull(diff_affordable_real_1718) %>% 
+  {.*-1} %>% 
+  scales::dollar(10) 
+
+```
+
+``` {r make_fig_1_5}
+
+figure_1_5_fun <- function(regular = "", condensed = "") {
+  
+sale_price_2020_2017 %>% 
+  ggplot() +
+  geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(aes(fill = avg_sale_price_2021), colour = "white") +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
+                       na.value = "grey80",
+                       limits = c(400000, 1000000), oob = scales::squish, 
+                       labels = scales::dollar)  +
+  guides(fill = guide_colourbar(title = "Average sale\nprice",
+                                title.vjust = 1)) + 
+  gg_bbox(EW) +
+  theme_void() +
+  theme(text = element_text(family = regular, face = "plain"),
+        legend.title = element_text(family = regular, face = "bold",
+                                    size = 7),
+        legend.title.align = 0.9,
+        legend.text = element_text(family = regular, size = 5),
+        panel.border = element_rect(colour = "white", size = 2))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_5.pdf"), 
+         plot = figure_1_5_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_5.pdf"))
+}
+
+```
+
+Due to the relatively outdated nature of the last available census, it can be difficult to utilize this data to dress a portrait of the housing affordability in the County. However, we can still estimate based on the average sale prices by ward the income it would take to be able to afford being a homeowner in Prince Edward County without being in a situation of housing stress (which is set at the 30% threshold mentioned above). As we have seen in the first part of the chapter, homeowners in housing stress represent 17.3% of all homeowners, with varying averages by ward. The average sale price varies by ward, with North Marysburgh `r north_avg_price` having the highest average, and Athol the lowest `r athol_avg_price` for the years 2020 and 2021 only (Figure \@ref(fig:fig-1-5)).
+
+``` {r fig-1-5, include = TRUE, fig.cap = '(ref:fig-1-5)', fig.align = "center"}
+
+figure_1_5_fun()
+
+```
+
+(ref:fig-1-5) _Average sale prices by ward from 2016 to 2021_
+
+``` {r tab-1-3, include = TRUE}
+
+library(kableExtra)
+
+affordable_homeownership_1718 %>% 
+  left_join(., affordable_homeownership_2021 %>% select(-at_hh_inc), by = "ward") %>% 
+  select(ward, avg_sale_price_1718, avg_sale_price_2021,
+         at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) %>% 
+  mutate(avg_sale_price_1718 = scales::dollar(avg_sale_price_1718, 10),
+         avg_sale_price_2021 = scales::dollar(avg_sale_price_2021, 10),
+         at_hh_inc = scales::dollar(at_hh_inc, 10),
+         diff_affordable_real_1718 = scales::dollar(diff_affordable_real_1718, 10),
+         diff_affordable_real_2021 = scales::dollar(diff_affordable_real_2021, 10)) %>% 
+  arrange(desc(diff_affordable_real_2021)) %>% 
+  set_names(c("Ward", "Average sale price, 2017-2018", "Average sale price, 2020-2021", 
+              "After-tax household income, 2016 census", "Difference with affordable income threshold, 2017-2018", 
+              "Difference with affordable income threshold, 2020-2021")) %>% 
+  kbl(caption = "Difference between household incomes and affordable homeownership threshold, for 2017-2018 and 2020-2021",
+      align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down") 
+  
+```
+
+Based on the average sale prices for the past years, it was possible to estimate the average household income it would take to become a homeowner in Prince Edward County in an affordable manner. We completed the exercise using average sale prices for the 2017-2018 and 2020-2021 periods to highlight the recent market changes in the county. The calculations were based on a 25-year mortgage at a 1.75% interest rate and a 20% mortgage down payment (although 20% downpayment can be considered a rare feat, with most people having small down payments and needing to insure their mortgages). Monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) were calculated to provide a yearly homeonwership total costs, from which an affordable homeownership threshold was determined. The affordable homeonwership threshold represents the minimum household income required to have housing costs remain at 30% of income or below. These thresholds for both 2017-2018 and 2020-2021 were then compared to the 2016 census after-tax household income, by ward (2016 being the most recent data available). The differences between the affordable thresholds and the actual household incomes are displayed in Table \@ref(tab:tab-1-3). We can see that, for both time periods, the average after-tax household income in each ward is not sufficient to make homeownership affordable in the County (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period, there are five wards for which households would require more than $50,000 to make current homeownership market conditions affordable for them, whereas the highest difference in 2017-2018 was Picton with `r diff_picton_1718`.
+
+
 
 \newpage
