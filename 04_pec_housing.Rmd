@@ -473,7 +473,7 @@ if (build_figures) {
 
 ```
 
-There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices.The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figure \@ref(fig:fig-1-4) shows both of those indicators. The that the average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`
+There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figure \@ref(fig:fig-1-4) shows both of those indicators. The that the average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`
 
 ``` {r fig-1-4, include = TRUE, fig.cap = '(ref:fig-1-4)', fig.align = "center"}
 
@@ -483,6 +483,68 @@ figure_1_4_fun()
 
 (ref:fig-1-4) _Monthly averages for days on the market (right) and difference between asking and sale prices (left)_
 
+```{r para_5, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
+multiple_sales <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  arrange(sale_date) %>% 
+  group_by(address, ward, unit_number) %>% 
+  summarize(sale_dates = list(sale_date)) %>% 
+  filter(lengths(sale_dates) > 1) %>%
+  rowwise() %>% 
+  mutate(first_time = sale_dates[1],
+         second_time = sale_dates[2],
+         third_time = sale_dates[3],
+         fourth_time = sale_dates[4]) 
+
+second <- 
+  multiple_sales %>% 
+  mutate(second_time_year = year(second_time),
+         third_time_year = year(third_time),
+         fourth_time_year = year(fourth_time)) %>% 
+  group_by(second_time_year) %>% 
+  summarize(n_second = n()) %>% 
+  filter(!is.na(second_time_year)) %>% 
+  rename(year=second_time_year)
+
+third <- 
+  multiple_sales %>% 
+  mutate(second_time_year = year(second_time),
+         third_time_year = year(third_time),
+         fourth_time_year = year(fourth_time)) %>% 
+  group_by(third_time_year) %>% 
+  summarize(n_third = n()) %>% 
+  filter(!is.na(third_time_year))%>% 
+  rename(year=third_time_year)
+
+fourth <- 
+  multiple_sales %>% 
+  mutate(second_time_year = year(second_time),
+         third_time_year = year(third_time),
+         fourth_time_year = year(fourth_time)) %>% 
+  group_by(fourth_time_year) %>% 
+  summarize(n_fourth = n()) %>% 
+  filter(!is.na(fourth_time_year)) %>% 
+  rename(year=fourth_time_year)
+
+```
+
+``` {r tab-1-1, include = TRUE}
+
+library(kableExtra)
+
+left_join(second, third) %>% 
+  left_join(., fourth) %>% 
+  set_names(c("Year of sale", 
+              "Second time",
+              "Third time",
+              "Fourth time")) %>% 
+  kbl(caption = "Properties sold multiple times between 2016 and 2021",
+      align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down") 
+
+  
+```
 
 \newpage
