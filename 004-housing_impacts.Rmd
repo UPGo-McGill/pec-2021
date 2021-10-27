@@ -1,0 +1,683 @@
+# Seasonality pattern of STR in PEC meets Covid-19
+
+<style type="text/css">
+  body{
+  font-family: Futura, Helvetica, Arial;
+}
+</style>
+
+<br>
+
+```{r setup, include = FALSE, echo = FALSE}
+
+library(here)
+source(here("R", "01_startup.R"))
+
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+# Function for checking file modifications
+mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
+
+# Set this to TRUE to output PDF figures
+build_figures <- FALSE
+
+qload(here("output", "/geometry.qsm"))
+qload(here("output", "/str_processed.qsm"))
+seasonal_FREH <- qread("output/seasonal_FREH.qs")
+
+options(tinytex.verbose = TRUE)
+
+```
+
+```{r new_objects}
+
+FREH <- 
+  daily %>% 
+  # 180 days after VRBO
+  filter(date >= as.Date("2017-06-01") + days(180)) %>% 
+  group_by(date) %>% 
+  summarize(across(c(FREH_6), sum))
+
+FREH_EW <- 
+  daily %>% 
+  filter(date >= start_2019) %>% 
+  group_by(ward, date) %>% 
+  summarize(FREH = sum(FREH_6)) %>% 
+  mutate(date = case_when(str_starts(date, "2019") ~ 2019,
+                         str_starts(date, "2020") ~ 2020,
+                         str_starts(date, "2021") ~ 2021)) %>% 
+  group_by(ward, date) %>% 
+  summarize(FREH = round(mean(FREH))) 
+  
+
+FREH_DA <- 
+  daily %>% 
+  filter(date == max(daily$date)) %>% 
+  left_join(select(st_drop_geometry(property), property_ID, GeoUID)) %>% 
+  group_by(GeoUID) %>% 
+  summarize(FREH = sum(FREH_6))
+
+GH_EW <- 
+  GH %>% 
+  filter(date >= start_2019) %>% 
+  mutate(geometry = st_centroid(geometry)) %>% 
+  st_join(EW) %>% 
+  st_drop_geometry() %>% 
+  group_by(ward, date) %>% 
+  summarize(GH = sum(housing_units, na.rm = TRUE)) %>% 
+  as_tibble() %>% 
+  mutate(date = case_when(str_starts(date, "2019") ~ 2019,
+                         str_starts(date, "2020") ~ 2020,
+                         str_starts(date, "2021") ~ 2021)) %>% 
+  group_by(ward, date) %>% 
+  summarize(GH = round(mean(GH))) 
+
+GH_DA <- 
+  GH %>% 
+  filter(date == max(daily$date)) %>% 
+  mutate(geometry = st_centroid(geometry)) %>% 
+  st_join(DA) %>% 
+  st_drop_geometry() %>% 
+  group_by(GeoUID) %>% 
+  summarize(GH = sum(housing_units, na.rm = TRUE)) %>% 
+  as_tibble()
+
+FREH_total <- 
+  daily %>% 
+  filter(date >= "2017-06-01") %>% 
+  group_by(date) %>% 
+  summarize(across(c(FREH_6), sum))
+
+GH_total <-
+  GH %>%
+  st_drop_geometry() %>%
+  filter(status != "B") %>% 
+  group_by(date) %>%
+  summarize(GH = sum(housing_units)) %>%
+  mutate(GH = slide_dbl(GH, mean, .before = 29))
+
+housing_loss <-
+  FREH_total %>%
+  select(date, FREH_6) %>% 
+  left_join(GH_total, by = "date") %>%
+  rename(`Entire home/apt` = FREH_6, `Private room` = GH) %>%
+  pivot_longer(c(`Entire home/apt`, `Private room`), 
+               names_to = "Listing type",
+               values_to = "Housing units") %>% 
+  mutate(`Listing type` = factor(`Listing type`, 
+                                 levels = c("Private room", "Entire home/apt")))  
+
+housing_loss_EW <- 
+  EW %>% 
+  left_join(FREH_EW) %>% 
+  left_join(GH_EW) %>% 
+  mutate(GH = if_else(is.na(GH), 0L, GH),
+         housing_loss_pct = (FREH + GH) / dwellings)
+
+housing_loss_DA <- 
+  DA %>% 
+  left_join(FREH_DA) %>% 
+  left_join(GH_DA) %>% 
+  mutate(GH = if_else(is.na(GH), 0L, GH),
+         housing_loss_pct = (FREH + GH) / dwellings)
+
+EW_housing_table <- 
+  EW %>% 
+  st_drop_geometry() %>% 
+  left_join(FREH_EW) %>% 
+  left_join(GH_EW) %>%
+  mutate(GH = if_else(is.na(GH), 0, GH)) %>% 
+  group_by(ward) %>% 
+  summarize(
+    dwellings = mean(dwellings),
+    housing_loss_2019 = sum(FREH[date == 2019]) + sum(GH[date == 2019]),
+    housing_loss_2021 = sum(FREH[date == 2021]) + sum(GH[date == 2021]),
+    change_2019_2021 = (housing_loss_2021 - housing_loss_2019) / housing_loss_2019,
+    housing_loss_pct_2021 = housing_loss_2021 / dwellings)
+  
+```
+
+```{r exec_summ}
+
+# Avg housing loss for 2021
+housing_loss_2021 <- 
+  {{FREH %>% 
+      filter(date >= start_2021) %>% 
+      summarize(mean(FREH_6)) %>% pull()} +
+      {GH %>% st_drop_geometry() %>% 
+      filter(date >= start_2021) %>% 
+        group_by(date) %>% summarize(h_u = sum(housing_units)) %>% 
+        pull(h_u) %>% mean()}} %>% 
+  round(digit = -1) %>% 
+  prettyNum(",")
+
+# # Total housing loss for 2020
+# housing_loss_2020 <- 
+#   {{FREH %>% 
+#       filter(date == end_2020) %>% 
+#       pull(FREH_6)} +
+#       {GH %>% 
+#           filter(date == end_2020) %>% 
+#           pull(housing_units) %>% sum()}} %>% 
+#   round(digit = -1) %>% 
+#   prettyNum(",")
+
+# Avg housing loss for 2019
+housing_loss_2019 <- 
+  {{FREH %>% 
+      filter(date >= start_2019, date <= end_2019) %>% 
+      summarize(mean(FREH_6)) %>% pull()} +
+      {GH %>% st_drop_geometry() %>% 
+      filter(date >= start_2019, date <= end_2019) %>% 
+        group_by(date) %>% summarize(h_u = sum(housing_units)) %>% 
+        pull(h_u) %>% mean()}} %>% 
+  round(digit = -1) %>% 
+  prettyNum(",")
+
+
+#### CONTINUE AVERAGING DAILY NUMBERS IN A YEAR RATHER THEN LOOKING AT THE LAST DAY/MONTH.
+#### TKTKTKKTK COME BACK HERE
+
+# Absolute numbers of change in dedicated STRs from 2019 to 2021
+housing_loss_change_absolute <- 
+  {{{FREH %>% filter(date == end_2019) %>% pull(FREH_6)} +
+      {GH %>% filter(date == end_2019) %>% 
+          pull(housing_units) %>% sum()}} -
+  {{FREH %>% filter(date == max(daily$date)) %>% pull(FREH_6)} +
+      {GH %>% filter(date == max(daily$date)) %>% pull(housing_units) %>% sum()}}} %>% 
+  round(digit = -1) %>% 
+  prettyNum(",")
+
+
+# 2019 to 2021 increase in housing loss
+housing_loss_change_2021 <- 
+  {{{FREH %>% filter(date ==max(daily$date)) %>% pull(FREH_6)} +
+      {GH %>% filter(date == max(daily$date)) %>% pull(housing_units) %>% sum()}} /
+      {{FREH %>% filter(date == end_2019) %>% pull(FREH_6)} +
+          {GH %>% filter(date == end_2019) %>% 
+              pull(housing_units) %>% sum()}}} %>% 
+  {. - 1} %>% 
+  {. * -1} %>% 
+  round(3) %>% 
+  scales::percent(0.1)
+
+
+housing_loss_pct_dwelling_2021 <- 
+  {{{FREH %>% filter(date == max(daily$date)) %>% pull(FREH_6)} +
+      {GH %>% filter(date == max(daily$date)) %>% pull(housing_units) %>% sum()}} /
+      sum(EW$dwellings)} %>% 
+  round(3) %>% 
+  scales::percent(0.1)
+
+housing_loss_pct_dwelling_2020 <- 
+  {{{FREH %>% filter(date == end_2020) %>% pull(FREH_6)} +
+      {GH %>% filter(date == end_2020) %>% pull(housing_units) %>% sum()}} /
+      sum(EW$dwellings)} %>% 
+  round(3) %>% 
+  scales::percent(0.1)
+
+housing_loss_pct_dwelling_2019 <- 
+  {{{FREH %>% filter(date == end_2019) %>% pull(FREH_6)} +
+      {GH %>% filter(date == end_2019) %>% pull(housing_units) %>% sum()}} /
+      sum(EW$dwellings)} %>% 
+  round(3) %>% 
+  scales::percent(0.1)
+
+housing_loss_pct_EW_2021 <- 
+  EW %>% 
+  left_join(FREH_EW) %>% 
+  left_join(GH_EW) %>% 
+  filter(date == "2021") %>% 
+  mutate(GH = if_else(is.na(GH), 0, GH),
+         housing_loss_per_dwelling = (FREH + GH) / dwellings,
+         housing_loss_per_dwelling = round(housing_loss_per_dwelling, 3)) %>% 
+  st_drop_geometry()
+
+housing_loss_pct_EW_2019 <- 
+  EW %>% 
+  left_join(FREH_EW) %>% 
+  left_join(GH_EW) %>% 
+  filter(date == "2019") %>% 
+  mutate(GH = if_else(is.na(GH), 0, GH),
+         housing_loss_per_dwelling = (FREH + GH) / dwellings,
+         housing_loss_per_dwelling = round(housing_loss_per_dwelling, 3)) %>% 
+  st_drop_geometry()
+
+housing_loss_pct_wellington_2019 <- 
+  housing_loss_pct_EW_2019 %>% 
+  filter(ward %in% c("Wellington")) %>% 
+    pull(housing_loss_per_dwelling) %>% 
+  scales::percent(0.1)
+
+housing_loss_pct_wellington_2021 <- 
+  housing_loss_pct_EW_2021 %>% 
+  filter(ward == "Wellington") %>% 
+  pull(housing_loss_per_dwelling) %>% 
+  scales::percent(0.1)
+
+housing_loss_pct_picton_2021 <- 
+  housing_loss_pct_EW_2021 %>% 
+  filter(ward == "Picton") %>% 
+  pull(housing_loss_per_dwelling) %>% 
+  scales::percent(0.1)
+
+housing_loss_pct_north_marysburgh_2021 <- 
+  housing_loss_pct_EW_2021 %>% 
+  filter(ward == "North Marysburgh") %>% 
+  pull(housing_loss_per_dwelling) %>% 
+  scales::percent(0.1)
+
+
+```
+
+**TKTK**
+
+<br>
+
+## STR-induced housing loss
+
+Prince Edward County’s (PEC) housing market has been under considerable stress in the past years, with housing prices and rents rising, and rental vacancy rates falling. These are symptoms of a market where the supply of housing is insufficient to meet demand. One possible explanation for both the insufficient supply and elevated demand for housing in PEC is the growth in short-term rentals. Tourists are now able to compete with residents for housing—adding demand to the local housing market—while landlords are now able to shift their properties out of the conventional housing market to become dedicated STRs—reducing the supply of conventional housing. Research has found that renting a housing unit on the STR market frequently offers landlords greater potential revenue than conventional leases (Wachsmuth & Weisler 2018), especially in transit-accessible neighborhoods (Deboosere et al. 2019). Multiple studies have also found that Airbnb and other STR platforms increase housing costs (Barron, Kung, & Proserpio 2017; Horn & Merante 2017; Garcia-Lopez et al. 2019).
+
+One of the major considerations when gauging the impacts of short-term rentals (STRs) on a city, therefore, is the extent to which STRs are removing long-term housing from the market. This process can occur either directly, where tenants of a unit are evicted or not replaced at the end of a lease and the unit is converted to a STR, or indirectly by absorbing new construction or investment properties which otherwise would have gone onto the long-term market. To obtain the exact number of units that have been occupied as STRs, landlords or units would need to be individually surveyed, which is infeasible because STR hosts are mostly anonymous on major STR platforms such as Airbnb and VRBO. Instead, we use the daily activity of listings, alongside structural characteristics such as listing type and location, to estimate which listings are operating as dedicated STRs and are therefore not available as conventional long-term housing.
+
+_Frequently Rented Entire-Home (FREH) listings:_ The number of frequently-rented units is one way to estimate STR-induced housing loss. If a STR is either reserved or available for reservations the vast majority of the time, it is reasonable to assume that it is not serving as an individual’s principal residence at the same time. Along these lines, in this report, we define frequently rented entire-home (FREH) listings as entire-home listings which were active (either reserved or available) on Airbnb or VRBO the vast majority of the last 180 days (at least 162 nights).
+
+_Ghost hostels:_ In addition to FREH listings, it is possible that entire housing units have been subdivided into multiple private-room listings, each of which appearing to be a spare bedroom or the like, while actually collectively representing an apartment removed from the long-term housing market. We call these clusters of private-room listings “ghost hostels”, building on the advocacy group Fairbnb.ca’s term “ghost hotels”—multiple FREH listings located in a single building, collectively serving as de facto hotels instead of long-term housing (Wieditz 2017). We detect ghost hostels by finding clusters of three or more private-room listings operated by a single host, whose reported locations are close enough to each other that they are likely to have originated in the same actual housing unit. (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m.)
+
+```{r para_1_2}
+
+# FREH in 2021
+FREH_2021 <- 
+  FREH %>% 
+  filter(date == max(daily$date)) %>% 
+  pull(FREH_6) %>% 
+  round(digit = -1) %>% 
+  prettyNum(",")
+
+# GH in 2021
+GH_2021 <- 
+  GH %>% 
+  filter(date == max(daily$date)) %>% 
+  pull(housing_units) %>% 
+  sum() %>% 
+  round(digit = -1) %>% 
+  prettyNum(",")
+
+# Change in listings 2020
+active_yoy_change <- 
+  daily %>% 
+  filter(housing, status != "B", date >= start_2019, 
+         !c(date >= start_2020 & date <= end_2020)) %>% 
+  group_by(year_2021 = str_starts(date, "2021")) %>% 
+  summarize(active_listings = n() / yday(max(date)),
+            avg_daily_revenue = sum(price[status == "R"]) / yday(max(date)), .groups = "drop") %>% 
+  summarize(across(c(active_listings, avg_daily_revenue), ~{(.x[2] - .x[1]) / .x[1]}), .groups = "drop")
+
+# YOY listing change
+active_yoy_listings <- 
+  active_yoy_change$active_listings %>% 
+  {. * -1} %>% 
+  scales::percent(accuracy = 0.1)
+
+# Total housing loss for 2021
+housing_loss_2021 <- 
+  {{FREH %>% 
+      filter(date == max(daily$date)) %>% 
+      pull(FREH_6)} +
+    {GH %>% 
+        filter(date == max(daily$date)) %>% 
+        pull(housing_units) %>% 
+        sum()}} %>% 
+  round(digit = -1) %>% 
+  prettyNum(",")
+
+# FREH summer seasons pre-covid
+summer_FREH_avg_pre <- 
+seasonal_FREH %>% 
+  filter(season == "summer",
+         str_starts(date, c("2018", "2019"))) %>% 
+  summarize(mean(n)) %>% 
+  pull() %>% 
+  round(digit = -1)
+
+# How many summer FREH / all dwellings
+summer_plateau_on_dwellings <- 
+{summer_FREH_avg_pre / sum(EW$dwellings)} %>% 
+  scales::percent(0.1)
+
+# FREH summer seasons
+summer_FREH_avg_2021 <- 
+seasonal_FREH %>% 
+  filter(season == "summer",
+         str_starts(date, c("2021"))) %>% 
+  summarize(mean(n)) %>% 
+  pull() %>% 
+  round(digit = -1)
+
+# How many summer FREH / all dwellings
+summer_2021_on_dwellings <- 
+{summer_FREH_avg_2021 / sum(EW$dwellings)} %>% 
+  scales::percent(0.1)
+  
+
+```
+
+``` {r make_fig_2_1}
+
+figure_2_1_fun <- function(regular = "", condensed = "") {
+  
+housing_loss %>% 
+  group_by(`Listing type`) %>% 
+  mutate(`Housing units` = slide_dbl(`Housing units`, mean, .before = 6, .complete = TRUE)) %>% 
+  filter(!is.na(`Housing units`)) %>% 
+  ggplot(aes(date, `Housing units`, fill = `Listing type`)) +
+  geom_col(lwd = 0) +
+  scale_fill_manual(values = col_palette[c(2, 4)]) +
+  # VRBO enters in June, 180 days to calcul accurately the overall number of FREH
+  scale_x_date(name = NULL, limits = c(as.Date("2017-06-01") + days(180), NA)) +
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        panel.grid.minor.x = element_blank(),
+        text = element_text(face = "plain", family = regular),
+        legend.title = element_text(face = "bold", family = regular, 
+                                    size = 10),
+        legend.text = element_text( size = 10, family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_1.pdf"), 
+         plot = figure_2_1_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
+}
+
+```
+
+At the end of summer 2021, there were `r FREH_2021` FREH listings in PEC, and `r GH_2021` more housing units which were operating as ghost hostels. In total, therefore, short-term rentals were taking `r sum(as.numeric(FREH_2021), as.numeric(GH_2021))` housing units off of PEC’s long-term market at the end of the summer (Figure \@ref(fig:fig-2-1)). Notably, while the number of active daily listings declined by `r active_yoy_listings` between 2019 and 2021, the number of housing units which STRs took off of PEC’s housing market decreased at a much sharper rate. There were `r housing_loss_change_2021` fewer dedicated STRs in 2021 compared to 2019, from `r housing_loss_2019` to `r housing_loss_2021`. This high decline in commercially-operated STRs reflects that the pandemic has disproportionately affected commercial operators in the County.
+
+``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-2-1)', fig.align = "center"}
+
+figure_2_1_fun()
+
+```
+(ref:fig-2-1) _Housing units converted to dedicated STRs in the Prince Edward County_
+
+``` {r make_fig_2_2}
+
+figure_2_2_fun <- function(regular = "", condensed = "") {
+  
+seasonal_FREH %>% 
+  mutate(season = ifelse(season == "winter", "Winter", "Summer")) %>% 
+  ggplot()+
+  geom_bar(aes(date, n, fill = season), stat= "identity")+
+  geom_line(data = (daily %>% 
+                      filter(status != "B", FREH_6) %>% 
+                      count(date) %>% 
+                      mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE))), 
+            aes(date, n, color = "6-month window"),
+            size = 1, color = col_palette[5])+
+  theme(plot.title = element_text(size=10),
+        legend.title = element_blank())+
+  # ylim(0,1000)+ 
+  scale_fill_manual("legend", 
+                    values = c("Summer" = col_palette[2], 
+                               "Winter" = col_palette[1]))+
+  scale_x_date(name = NULL, limits = c(as.Date("2017-06-01") + days(180), NA)) +
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom", 
+        panel.grid.minor.x = element_blank(),
+        text = element_text(face = "plain", family = regular),
+        legend.text = element_text( size = 10, family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_2.pdf"), 
+         plot = figure_2_2_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_2.pdf"))
+}
+
+```
+
+As we saw in the previous chapter, PEC has a highly seasonal market. Some owner-occupiers might leave in the summer to take advantage of the high demand for STR, while they occupy their home in winter. A landlord can also take advantage of the STR market in the summer, and rent out their unit in the winter on a more longer-term market. We explored these possibilities by separating seasons: Summer months range from May to September included, and winter months from October to April. The number of full-time entire-homes active on the STR market in winter is at the same level than the FREH indicator. However, in the summer months, the number of full-time entire-home STR was around `r summer_FREH_avg_pre` in the summers of 2018 and 2019, what seems to be a plateau in PEC as no growth has been seen between these two years. This number was equivalent to `r summer_plateau_on_dwellings` of all dwellings in PEC. In the summer of 2021, the number of full-time STR was `r summer_FREH_avg_2021`, which is a significant increase on the 2020 level, but still below the pre-Covid level. It is the equivalent of `r summer_2021_on_dwellings` of all dwellings in PEC. Figure \@ref(fig:fig-2-2) showcases the beginning of a recovery for the commercially-operated STRs.  
+
+``` {r fig-2-2, include = TRUE, fig.cap = '(ref:fig-2-2)', fig.align = "center"}
+
+figure_2_2_fun()
+
+```
+(ref:fig-2-2) _Housing units operating on a full-time basis on the STR market of the Prince Edward County, per season_
+
+```{r para_3}
+
+after_180days_vrbo <- as.Date("2017-06-01") + days(180)
+
+# End-of-year summaries
+housing_loss_summaries <- 
+  daily %>% 
+  filter(housing, status != "B", listing_type %in% c("Entire home/apt",
+                                                     "Private room")) %>% 
+  group_by(date) %>% 
+  summarize(eh = mean(FREH_6[listing_type == "Entire home/apt"]),
+            pr = mean(GH[listing_type == "Private room"])) %>% 
+  mutate(across(c(eh, pr), slide_dbl, mean, .before = 30)) %>% 
+  filter(date >= after_180days_vrbo)
+
+eh_housing_loss <- 
+  housing_loss_summaries %>% 
+  filter(date >= start_2021) %>% 
+  pull(eh) %>% mean() %>% 
+  scales::percent(0.1)
+
+pr_housing_loss <- 
+  housing_loss_summaries %>% 
+  filter(date >= start_2021) %>% 
+  pull(pr) %>% mean() %>% 
+  scales::percent(0.1)
+
+eh_housing_loss_pre_covid <- 
+  housing_loss_summaries %>% 
+  filter(date < start_2021) %>% 
+  pull(eh) %>% mean() %>% 
+  scales::percent(0.1)
+
+pr_housing_loss_pre_covid <- 
+  housing_loss_summaries %>% 
+  filter(date < start_2021) %>% 
+  pull(pr) %>% mean() %>% 
+  scales::percent(0.1)
+
+
+# Table for figure
+housing_loss_share <- 
+  daily %>% 
+  filter(housing, 
+         status != "B", 
+         listing_type %in% c("Entire home/apt", "Private room")) %>% 
+  group_by(date) %>% 
+  summarize(
+    `Entire home/apt` = mean(FREH_6[listing_type == "Entire home/apt"]),
+    `Private room` = mean(GH[listing_type == "Private room"])) %>% 
+  filter(date >= after_180days_vrbo) %>% 
+  pivot_longer(-date, names_to = "Listing type", 
+               values_to = "housing_loss_pct") %>% 
+  group_by(`Listing type`) %>% 
+  mutate(housing_loss_pct = slide_dbl(housing_loss_pct, mean, .before = 13))
+
+
+```
+
+``` {r make_fig_2_3}
+
+figure_2_3_fun <- function(regular = "", condensed = "") {
+  
+  housing_loss_share %>% 
+    ggplot(aes(date, housing_loss_pct, colour = `Listing type`)) +
+    geom_line(lwd = 1) +
+    scale_x_date(name=NULL) +
+    scale_y_continuous(name = NULL, labels = scales::percent) +
+    scale_colour_manual(values = col_palette[c(5, 1)]) +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          panel.grid.minor.x = element_blank())
+  
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_3.pdf"), 
+         plot = figure_2_3_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+}
+
+```
+
+On average, for the pre-Covid years, half of entire-home listings (`r eh_housing_loss_pre_covid`) and of the private-room listings (`r pr_housing_loss_pre_covid`) were taking housing off the long-term market. On average, in 2021, only a third of entire-home listings (`r eh_housing_loss`) and a fifth of private-room listings (`r pr_housing_loss`) were being operated in a full-time or close-to-full-time fashion (Figure \@ref(fig:fig-2-3)). The yearly up-and-down pattern on Figure \@ref(fig:fig-2-3) is that, in winter, a lower percentage of FREH listings are removed from the platform than for less commercial listings. In addition, there are more active listings in the summer, shrinking the percentage of entire home/apt STR that contributes to housing-loss even if their number in absolute was stable before the pandemic.
+
+Table \@ref(tab:tab-2-1) summarizes STR-induced housing loss patterns by wards. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of TKTK. The following section takes a closer look at the impact of Covid-19 on frequently rented entire-home listings.
+
+
+``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
+
+figure_2_3_fun()
+
+```
+
+(ref:fig-2-3) _The percentage of active STR listings contributing to housing loss each day in PEC (14-day average)_
+
+``` {r tab-2-1, include = TRUE}
+
+library(kableExtra)
+
+EW_housing_table %>% 
+  summarize(
+    dwellings = sum(dwellings),
+    housing_loss_2019 = sum(housing_loss_2019),
+    housing_loss_2021 = sum(housing_loss_2021),
+    change_2019_2021 = (housing_loss_2021 - housing_loss_2019) / housing_loss_2019,
+    housing_loss_pct_2021 = housing_loss_2021 / dwellings) %>% 
+  mutate(ward = "PEC") %>% 
+  bind_rows(EW_housing_table) %>% 
+  relocate(ward) %>% 
+  select(-dwellings) %>% 
+  # filter(housing_loss_2021 > 50) %>% 
+  mutate(across(c(housing_loss_2019, housing_loss_2021), round, -1)) %>% 
+  mutate(across(c(change_2019_2021, housing_loss_pct_2021), scales::percent, accuracy = 0.01)) %>% 
+  arrange(desc(housing_loss_2021)) %>%
+  rename(Ward = ward,
+         `Housing loss (2021)` = housing_loss_2021,
+         `Housing loss (2019)` = housing_loss_2019,
+         `Growth 2019-2021 (%)` = change_2019_2021,
+         `% of housing lost (2021)` = housing_loss_pct_2021) %>% 
+  kbl(caption = "STR-induced housing loss by ward in PEC",
+      align = "lrrrr") %>%
+  kable_styling(latex_options = "scale_down") %>%
+  row_spec(1, background = paste0(col_palette[2], "50"))
+
+```
+
+```{r on_water, cache = TRUE, cache.lazy = FALSE}
+
+qload(here("output", "geometry.qsm"), nthreads = availableCores())
+
+ocean <- 
+  read_sf(here("data", "shapefiles", "lhy_000h16a_e.shp")) %>% 
+  st_transform(32618)
+
+ocean <- 
+  ocean %>% 
+  st_filter(rbind(select(city, -everything()), select(city, -everything())))
+
+river <- 
+  read_sf(here("data", "shapefiles", "lhy_000c16a_e.shp")) %>% 
+  st_transform(32618)
+
+river <- 
+  river %>% 
+  st_filter(rbind(select(city, -everything()), select(city, -everything())))
+
+water <- rbind(select(river, -everything()), select(ocean, -everything()))
+
+rm(ocean, river, city, CMA)
+```
+
+``` {r make_fig_2_3}
+
+figure_2_3_fun <- function(regular = "", condensed = "") {
+  
+  left_map <- 
+    filter(date=="2021") %>% 
+    ggplot() +
+    geom_sf(data = province, colour = "transparent", fill = "grey93") +
+    geom_sf(aes(fill = housing_loss_pct), colour = "white") +
+    geom_sf(data = water, fill = "white", colour = "transparent") +
+    scale_fill_gradientn(colors = col_palette[c(4, 3, 5)], 
+                         na.value = "grey80",
+                         limits = c(0, 0.03), oob = scales::squish, 
+                         labels = scales::percent)  +
+    guides(fill = guide_colourbar(title = "% housing\nlost to STR",
+                                  title.vjust = 1)) + 
+    gg_bbox(housing_loss_DA) +
+    theme_void() +
+    theme(text = element_text(family = regular, face = "plain"),
+          legend.title = element_text(family = regular, face = "bold", 
+                                      size = 7),
+          legend.title.align = 0.9,
+          legend.text = element_text(family = regular, size = 5))
+  
+  right_map <- 
+    housing_loss_DA %>% 
+    ggplot() +
+    geom_sf(data = province, colour = "transparent", fill = "grey93") +
+    geom_sf(aes(fill = housing_loss_pct), colour = "transparent") +
+    geom_sf(data = water, fill = "white", colour = "transparent") +
+    scale_fill_gradientn(colors = col_palette[c(4, 3, 5)], 
+                         na.value = "grey80",
+                         limits = c(0, 0.05), oob = scales::squish, 
+                         labels = scales::percent)  +
+    guides(fill = guide_colourbar(title = "% housing\nlost to STR",
+                                  title.vjust = 1)) + 
+    gg_bbox(housing_loss_DA) +
+    theme_void() +
+    theme(text = element_text(family = regular, face = "plain"),
+          legend.title = element_text(family = regular, face = "bold", 
+                                      size = 7),
+          legend.title.align = 0.9,
+          legend.text = element_text(family = regular, size = 5))
+  
+  left_map + right_map + plot_layout(guides = 'collect') & 
+    theme(legend.position = "bottom")
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_3.pdf"), 
+         plot = figure_2_3_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+}
+
+```
+
+The `r housing_loss_2021` housing units taken off of PEC’s housing market in 2021 are `r housing_loss_pct_dwelling` of the total amount of housing in the city, and this housing loss has been concentrated in small parts of the city. Figure \@ref(fig:fig-2-3) shows the proportion of each ward or dissemination area’s housing stock which was operated as a dedicated short-term rental as of the end of 2021. The maps show a tale of two cities: in most of PEC, there are relatively few dedicated STRs, while in the center of the city as well as a few transit corridors, they are ubiquitous. In the Spadina-Fort York ward, `r housing_loss_pct_spadina` of all housing units were operating as dedicated STRs at the end of 2021, even in the face of Covid-19. The figure is `r housing_loss_pct_university` for University-Rosedale and `r housing_loss_pct_centre` for PEC Centre. In the Downtown CMHC zone, the rental vacancy rate was `r downtown_spadina` in 2019, while the number of STRs contributing to housing loss in the Spadina-Fort York in 2019 was `r housing_loss_pct_spadina_2019`. This means that there were slightly more dedicated STRs in this neighbourhood than there were vacant apartments for rent. (2021 rental vacancy rates numbers were not yet available at the time of analysis.)
+
+``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
+
+figure_2_3_fun()
+
+```
+
+(ref:fig-2-3) _The percentage of housing units converted to dedicated STRs in the PEC, by ward (L) and dissemination area (R)_
+
