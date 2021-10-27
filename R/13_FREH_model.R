@@ -228,7 +228,9 @@ for(i in 1:length(as.Date(min(daily$date)):as.Date(max(daily$date)))) { # Number
   
   freh_prop <- 
     daily %>% 
-    filter(date > start_date, 
+    filter(housing,
+           listing_type == "Entire home/apt",
+           date > start_date, 
            date <= end_date) %>% 
     group_by(property_ID) %>% 
     filter(sum(status %in% c("A", "R")) >= 180*th) %>% 
