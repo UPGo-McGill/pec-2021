@@ -99,4 +99,4 @@ seasonal_FREH <- fun_seasonal_FREH(winter_start, winter_end, threshold = 0.9)
 
 # Save --------------------------------------------------------------------
 
-qsave(seasonal_FREH, file = "output/seasonal_FREH")
+qsave(seasonal_FREH, file = "output/seasonal_FREH.qs")
