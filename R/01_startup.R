@@ -31,10 +31,13 @@ library(qs)
 # Set global variables ----------------------------------------------------
 
 if (Sys.info()["sysname"] != "Windows") plan(multisession)
-start_2020 <- as.Date("2019-06-01")
-end_2020 <- as.Date("2020-05-31")
-start_2021 <- as.Date("2020-06-01")
-end_2021 <- as.Date("2021-05-31")
+start_2019 <- as.Date("2019-01-01")
+end_2019 <- as.Date("2019-12-31")
+start_2020 <- as.Date("2020-01-01")
+end_2020 <- as.Date("2020-12-31")
+start_2021 <- as.Date("2021-01-01")
+summer_start_2021 <- as.Date("2021-05-01")
+summer_end_2021 <- as.Date("2021-09-30")
 
 key_date_regulations <- as.Date("2019-11-01")
 key_date_covid <- as.Date("2020-03-14")
