@@ -77,9 +77,8 @@ property <-
 
 # Convert currency --------------------------------------------------------
 
-exchange_rates <-
-  convert_currency(start_date = min(daily$date),
-                   end_date = max(daily$date))
+exchange_rates <- convert_currency(start_date = min(daily$date),
+                                   end_date = max(daily$date))
 
 daily <-
   daily %>%
@@ -99,19 +98,31 @@ property <-
 # Add area to property file
 property <-
   property %>%
-  st_transform(32617) %>% 
-  st_join(select(EW, 
-                 -dwellings, -type))
+  st_join(select(EW, -dwellings, -type)) %>%
+  relocate(ward, .after = GeoUID)
 
-# Add area to daily file
+# Add DA and area to daily file
 daily <-
   property %>%
   st_drop_geometry() %>%
-  select(property_ID, ward) %>%
+  select(property_ID, GeoUID, ward) %>%
   left_join(daily, ., by = "property_ID")
 
 
 # Get rid of non-housing listings -----------------------------------------
+
+# Need to manually update housing status
+property <- 
+  property |> 
+  select(-housing) |> 
+  strr_housing() |> 
+  relocate(housing, .after = last_active)
+
+daily <- 
+  daily |> 
+  select(-housing) |> 
+  left_join(select(st_drop_geometry(property), property_ID, housing)) |> 
+  relocate(housing, .after = listing_type)
 
 daily_all <- 
   daily
@@ -119,6 +130,7 @@ daily_all <-
 daily <- 
   daily |> 
   filter(housing)
+
 
 # Save output -------------------------------------------------------------
 
