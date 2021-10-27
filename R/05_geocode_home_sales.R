@@ -8,6 +8,7 @@
 
 source("R/01_startup.R")
 library(readxl)
+library(ggmap)
 
 # Import home sales -------------------------------------------------------
 
@@ -30,8 +31,9 @@ home_sales <-
          address = str_remove(address, "\\.")) %>% 
   mutate(address = str_replace(address, " road", " rd"),
          address = str_replace(address, " street", " st"),
-         address = case_when(str_detect(address, "\\d road") ~ str_remove(address, " road$"),
-                             TRUE ~ address),# ROAD 3 ROAD, take the second rd off...
+         address = case_when(str_detect(address, "\\d road") ~ 
+                               str_remove(address, " road$"),
+                             TRUE ~ address), # ROAD 3 ROAD, drop second ROAD
          address = str_replace(address, " crescent", " cr"),
          address = str_replace(address, " drive", " dr"),
          address = str_replace(address, " lane", " ln"),
@@ -39,8 +41,9 @@ home_sales <-
          address = str_replace(address, " parkway", " pkwy"),
          address = str_replace(address, " avenue", " ave"),
          address = str_replace_all(address, "[[:space:]]+", " "),
-         address = case_when(str_detect(address, "loyalist pkwy") ~ str_extract(address, "^\\d* loyalist pkwy"),
-                             TRUE ~ address),# ROAD 3 ROAD, take the second rd off...
+         address = case_when(str_detect(address, "loyalist pkwy") ~ 
+                               str_extract(address, "^\\d* loyalist pkwy"),
+                             TRUE ~ address), # ROAD 3 ROAD, drop second ROAD
          address = str_remove(address, " n$"),
          address = str_remove(address, " highway$")) %>% 
   mutate(address = str_trim(str_to_lower(address))) %>% 
@@ -52,14 +55,14 @@ home_sales <-
          ward = ifelse(ward == "zz-Prince Edward", NA, ward))
 
 
-
 # Geocode -----------------------------------------------------------------
 
 home_sales <- 
   home_sales %>% 
-  mutate(address = as.character(str_glue("{address}, prince edward county"))) %>%
-  ggmap::mutate_geocode(location = address) %>%
-  mutate(address = str_remove(address, ", prince edward county"))
+  mutate(to_geo = as.character(str_glue(
+    "{address}, prince edward county, ontario"))) %>%
+  ggmap::mutate_geocode(location = to_geo) %>%
+  select(-to_geo)
 
 home_sales <- 
   home_sales %>% 

@@ -47,3 +47,6 @@ output/*.Rdata
 
 # Ignore data folder
 /data/
+
+# Other
+.DS_Store

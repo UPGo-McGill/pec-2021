@@ -1,4 +1,4 @@
-#### 03 REGISTRATION DATA IMPORT ########################################################
+#### 04 REGISTRATION DATA IMPORT ###############################################
 
 #' Output:
 #' - `STA.qs`
@@ -8,9 +8,11 @@
 
 source("R/01_startup.R")
 
+
 # STA import --------------------------------------------------------------
 
-STA <- read_sf("data/McGill/STA.shp") %>% 
+STA <- 
+  read_sf("data/McGill/STA.shp") %>% 
   transmute(id = LicenceID, 
             created = created_da,
             expiry = Expiry,
@@ -31,8 +33,9 @@ STA <- STA %>%
          address = str_remove(address, "\\.")) %>% 
   mutate(address = str_replace(address, " road", " rd"),
          address = str_replace(address, " street", " st"),
-         address = case_when(str_detect(address, "\\d road") ~ str_remove(address, " road$"),
-                             TRUE ~ address),# ROAD 3 ROAD, take the second rd off...
+         address = case_when(str_detect(address, "\\d road") ~ 
+                               str_remove(address, " road$"),
+                             TRUE ~ address), # ROAD 3 ROAD, take the second rd off...
          address = str_replace(address, " crescent", " cr"),
          address = str_replace(address, " drive", " dr"),
          address = str_replace(address, " lane", " ln"),
@@ -40,7 +43,8 @@ STA <- STA %>%
          address = str_replace(address, " parkway", " pkwy"),
          address = str_replace(address, " avenue", " ave"),
          address = str_replace_all(address, "[[:space:]]+", " "),
-         address = case_when(str_detect(address, "loyalist pkwy") ~ str_extract(address, "^\\d* loyalist pkwy"),
+         address = case_when(str_detect(address, "loyalist pkwy") ~ 
+                               str_extract(address, "^\\d* loyalist pkwy"),
                              TRUE ~ address),# ROAD 3 ROAD, take the second rd off...
          address = str_remove(address, " n$"),
          address = str_remove(address, " highway$")) %>% 
