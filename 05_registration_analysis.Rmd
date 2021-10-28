@@ -140,6 +140,8 @@ STA %>%
 
 ```
 
+On 9 October 2018, Prince Edward County's city council approved a by-law allowing the registration of short-term accommodations (STA) on its territory. The new licensing program requires STA hosts to acquire one license per accommodation, to be renewed annually. The license fees depend on the number of guest room within the accommodation. The density of STAs operating within the county is set for each zone or area of the County, based on the zoning by-law. The percentage of STAs out of total existing dwelling units is set at 15%, with varying radius thresholds depending on the zones. The County recognizes four different types of STAs: traditional B&Bs, where owner lives on site; partial or entire principal residence STAs; partial or entire secondary residence STAs; and on-farm tourist homes. The licensing system came into effect in November 2019. The Covid-related travel restrictions started in the month of March 2020, with a moratorium on STA licensing established by the County on 30 September 2020. The STA registration was reinstated in the County for traditional B&Bs and principal residence STA on 22 June 2021, leaving other types of STAs accommodation still enable to be granted a license. The following chapter provides an analysis of Prince Edward County's STA licensing system in relation to short-term rentals operated on platforms.
+
 
 ```{r, include = T}
 
