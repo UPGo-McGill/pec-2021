@@ -1,4 +1,4 @@
-#### 12 STR PROCESSING #########################################################
+#### 09 STR PROCESSING #########################################################
 
 #' This script is very time-consuming to run, and should be rerun when STR data
 #' has changed.
@@ -8,7 +8,7 @@
 #'
 #' Script dependencies:
 #' - `03_str_data_import.R`
-#' - `11_str_listing_match.R`
+#' - `08_str_listing_match.R`
 #'
 #' External dependencies:
 #' - None
@@ -82,23 +82,14 @@ status_fun <- function(x, y) {
   fcase("R" %in% status, "R", "A" %in% status, "A", "B" %in% status, "B")
 }
 
-upgo:::handler_upgo("Analyzing row")
-
-with_progress({
-
-  pb <- progressor(nrow(GH))
-
-  status <- foreach(i = 1:nrow(GH), .combine = "c") %dopar% {
-    pb()
-    status_fun(GH$date[[i]], GH$property_IDs[[i]])
+status <- foreach(i = 1:nrow(GH), .combine = "c") %dopar% {
+  status_fun(GH$date[[i]], GH$property_IDs[[i]])
   }
-
-})
 
 GH$status <- status
 GH <- GH %>% select(ghost_ID, date, status, host_ID:data, geometry)
 
-rm(daily_GH, pb, status_fun, status)
+rm(daily_GH, status_fun, status)
 
 
 # Add GH status to daily --------------------------------------------------
@@ -121,5 +112,5 @@ rm(GH_daily)
 
 # Save output -------------------------------------------------------------
 
-qsavem(property, daily, GH, file = "output/str_processed.qsm",
+qsavem(property, daily, daily_all, GH, file = "output/str_processed.qsm",
        nthreads = availableCores())
