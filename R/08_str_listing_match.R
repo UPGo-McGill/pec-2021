@@ -1,4 +1,4 @@
-#### 11 STR LISTING MATCH ######################################################
+#### 08 STR LISTING MATCH ######################################################
 
 #' This script is moderately time-consuming to run, and should be rerun when STR
 #' data or image data has changed.
@@ -14,30 +14,33 @@
 #' - None
 
 source("R/01_startup.R")
-library(furrr)
 
 
 # Load previous data ------------------------------------------------------
 
-qload("output/str_processed.qsm", nthreads = availableCores())
-qload("output/matches_processed.qs", nthreads = availableCores())
-dl_location <- "/Volumes/Data 2/Scrape photos/toronto" #PEC
+qload("output/str_raw.qsm", nthreads = availableCores())
+ab_matches <- qread("output/matches_raw.qs", nthreads = availableCores())
+dl_location <- "/Volumes/Data 2/Scrape photos/pec"
 
 
 # Clean up ab_matches -----------------------------------------------------
 
 ab_matches <-
   ab_matches %>%
-  filter(match == "match") %>%
-  mutate(
-    x_name = str_replace_all(vctrs::field(x_sig, "file"),
+  filter(match) %>%
+  transmute(
+    x_name = str_replace_all(get_path(x_sig),
                              paste0(dl_location, "/ab/|-[:digit:]+.jpg"), ""),
-    y_name = str_replace_all(vctrs::field(y_sig, "file"),
-                             paste0(dl_location, "/ab/|-[:digit:]+.jpg"), "")
-    ) %>%
-  select(x_name, y_name)
+    y_name = str_replace_all(get_path(y_sig),
+                             paste0(dl_location, "/ab/|-[:digit:]+.jpg"), ""))
 
-rm(dl_location, matches)
+ab_matches <- 
+  ab_matches |> 
+  mutate(across(c(x_name, y_name), str_replace_all, "\\-1\\.10", "")) |> 
+  mutate(across(c(x_name, y_name), str_replace_all, "\\-1\\.6", "")) |> 
+  mutate(across(c(x_name, y_name), str_replace_all, "\\-1\\.jpeg", ""))
+
+rm(dl_location)
 
 
 # Identify groupings ------------------------------------------------------
@@ -100,6 +103,14 @@ daily <-
          host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
   select(-new_host)
 
+daily_all <-
+  daily_all %>%
+  left_join(host_change_table) %>%
+  mutate(old_host = if_else(is.na(new_host), NA_character_, host_ID),
+         host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
+  select(-new_host)
+
+
 rm(host_change_table, host_IDs, reduce)
 
 
@@ -115,7 +126,7 @@ property <-
   ungroup() %>%
   select(property_ID, active = date) %>%
   left_join(property, .) %>%
-  select(property_ID:scraped, active, housing:ltr_ID, old_host, geometry)
+  select(property_ID:scraped, active, housing:ward, old_host, geometry)
 
 group_matches <-
   groupings %>%
@@ -157,9 +168,7 @@ property_change_table <-
               pull(property_ID),
             new_created = min(.x$created, na.rm = TRUE),
             new_scraped = max(.x$scraped, na.rm = TRUE),
-            new_active = max(.x$active, na.rm = TRUE),
-            new_ltr_IDs = list(unique(unlist(.x$ltr_ID)))
-          ))
+            new_active = max(.x$active, na.rm = TRUE)))
 
 daily <-
   daily %>%
@@ -168,11 +177,17 @@ daily <-
          property_ID = if_else(is.na(new_PID), property_ID, new_PID)) %>%
   select(-new_PID, -new_created, -new_scraped, -new_active)
 
+daily_all <-
+  daily_all %>%
+  left_join(property_change_table) %>%
+  mutate(old_PID = if_else(is.na(new_PID), NA_character_, property_ID),
+         property_ID = if_else(is.na(new_PID), property_ID, new_PID)) %>%
+  select(-new_PID, -new_created, -new_scraped, -new_active)
+
 property_change_collapsed <-
   property_change_table %>%
   group_by(new_PID, new_created, new_scraped, new_active) %>%
-  summarize(all_PIDs = list(property_ID),
-            new_ltr_ID = list(unique(unlist(new_ltr_IDs))))
+  summarize(all_PIDs = list(property_ID))
 
 property_to_delete <-
   property_change_table %>%
@@ -184,11 +199,9 @@ property <-
   filter(!property_ID %in% property_to_delete$property_ID) %>%
   mutate(created = if_else(!is.na(new_created), new_created, created),
          scraped = if_else(!is.na(new_scraped), new_scraped, scraped),
-         active = if_else(!is.na(new_active), new_active, active),
-         ltr_ID = map2(ltr_ID, new_ltr_ID, ~{if (is.null(.y)) .x else .y}),
-         ltr_ID = map(ltr_ID, unique)) %>%
-  select(-new_created, -new_scraped, -new_active, -new_ltr_ID) %>%
-  select(-geometry, everything(), geometry)
+         active = if_else(!is.na(new_active), new_active, active)) %>%
+  select(-new_created, -new_scraped, -new_active) %>%
+  relocate(geometry, .after = last_col())
 
 rm(group_matches, property_change_collapsed, property_change_table,
    property_to_delete)
@@ -196,5 +209,5 @@ rm(group_matches, property_change_collapsed, property_change_table,
 
 # Save output -------------------------------------------------------------
 
-qsavem(property, daily, host, file = "output/str_processed.qsm",
+qsavem(property, daily, daily_all, host, file = "output/str_processed.qsm",
        nthreads = availableCores())
