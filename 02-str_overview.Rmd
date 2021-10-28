@@ -24,28 +24,35 @@ mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 # Set this to TRUE to output PDF figures
 build_figures <- FALSE
 
+
 ```
 
 ```{r new_objects, cache=TRUE, cache.lazy=FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
+
 qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 qload(here("output", "geometry.qsm"), nthreads = availableCores())
 
-# 2020 active
-active_2020 <- 
+daily <- 
+  daily %>% 
+  # to not report on incomplete numbers, start at a date when VRBO is in our dataset
+  filter(date >= "2017-06-01")
+
+# 2021 active
+active_2021 <- 
   daily %>%
-  filter(housing, status %in% c("R", "A"), date <= end_2020, 
-         date >= start_2020) %>%
+  filter(housing, status %in% c("R", "A"), 
+         date >= start_2021) %>%
   pull(property_ID) %>% 
   unique()
   
-# 2020 revenue
-revenue_2020 <-
+# 2021 revenue
+revenue_2021 <-
   daily %>%
-  filter(housing, status == "R", date <= end_2020, 
-         date >= start_2020) %>%
+  filter(housing, status == "R", 
+         date >= start_2021) %>%
   group_by(property_ID) %>%
-  summarize(revenue_2020 = sum(price), .groups = "drop") %>% 
+  summarize(revenue_2021 = sum(price), .groups = "drop") %>% 
   inner_join(property, ., by = "property_ID")
 
 # 2019 active
@@ -86,7 +93,7 @@ active_listings <-
 # Daily variation
 daily_variation <- 
   daily %>% 
-  filter(housing, status != "B", date >= "2015-12-16", date != "2020-02-29") %>% 
+  filter(housing, status != "B", date != "2020-02-29") %>%
   group_by(date) %>% 
   summarize("Active listings" = n(), Revenue = sum(price[status == "R"])) %>% 
   mutate(across(where(is.numeric), 
@@ -96,65 +103,62 @@ daily_variation <-
   group_by(var) %>% 
   mutate(value = slide_dbl(value, mean, .before = 13, .complete = TRUE)) %>% 
   ungroup() %>% 
-  filter(date >= "2018-06-01")
+  filter(!is.na(value))
 
 # EW breakdown
 EW_breakdown <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019 - years(1), 
-         date <= end_2019) %>% 
+  filter(housing, status != "B", date >= start_2019, 
+         !c(date >= start_2020 & date <= end_2020)) %>% 
   group_by(date, ward) %>% 
   summarize(n = n(),
             revenue = sum(price[status == "R"])) %>% 
   left_join(st_drop_geometry(EW)) %>% 
   group_by(ward, dwellings) %>% 
-  summarize(active_listings = mean(n[date >= start_2019]),
-            active_2019 = mean(n[date < start_2019]),
-            active_growth = (active_listings - active_2019) / active_2019,
-            annual_rev = sum(revenue[date >= start_2019]),
-            rev_2019 = sum(revenue[date < start_2019]),
-            rev_growth = (annual_rev - rev_2019) / rev_2019,
+  summarize(active_listings = mean(n[date >= start_2021]),
+            active_2019 = mean(n[date < start_2021]),
+            active_growth_2019_2021 = (active_listings - active_2019) / active_2019,
+            annual_rev = sum(revenue[date >= start_2021]),
+            rev_2019 = sum(revenue[date < start_2021]),
+            rev_growth_2019_2021 = (annual_rev - rev_2019) / rev_2019,
             .groups = "drop") %>% 
   mutate(listings_pct = active_listings / sum(active_listings, na.rm = TRUE),
          listings_pct_dwellings = active_listings / dwellings,
          rev_pct = annual_rev / sum(annual_rev)) %>% 
-  select(ward, active_listings, active_growth, listings_pct,
-         listings_pct_dwellings, annual_rev, rev_pct, rev_growth)
+  select(ward, active_listings, active_growth_2019_2021, listings_pct,
+         listings_pct_dwellings, annual_rev, rev_pct, rev_growth_2019_2021)
 
 # Active listings by EW
 active_EW <-
   daily %>%
-  filter(housing, status != "B", date >= start_2019, 
-         date <= end_2019) %>%
+  filter(housing, status != "B", date >= start_2021) %>%
   count(ward, date) %>% 
   group_by(ward) %>% 
   summarize(n = mean(n, na.rm = TRUE)) %>%
   left_join(EW, .) %>% 
-  mutate(percentage = n / dwellings, n = round(n, digit = -1)) %>% 
+  mutate(percentage = n / dwellings, n = round(n)) %>% 
   select(ward, n, dwellings, percentage)
 
 # Active listings by DA
 active_DA <-
   daily %>%
-  filter(housing, status != "B", date >= start_2019,
-         date <= end_2019) %>%
+  filter(housing, status != "B", date >= start_2021) %>%
   left_join(select(st_drop_geometry(property), property_ID, GeoUID)) %>% 
   count(GeoUID, date) %>% 
   group_by(GeoUID) %>% 
   summarize(n = mean(n, na.rm = TRUE)) %>%
   left_join(DA, .) %>% 
-  mutate(percentage = n / dwellings, n = round(n, digit = -1),
+  mutate(percentage = n / dwellings, n = round(n),
          percentage = if_else(dwellings <= 4, NA_real_, percentage)) %>% 
   relocate(geometry, .after = last_col())
 
 # Listing type breakdown
 listing_type_breakdown <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019,
-         date <= end_2019) %>% 
+  filter(housing, status != "B", date >= start_2021) %>% 
   group_by(listing_type) %>% 
   summarize(
-    active_listings = n() / 365,
+    active_listings = round(n() / 365),
     revenue = sum(price[status == "R"]),
     .groups = "drop") %>% 
   mutate(pct_of_listings = active_listings / sum(active_listings),
@@ -165,27 +169,28 @@ listing_type_breakdown <-
   filter(housing, status != "B", date >= start_2019 - years(1), 
          date <= end_2019 - years(1)) %>% 
   group_by(listing_type) %>% 
-  summarize(active_2019 = n() / 365) %>% 
+  summarize(active_2019 = round(n() / 365)) %>% 
   left_join(listing_type_breakdown, .) %>% 
-  mutate(pct_listing_growth = (active_listings - active_2019) / active_2019) %>% 
+  mutate(pct_listing_growth_2019_2021 = (active_listings - active_2019) / active_2019) %>%
   select(-active_2019)
 
 # Host revenue table for calculations and table
 host_rev <-
   daily %>%
-  filter(housing, date >= start_2019, date <= end_2019, 
+  filter(housing, date >= start_2021, 
          status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price))
 
-host_rev19 <-
+host_rev_2019 <-
   daily %>%
-  filter(housing, date >= start_2019, date <= end_2019, 
+  filter(housing, date >= start_2019, date <= end_2019,
          status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price))
 
 rm(property, daily, GH, DA, city)
+
 
 ```
 
@@ -193,10 +198,10 @@ rm(property, daily, GH, DA, city)
 
 qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
-# Average active and blocked daily listings in 2019
+# Average active and blocked daily listings in 2021
 avg_listings <- 
   daily %>% 
-  filter(housing, date >= start_2019, date <= end_2019) %>% 
+  filter(housing, date >= start_2021) %>% 
   count(date, B = status == "B") %>% 
   group_by(B) %>% 
   summarize(avg = round(mean(n), digit = -1), .groups = "drop")
@@ -206,34 +211,32 @@ avg_listings_active <-
   prettyNum(",")
 
 # Average active and blocked daily listings in 2019
-avg_listings19 <- 
+avg_listings_2019 <- 
   daily %>% 
   filter(housing, date >= start_2019, date <= end_2019) %>% 
   count(date, B = status == "B") %>% 
   group_by(B) %>% 
   summarize(avg = round(mean(n), digit = -1), .groups = "drop")
 
-avg_listings_active19 <- 
+avg_listings_active_2019 <- 
   avg_listings19$avg[1] %>% 
   prettyNum(",")
 
-# Total annual revenue in 2019
+# Total annual revenue in 2021
 annual_rev <- 
-  revenue_2019$revenue_2019 %>% 
-  sum() %>% 
-  {. / 1000000} %>% 
-  round(digit = 1) %>% 
+  {{revenue_2021$revenue_2021 %>% 
+  sum()}/365} %>% 
+  round(-3) %>% 
   prettyNum(",") %>% 
-  paste0("$", ., " million")
+  paste0("$", .)
 
 # Total annual revenue in 2019
-annual_rev19 <- 
-  revenue_2019$revenue_2019 %>% 
-  sum() %>% 
-  {. / 1000000} %>% 
-  round(digit = 1) %>% 
+annual_rev_2019 <- 
+  {{revenue_2019$revenue_2019 %>% 
+  sum()}/365} %>% 
+  round(-3) %>% 
   prettyNum(",") %>% 
-  paste0("$", ., " million")
+  paste0("$", .)
 
 # EH listings
 eh_listings <- 
@@ -249,7 +252,7 @@ eh_revenue <-
   pull(pct_of_revenue) %>% 
   scales::percent(0.1)
 
-# Host revenue in 2019
+# Host revenue in 2021
 host_rev_top_10 <- 
   host_rev %>% 
   summarize(top_10 = sum(rev[rev > quantile(rev, .9)]) / sum(rev)) %>% 
@@ -264,32 +267,30 @@ host_rev_top_1 <-
 
 # Host revenue in 2019
 host_rev_top_10_2019 <- 
-  host_rev19 %>% 
+  host_rev_2019 %>% 
   summarize(top_10 = sum(rev[rev > quantile(rev, .9)]) / sum(rev)) %>% 
   pull(top_10) %>% 
   scales::percent(0.1)
 
 host_rev_top_1_2019 <- 
-  host_rev19 %>% 
+  host_rev_2019 %>% 
   summarize(top_1 = sum(rev[rev > quantile(rev, .99)]) / sum(rev)) %>% 
   pull(top_1) %>% 
   scales::percent(0.1)
 
-# 2020 ML listings
+# 2021 ML listings
 ml_listings <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2020, 
-         date <= end_2020) %>% 
+  filter(housing, status != "B", date >= start_2021) %>% 
   count(multi) %>% 
   summarize(ML = n[2] / sum(n)) %>% 
   pull(ML) %>% 
   scales::percent(0.1)
 
-# 2020 ML revenue
+# 2021 ML revenue
 ml_revenue <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2020, 
-       date <= end_2020) %>% 
+  filter(housing, status == "R", date >= start_2021) %>% 
   group_by(multi) %>% 
   tally(price) %>% 
   summarize(multi_rev = n[2] / sum(n)) %>% 
@@ -297,9 +298,9 @@ ml_revenue <-
   scales::percent(0.1)
 
 # 2019 ML listings
-ml_listings19 <- 
+ml_listings_2019 <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019, 
+  filter(housing, status != "B", date >= start_2021, 
          date <= end_2019) %>% 
   count(multi) %>% 
   summarize(ML = n[2] / sum(n)) %>% 
@@ -307,10 +308,10 @@ ml_listings19 <-
   scales::percent(0.1)
 
 # 2019 ML revenue
-ml_revenue19 <- 
+ml_revenue_2019 <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2019, 
-       date <= end_2019) %>% 
+  filter(housing, status == "R", date >= start_2021, 
+         date <= end_2019) %>% 
   group_by(multi) %>% 
   tally(price) %>% 
   summarize(multi_rev = n[2] / sum(n)) %>% 
@@ -321,7 +322,7 @@ rm(property, daily, GH)
 
 ```
 
-**There were `r avg_listings_active` active STR listings in Prince Edward County housing units in 2020, which collectively earned `r annual_rev`. This is a dramatic decline in comparison to 2019; the COVID-19 pandemic reduced reservations by XX.X%. One fifth of all listings are located in Picton. The quasi totality (`r eh_listings`) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning almost half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STR listings account for `r ml_listings` of listings and their revenue amount to `r ml_revenue` of total revenue.**
+**There were `r avg_listings_active` active STR listings in Prince Edward County housing units in 2021, which earned on average `r annual_rev`. This is a dramatic decline in comparison to 2019 (`r avg_listings_active_2019` active listings). TKTK of all listings in 2021 are located in Picton. The quasi totality (`r eh_listings`) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning almost half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STR listings account for `r ml_listings` of listings in 2021 and their revenue amount to `r ml_revenue` of total revenue.**
 
 <br>
 
@@ -331,35 +332,14 @@ rm(property, daily, GH)
 
 qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
-# Average active and blocked daily listings in 2020
-avg_listings <- 
-  daily %>% 
-  filter(housing, date >= start_2020, date <= end_2020) %>% 
-  count(date, B = status == "B") %>% 
-  group_by(B) %>% 
-  summarize(avg = round(mean(n), digit = -1), .groups = "drop")
-
-avg_listings_active <- 
-  avg_listings$avg[1] %>% 
+avg_listings_active_2019 <- 
+  avg_listings_2019$avg[1] %>% 
   prettyNum(",")
 
-# Average active and blocked daily listings in 2019
-avg_listings20 <- 
-  daily %>% 
-  filter(housing, date >= start_2019, date <= end_2019) %>% 
-  count(date, B = status == "B") %>% 
-  group_by(B) %>% 
-  summarize(avg = round(mean(n), digit = -1), .groups = "drop")
-
-avg_listings_active20 <- 
-  avg_listings20$avg[1] %>% 
-  prettyNum(",")
-
-# Average number of hosts in 2020 (taking out blocked 365 days)
+# Average number of hosts in 2021 (taking out blocked 365 days)
 avg_hosts <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2020, 
-         date <= end_2020) %>%
+  filter(housing, status != "B", date >= start_2021) %>%
   count(date, host_ID) %>% 
   count(date) %>% 
   summarize(hosts = round(mean(n), digit = -1), .groups = "drop") %>% 
@@ -367,7 +347,7 @@ avg_hosts <-
   prettyNum(",")
 
 # Average number of hosts in 2019 (taking out blocked 365 days)
-avg_hosts19 <- 
+avg_hosts_2019 <- 
   daily %>% 
   filter(housing, status != "B", date >= start_2019, 
          date <= end_2019) %>%
@@ -377,69 +357,52 @@ avg_hosts19 <-
   pull(hosts) %>% 
   prettyNum(",")
 
-# Total annual revenue in 2020
-annual_rev <- 
-  revenue_2020$revenue_2020 %>% 
-  sum() %>% 
-  {. / 1000000} %>% 
-  round(digit = 1) %>% 
-  prettyNum(",") %>% 
-  paste0("$", ., " million")
-
-# Total annual revenue in 2019
-annual_rev19 <- 
-  revenue_2019$revenue_2019 %>% 
-  sum() %>% 
-  {. / 1000000} %>% 
-  round(digit = 1) %>% 
-  prettyNum(",") %>% 
-  paste0("$", ., " million")
-
-# Average revenue per active listing in 2020
+# Average revenue per active listing in 2021
 avg_rev_per_listing <- 
-  (sum(revenue_2020$revenue_2020) /
+  # Since there aren't 365 days in 2021, we need to avg per day
+  {(sum(revenue_2021$revenue_2021) / yday(max(daily$date))) /
     daily %>% 
-    filter(housing, status != "B", date >= start_2020, date <= end_2020) %>% 
+    filter(housing, status != "B", date >= start_2021) %>% 
     count(date) %>% 
-    summarize(avg_rev_per_active = round(mean(n)), .groups = "drop")) %>% 
+    summarize(avg_rev_per_active = round(mean(n)), .groups = "drop")} %>% 
   as.vector() %>% 
-  round(digit = -2) %>% 
+  round(digit = -1) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
 
 # Average revenue per active listing in 2019
-avg_rev_per_listing19 <- 
-  (sum(revenue_2019$revenue_2019) /
+avg_rev_per_listing_2019 <- 
+  {(sum(revenue_2019$revenue_2019) / 365) /
     daily %>% 
     filter(housing, status != "B", date >= start_2019, date <= end_2019) %>% 
     count(date) %>% 
-    summarize(avg_rev_per_active20 = round(mean(n)), .groups = "drop")) %>% 
+    summarize(avg_rev_per_active_2019 = round(mean(n)), .groups = "drop")} %>% 
   as.vector() %>% 
-  round(digit = -2) %>% 
+  round(digit = -1) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
 
-#' Average revenue per active host in 2020
+#' Average revenue per active host in 2021
 avg_rev_per_host <- 
-  (sum(revenue_2020$revenue_2020) /
+  {(sum(revenue_2021$revenue_2021) / yday(max(daily$date))) /
     daily %>% 
-    filter(housing, status != "B", date >= start_2020, date <= end_2020) %>%
+    filter(housing, status != "B", date >= start_2021) %>%
     group_by(date) %>% 
     summarize(n_hosts = length(unique(host_ID)), .groups = "drop_last") %>% 
-    summarize(avg_n_hosts = round(mean(n_hosts)), .groups = "drop")) %>% 
-  round(digit = -2) %>% 
+    summarize(avg_n_hosts = round(mean(n_hosts)), .groups = "drop")} %>% 
+  round(digit = -1) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
 
 #' Average revenue per active host in 2019
-avg_rev_per_host19 <- 
-  (sum(revenue_2019$revenue_2019) /
+avg_rev_per_host_2019 <- 
+  {(sum(revenue_2019$revenue_2019) / 365) /
     daily %>% 
-    filter(housing, status != "B", date >= start_2019, date <= end_2019) %>%
+    filter(housing, status != "B", date >= start_2019, date <= end_2019) %>% 
     group_by(date) %>% 
     summarize(n_hosts = length(unique(host_ID)), .groups = "drop_last") %>% 
-    summarize(avg_n_hosts20 = round(mean(n_hosts)), .groups = "drop")) %>% 
-  round(digit = -2) %>% 
+    summarize(avg_n_hosts20 = round(mean(n_hosts)), .groups = "drop")} %>% 
+  round(digit = -1) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
 
@@ -455,7 +418,6 @@ figure_1_1_fun <- function(regular = "", condensed = "") {
   ggplot(aes(date, n, colour = listing_type, size = listing_type)) +
   geom_line(na.rm = TRUE) +
   scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, limits = c(as.Date("2016-01-01"), NA)) +
   scale_colour_manual(name = NULL, values = col_palette[c(5, 1:3)],
                       guide = guide_legend(
                         override.aes = list(size = c(1.5, 0.75, 0.75, 0.75)))) +
@@ -478,7 +440,7 @@ if (build_figures) {
 
 ```
 
-Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STR market in a location, particularly with respect to change over time. In 2020, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-1-1)) operated by an average of `r avg_hosts` hosts. These hosts collectively earned `r annual_rev`—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per active host. These numbers are only a portion of Prince Edward County's STR market from before the pandemic. In 2019, the total STR market revenue amounted to `r annual_rev19`, with an average of `r avg_listings_active19` active listings on a given day operated by `r avg_hosts19` hosts. In 2019, the average listing earned `r avg_rev_per_listing19` and the average host, `r avg_rev_per_host19`. 
+Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STR market in a location, particularly with respect to change over time. In 2021, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-1-1)) operated by an average of `r avg_hosts` hosts. These hosts earned on average `r annual_rev` each in 2021—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per daily active host. These numbers are only a portion of Prince Edward County's STR market from before the pandemic. In 2019, the total STR market revenue amounted to `r annual_rev_2019`, with an average of `r avg_listings_active_2019` active listings on a given day operated by `r avg_hosts_2019` hosts. In 2019, the average listing earned `r avg_rev_per_listing_2019` a night and the average host, `r avg_rev_per_host_2019` a night. 
 
 ``` {r fig-1-1, include = TRUE, fig.cap = '(ref:fig-1-1)', fig.align = "center"}
 
@@ -492,69 +454,69 @@ figure_1_1_fun()
 
 qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
-# Average blocked daily listings in 2020
+# Average blocked daily listings in 2021
 avg_listings_blocked <- 
   avg_listings$avg[2] %>% 
   prettyNum(",")
 
 # Average blocked daily listings in 2019
-avg_listings_blocked19 <- 
-  avg_listings19$avg[2] %>% 
+avg_listings_blocked_2019 <- 
+  avg_listings_2019$avg[2] %>% 
   prettyNum(",")
 
-# Average revenue per all listings in 2020
+# Average revenue per all listings in 2021
 avg_revenue_all_listings <- 
-  revenue_2020$revenue_2020 %>% 
-  mean() %>% 
-  round(digit = -2) %>% 
+  {(revenue_2021$revenue_2021 %>% 
+  mean()) / yday(max(daily$date))} %>% 
+  round(digit = -1) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
 
 # Average revenue per all listings in 2019
-avg_revenue_all_listings19 <- 
-  revenue_2019$revenue_2019 %>% 
-  mean() %>% 
-  round(digit = -2) %>% 
+avg_revenue_all_listings_2019 <- 
+  {(revenue_2019$revenue_2019 %>% 
+  mean()) / 365} %>% 
+  round(digit = -1) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
 
-# Average revenue per all hosts in 2020
+# Average revenue per all hosts in 2021
 avg_revenue_all_hosts <- 
-  revenue_2020 %>% 
+  {(revenue_2021 %>% 
   st_drop_geometry() %>%
   filter(!is.na(host_ID)) %>%
   group_by(host_ID) %>% 
-  summarize("host_rev" = sum(revenue_2020)) %>% 
-  summarize("avg_host_rev" = prettyNum(round(mean(host_rev), digit = -2), ",")) %>% 
-  pull(avg_host_rev) %>% 
+  summarize("host_rev" = sum(revenue_2021)) %>% 
+  summarize("avg_host_rev" = mean(host_rev)) %>% 
+  pull(avg_host_rev)) / yday(max(daily$date))} %>% 
+  round(., -1) %>% 
   paste0("$", .)
 
 # Average revenue per all hosts in 2019
-avg_revenue_all_hosts19 <- 
-  revenue_2019 %>% 
+avg_revenue_all_hosts_2019 <- 
+  {(revenue_2019 %>% 
   st_drop_geometry() %>%
   filter(!is.na(host_ID)) %>%
   group_by(host_ID) %>% 
   summarize("host_rev" = sum(revenue_2019)) %>% 
-  summarize("avg_host_rev" = prettyNum(round(mean(host_rev), digit = -2), ",")) %>% 
-  pull(avg_host_rev) %>% 
+  summarize("avg_host_rev" = mean(host_rev)) %>% 
+  pull(avg_host_rev)) / 365}  %>% 
+  round(., -1) %>% 
   paste0("$", .)
 
-# Non-housing active listings in 2020
+# Non-housing active listings in 2021
 non_housing_listings <- 
   daily %>% 
-  filter(!housing, status != "B", date >= start_2020, 
-         date <= end_2020) %>%
+  filter(!housing, status != "B", date >= start_2021) %>%
   count(date) %>% 
   summarize(non_housing = round(mean(n), digit = -1)) %>% 
   pull(non_housing) %>% 
   prettyNum(",")
 
 # Non-housing active listings in 2019
-non_housing_listings19 <- 
+non_housing_listings_2019 <- 
   daily %>% 
-  filter(!housing, status != "B", date >= start_2019, 
-         date <= end_2019) %>%
+  filter(!housing, status != "B", date >= start_2019, date <= end_2019) %>%
   count(date) %>% 
   summarize(non_housing = round(mean(n), digit = -1)) %>% 
   pull(non_housing) %>% 
@@ -564,7 +526,7 @@ rm(property, daily, GH)
 
 ```
 
-There was also a daily average of `r avg_listings_blocked` listings which were visible on the Airbnb and Vrbo websites but were blocked by the host from receiving reservations (which is more than the previous year, which had on average `r avg_listings_blocked19` blocked listings on a given). The presence of these listings can erroneously suggest that a city’s STR market is larger than it is. When these blocked but inactive listings are included, the average listing earned `r avg_revenue_all_listings` in 2020, and the average host earned `r avg_revenue_all_hosts`. Finally, there was a daily average of `r non_housing_listings` listings that were not located in private housing units (B&Bs, hotels, etc.), which have been excluded from the analysis in this report. All the material which follows pertain to short-term rentals located in Prince Edward County’s residential housing stock.
+There was also a daily average of `r avg_listings_blocked` listings which were visible on the Airbnb and Vrbo websites but were blocked by the host from receiving reservations (which is more than pre-Covid years, which 2019 having on average `r avg_listings_blocked_2019` blocked listings on a given day). The presence of these listings can erroneously suggest that a city’s STR market is larger than it is. When these blocked but inactive listings are included, the average listing earned `r avg_revenue_all_listings` daily in 2021, and the average host earned `r avg_revenue_all_hosts` daily. Finally, there was a daily average of `r non_housing_listings` listings that were not located in private housing units (B&Bs, hotels, etc.), which have been excluded from the analysis in this report. All the material which follows pertain to short-term rentals located in Prince Edward County’s residential housing stock.
 
 ``` {r para_3, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -589,7 +551,7 @@ highest_activity_amount <-
   prettyNum(",")
 
 # Active listing YOY change in 2019
-active_yoy_change19 <- 
+active_yoy_change_2019 <- 
   daily %>% 
   filter(housing, status != "B", date >= start_2019 - years(1), 
          date <= end_2019) %>% 
@@ -599,21 +561,21 @@ active_yoy_change19 <-
   summarize(across(c(active_listings, revenue), ~{(.x[2] - .x[1]) / .x[1]}),
             .groups = "drop")
 
-active_yoy_listings19 <- 
-  active_yoy_change19$active_listings %>% 
+active_yoy_listings_2019 <- 
+  active_yoy_change_2019$active_listings %>% 
   {. * -1} %>% 
   scales::percent(accuracy = 0.1)
 
-active_yoy_revenue19 <- 
-  active_yoy_change19$revenue %>% 
+active_yoy_revenue_2019 <- 
+  active_yoy_change_2019$revenue %>% 
   scales::percent(accuracy = 0.1)
 
-# Active listing YOY change in 2020
+# Active listing change 2019 to 2021
 active_yoy_change <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2020 - years(1), 
-         date <= end_2020) %>% 
-  group_by(year_2020 = date >= start_2020) %>% 
+  filter(housing, status != "B", date >= start_2019, 
+         !c(date >= start_2020 & date <= end_2020)) %>% 
+  group_by(year_2021 = date >= start_2021) %>% 
   summarize(active_listings = n() / 365,
             revenue = sum(price[status == "R"]), .groups = "drop") %>% 
   summarize(across(c(active_listings, revenue), ~{(.x[2] - .x[1]) / .x[1]}),
@@ -632,7 +594,7 @@ rm(property, daily, GH)
 
 ```
 
-Active daily listings peaked in `r highest_activity_date` at `r highest_activity_amount`, and have since declined. Due to the Covid-19 pandemic, there were `r active_yoy_listings` fewer active listings on average in 2020 than in 2019, and `r active_yoy_revenue` less revenue. Prior to 2020, Prince Edward County's STR market was growing rapidly—active listings and revenue respectively increased by `r active_yoy_listings19` and `r active_yoy_revenue19` from 2018 to 2019. It is likely that this trend would have continued in 2020 in the absence of the pandemic. In general, the number of STR listings available in Prince Edward County follows a strongly seasonal pattern, with the bulk of activity happening in the summer (June-July-August) months (Figure \@ref(fig:fig-1-1)). Detailed information about seasonality in Prince Edward County will be presented in the next chapter.
+Active daily listings peaked in `r highest_activity_date` at `r highest_activity_amount`, and have since declined. Due to the Covid-19 pandemic, there were `r active_yoy_listings` fewer active listings on average in 2021 than in 2019, and `r active_yoy_revenue` less revenue. Prior to the pandemic, it seems like Prince Edward County's STR market had leveled off, with, for example, a slow growth between 2018 and 2019—active listings and revenue respectively increased by `r active_yoy_listings_2019` and `r active_yoy_revenue_2019` from 2018 to 2019. It is likely that this plateauing trend would have continued in 2020 and 2021 in the absence of a pandemic. In general, the number of STR listings available in Prince Edward County follows a strongly seasonal pattern, with the bulk of activity happening in what we call "summer months", the high-season between May and September included (Figure \@ref(fig:fig-1-1)). Detailed information about seasonality in Prince Edward County will be presented in the next chapter.
   
 <br>
 
@@ -694,18 +656,16 @@ bloomfield_per_cap <-
   pull(listings_pct_dwellings) %>% 
   scales::percent(0.1)
 
-min_per_cap <- 
+min_per_dwellings <- 
   EW_breakdown %>%
-  filter(!is.na(ward)) %>% 
-  filter(active_listings > 100) %>% 
+  filter(!is.na(ward), !ward %in% c("Bloomfield", "Wellington")) %>% 
   pull(listings_pct_dwellings) %>% 
   min() %>% 
   scales::percent(0.1)
 
-max_per_cap <- 
+max_per_dwellings <- 
   EW_breakdown %>% 
-  filter(active_listings > 100, 
-         !active_listings %in% c("Bloomfield", "Wellington")) %>% 
+  filter(!is.na(ward), !ward %in% c("Bloomfield", "Wellington")) %>% 
   pull(listings_pct_dwellings) %>% 
   max() %>% 
   scales::percent(0.1)
@@ -749,7 +709,7 @@ figure_1_2_fun <- function(regular = "", condensed = "") {
     geom_sf(data = water, fill = "white", colour = "transparent") +
     scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
                          na.value = "grey80",
-                         limits = c(0, 0.1), oob = scales::squish, 
+                         limits = c(0, 0.05), oob = scales::squish, 
                          labels = scales::percent)  +
     guides(fill = guide_colourbar(title = "STRs/\ndwelling",
                                   title.vjust = 1)) + 
@@ -770,7 +730,7 @@ figure_1_2_fun <- function(regular = "", condensed = "") {
     geom_sf(data = water, fill = "white", colour = "transparent") +
     scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
                          na.value = "grey80",
-                         limits = c(0, 0.1), oob = scales::squish, 
+                         limits = c(0, 0.05), oob = scales::squish, 
                          labels = scales::percent)  +
     guides(fill = guide_colourbar(title = "STRs/\ndwelling",
                                   title.vjust = 1)) + 
@@ -798,8 +758,7 @@ if (build_figures) {
 
 ```
 
-STR activity in Prince Edward County is highly concentrated in the towns, as opposed to the townships (Figure \@ref(fig:fig-1-2)). In particular, Picton accounts for `r picton_listing_pct` of all listings, and an even higher share of host revenue (`r picton_rev_pct`). Picton is followed by Hallowell (`r hallowell_listing_pct` of active listings and `r hallowell_rev_pct` of revenue) and Wellington (`r wellington_listing_pct` of active listings and `r wellington_rev_pct` of revenue). When measured in per-capita terms, Bloomfield has by far the highest concentrations of STRs, at `r bloomfield_per_cap`, followed by Wellington with `r wellington_per_cap`. In all other wards STRs account for between `r min_per_cap` and `r max_per_cap` of total dwellings.
-
+STR activity in Prince Edward County is highly decentralized (Figure \@ref(fig:fig-1-2)), but seems to be less important in the Northern part of the county. Notably, Picton accounts for `r picton_listing_pct` of all listings, (`r picton_rev_pct`) and of all host revenue. Picton is followed by Hallowell (`r hallowell_listing_pct` of active listings and the biggest share of total revenue at  `r hallowell_rev_pct`) and Wellington (`r wellington_listing_pct` of active listings and `r wellington_rev_pct` of revenue). When measured in per-capita terms, Bloomfield has by far the highest concentrations of STRs per dwellings, at `r bloomfield_per_cap`, followed by Wellington with `r wellington_per_cap`. In all other wards, STRs account for between `r min_per_dwellings` and `r max_per_dwellings` of total dwellings.
 
 ``` {r fig-1-2, include = TRUE, fig.cap = '(ref:fig-1-2)', fig.align = "center"}
 
@@ -807,40 +766,38 @@ figure_1_2_fun()
 
 ```
 
-(ref:fig-1-2) _Active STRs as a share of all dwelling units in Prince Edward County , by ward (L) and dissemination area (R)_
+(ref:fig-1-2) _Active STRs as a share of all dwelling units in Prince Edward County, by ward (L) and dissemination area (R)_
 
 ``` {r tab-1-1, include = TRUE}
 
 library(kableExtra)
 
 EW_breakdown %>% 
-  select(ward, active_listings, active_growth, listings_pct_dwellings,
-         annual_rev, rev_growth) %>% 
-  filter(active_listings > 20) %>% 
   arrange(-active_listings) %>% 
   mutate(active_listings = prettyNum(round(active_listings, -1), ","),
-         active_growth = scales::percent(active_growth, 0.1),
+         active_growth_2019_2021 = scales::percent(active_growth_2019_2021, 0.1),
          listings_pct_dwellings = scales::percent(listings_pct_dwellings, 0.1),
          annual_rev = scales::dollar(annual_rev, 0.1, scale = 1 / 1000000),
-         rev_growth = scales::percent(rev_growth, 0.1)) %>%
+         rev_growth_2019_2021 = scales::percent(rev_growth_2019_2021, 0.1)) %>%
+    select(ward, active_listings, active_growth_2019_2021, listings_pct_dwellings, annual_rev, rev_growth_2019_2021) %>% 
   add_row(ward = "Prince Edward County",
           active_listings = avg_listings_active,
-          active_growth = paste0("-", active_yoy_listings),
+          active_growth_2019_2021 = paste0("-", active_yoy_listings),
           listings_pct_dwellings = {
             avg_listings_active %>% 
               parse_number() %>% 
               {. / sum(EW$dwellings)} %>% 
               scales::percent(0.1)},
           annual_rev = str_remove(annual_rev, " million"),
-          rev_growth = active_yoy_revenue,
+          rev_growth_2019_2021 = active_yoy_revenue,
           .before = 1) %>% 
   set_names(c("Ward", 
               "Active listings",
-              "Annual listing growth",
+              "Annual listing growth (2019-2021)",
               "Active listings as % of dwellings",
               "Annual revenue (million)",
-              "Annual revenue growth")) %>% 
-  kbl(caption = "Wards with at least 20 daily active listings in 2020",
+              "Annual revenue growth (2019-2021)")) %>% 
+  kbl(caption = "Wards with at least 20 daily active listings in 2021",
                align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") %>% 
   row_spec(1, background = paste0(col_palette[2], "50"))
@@ -861,7 +818,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 bedrooms <- 
   property %>% 
   st_drop_geometry() %>% 
-  filter(property_ID %in% active_2020, listing_type == "Entire home/apt") %>% 
+  filter(property_ID %in% active_2021, listing_type == "Entire home/apt") %>% 
   mutate(bedrooms = if_else(bedrooms >= 3, "3+", as.character(bedrooms))) %>% 
   count(bedrooms) %>% 
   mutate(percentage = n / sum(n))
@@ -892,7 +849,7 @@ studios <-
 
 eh_3_bedroom <- 
   property %>% 
-  filter(housing, created <= end_2020, scraped >= start_2020, 
+  filter(housing, created <= end_2021, scraped >= start_2021, 
          listing_type == "Entire home/apt", !is.na(bedrooms)) %>% 
   st_drop_geometry() %>% 
   summarize(bed_3 = mean(bedrooms <= 3)) %>% 
@@ -903,7 +860,7 @@ rm(property, daily, GH)
 
 ```
 
-Table \@ref(tab:tab-1-2) provides the distribution of the listings by listing type in 2020. The wide majority of STRs in Prince Edward County are entire homes, a category which includes single-family homes, townhouses, apartments and condominiums. More than half (`r three_bedrooms`) of these were three-or-more-bedroom housing units, and a quarter (`r two_bedrooms`) were two-bedrooms units. `r one_bedrooms` had one bedroom, and only `r studios` were studios. In general, three-or-more-bedroom units are over-represented on STR platforms in comparison with the County’s overall housing stock.
+Table \@ref(tab:tab-1-2) provides the distribution of the listings by listing type in 2021. The wide majority of STRs in Prince Edward County are entire homes, a category which includes single-family homes, townhouses, apartments and condominiums. More than half (`r three_bedrooms`) of these were three-or-more-bedroom housing units, and a quarter (`r two_bedrooms`) were two-bedrooms units. `r one_bedrooms` had one bedroom, and only `r studios` were studios. In general, three-or-more-bedroom units are over-represented on STR platforms in comparison with the County’s overall housing stock.
 
 ``` {r tab-1-2, include = TRUE}
 
@@ -928,7 +885,7 @@ listing_type_breakdown %>%
 
 ```
 
-In 2020 entire-home listings accounted for `r eh_listings` of all daily active listings, and `r eh_revenue` of total host revenue. (Private rooms accounted for nearly all of the remainder.) Moreover, the dominance of entire-home listings in Prince Edward County’s STR market is increasing over time.
+In 2021 entire-home listings accounted for `r eh_listings` of all daily active listings, and `r eh_revenue` of total host revenue. (Private rooms accounted for nearly all of the remainder.) Moreover, the dominance of entire-home listings in Prince Edward County’s STR market is increasing over time.
 
 <br>
 
@@ -962,7 +919,7 @@ if (build_figures) {
 
 ```
 
-Since 2018, the number of active STRs listings has been steadily decreasing in Prince Edward County. Figure \@ref(fig:fig-1-3) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. The figure indicates that, since 2018, the number of daily active listings has been declining. Revenues, on the other hand, have experienced growth since the beginning of 2019. With the exception of the winter 2020 months, Prince Edward County's STR revenues have been higher than the year before. The pandemic had a clear negative effect on the number of active daily listings being displayed as reserved or available on STR platforms as well as revenues. We observe higher revenues for the summer of 2021 than we did in 2020, indicating an increase in tourist activity starting 2021.
+Since 2018, the number of active STRs listings has been steadily decreasing in Prince Edward County. Figure \@ref(fig:fig-1-3) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. The figure indicates that, since 2018, the number of daily active listings has been declining. Revenues, on the other hand, have experienced growth since the beginning of 2019. With the exception of the winter 2021 months, Prince Edward County's STR revenues have been higher than the year before. The pandemic had a clear negative effect on the number of active daily listings being displayed as reserved or available on STR platforms as well as revenues. We observe higher revenues for the summer of 2021 than we did in 2021, indicating an increase in tourist activity starting 2021.
 
 ``` {r fig-1-3, include = TRUE, fig.cap = '(ref:fig-1-3)', fig.align = "center"}
 
@@ -998,12 +955,12 @@ listing_growth_2019 <-
   pull(change) %>% 
   scales::percent(0.1)
 
-#' YOY listing growth, 2020
-listing_growth_2020 <- 
+#' YOY listing growth, 2021
+listing_growth_2021 <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2020 - years(1),
-         date <= end_2020) %>% 
-  group_by(year_2020 = date >= start_2020) %>% 
+  filter(housing, status != "B", date >= start_2021 - years(1),
+         date <= end_2021) %>% 
+  group_by(year_2021 = date >= start_2021) %>% 
   summarize(n = n() / 365) %>% 
   summarize(change = (n[2] - n[1]) / n[1])  %>% 
   pull(change) %>% 
@@ -1020,18 +977,18 @@ rm(property, daily, GH)
 
 ```
 
-Overall, the year-over-year change in average active listings from 2017 to 2018  was `r listing_growth_2018` and the year-over-year change from 2018 to 2019 was `r listing_growth_2019`. In 2020, because of the Covid-19 pandemic, the year-over-year change in active daily listings is `r listing_growth_2020`.
+Overall, the year-over-year change in average active listings from 2017 to 2018  was `r listing_growth_2018` and the year-over-year change from 2018 to 2019 was `r listing_growth_2019`. In 2021, because of the Covid-19 pandemic, the year-over-year change in active daily listings is `r listing_growth_2021`.
 
 ``` {r para_7, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
-# YOY reservation change, 2019-2020
-reservation_change_2020 <- 
+# YOY reservation change, 2019-2021
+reservation_change_2021 <- 
   daily %>%
-  filter(housing, status == "R", date >= start_2020 - years(1),
-         date <= end_2020) %>%
-  group_by(year_2020 = date >= start_2020) %>%
+  filter(housing, status == "R", date >= start_2021 - years(1),
+         date <= end_2021) %>%
+  group_by(year_2021 = date >= start_2021) %>%
   summarize(n = n()) %>%
   summarize(change = (n[2] - n[1]) / n[1]) %>% 
   pull(change) %>% 
@@ -1048,12 +1005,12 @@ reservation_change_2019 <-
   pull(change) %>% 
   scales::percent(0.1)
 
-# Reservation counts, 2019-2020
-reservation_count_2020 <- 
+# Reservation counts, 2019-2021
+reservation_count_2021 <- 
   daily %>%
-  filter(housing, status == "R", date >= start_2020 - years(1),
-         date <= end_2020) %>%
-  group_by(year_2020 = date >= start_2020) %>%
+  filter(housing, status == "R", date >= start_2021 - years(1),
+         date <= end_2021) %>%
+  group_by(year_2021 = date >= start_2021) %>%
   summarize(n = n()) %>% 
   mutate(n = n / 1000000,
          n = round(n, 2),
@@ -1072,13 +1029,13 @@ reservation_count_2019 <-
          n = paste0(n, " million")) %>% 
   pull(n)
 
-# YOY revenue change, 2019-2020
-active_yoy_revenue_2020 <- 
+# YOY revenue change, 2019-2021
+active_yoy_revenue_2021 <- 
   daily %>%
   filter(housing, status == "R", date >= start_2019,
-         date <= end_2020,
-         date != "2020-02-29") %>%
-  group_by(year_2020 = date >= start_2019 + years(1)) %>%
+        
+         date != "2021-02-29") %>%
+  group_by(year_2021 = date >= start_2019 + years(1)) %>%
   summarize(revenue = sum(price)) %>%
   summarize(change = (revenue[2] - revenue[1]) / revenue[1]) %>% 
   pull(change) %>% 
@@ -1101,27 +1058,27 @@ active_by_status <-
 
 reserved_nights_increase_2019 <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2020 - years(1), 
-         date <= end_2020) %>% 
-  count(date_2019 = date >= start_2020) %>% 
+  filter(housing, status == "R", date >= start_2021 - years(1), 
+         date <= end_2021) %>% 
+  count(date_2019 = date >= start_2021) %>% 
   summarize(growth = (n[2] - n[1]) / n[1]) %>% 
   pull(growth) %>% 
   scales::percent(0.1)
 
-reserved_nights_decrease_2020 <- 
+reserved_nights_decrease_2021 <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2020 - years(1), 
-         date <= end_2020) %>% 
-  count(date_2020 = date >= start_2020) %>% 
+  filter(housing, status == "R", date >= start_2021 - years(1), 
+         date <= end_2021) %>% 
+  count(date_2021 = date >= start_2021) %>% 
   summarize(growth = (n[2] - n[1]) / n[1]) %>% 
   pull(growth) %>% 
   scales::percent(0.1)
 
 reserved_nights_increase_jan_feb <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2020, 
+  filter(housing, status == "R", date >= start_2021, 
          month(date) %in% c(1, 2)) %>% 
-  count(date_2020 = date >= start_2020) %>% 
+  count(date_2021 = date >= start_2021) %>% 
   summarize(growth = (n[2] - n[1]) / n[1]) %>% 
   pull(growth) %>% 
   scales::percent(0.1)
@@ -1145,7 +1102,7 @@ rm(property, daily, GH)
 #   tsibble::as_tsibble() %>% 
 #   tsibble::index_by(yearmon = tsibble::yearmonth(date)) %>% 
 #   summarize(n = sum(n)) %>% 
-#   filter(yearmon <= tsibble::yearmonth("2020-02")) %>% 
+#   filter(yearmon <= tsibble::yearmonth("2021-02")) %>% 
 #   model(x11 = feasts:::X11(n, type = "additive")) %>% 
 #   components()
 # 
@@ -1164,8 +1121,8 @@ rm(property, daily, GH)
 # # Apply March-Aug seasonal component to Feb trend
 # trends <-
 #   tibble(
-#     date = as.Date(c("2020-03-16", "2020-04-16", "2020-05-16", "2020-06-16",
-#                      "2020-07-16", "2020-07-31")),
+#     date = as.Date(c("2021-03-16", "2021-04-16", "2021-05-16", "2021-06-16",
+#                      "2021-07-16", "2021-07-31")),
 #     trend = (feb_trend + mar_aug_seasonal) / c(31, 30, 31, 30, 31, 31))
 # 
 # # Set July 31 value to average of July and August
@@ -1178,39 +1135,39 @@ rm(property, daily, GH)
 #   filter(date >= "2019-01-01") %>% 
 #   left_join(trends) %>% 
 #   select(-status) %>% 
-#   mutate(trend = if_else(date == "2020-03-01", n, trend)) %>% 
-#   filter(date >= "2020-03-01") %>% 
+#   mutate(trend = if_else(date == "2021-03-01", n, trend)) %>% 
+#   filter(date >= "2021-03-01") %>% 
 #   mutate(trend = zoo::na.approx(trend))
 # 
 # reservations <- 
 #   active_by_status %>% 
 #   filter(status == "R") %>% 
 #   mutate(n = slide_dbl(n, mean, .before = 6)) %>% 
-#   filter(date >= "2019-01-01", date <= "2020-02-29") %>% 
+#   filter(date >= "2019-01-01", date <= "2021-02-29") %>% 
 #   select(-status) %>% 
 #   bind_rows(reservations) 
 # 
 # # Reservation comparisons
 # res_table <- 
 #   reservations %>% 
-#   filter(date == "2020-12-31") %>% 
+#   filter(date == "2021-12-31") %>% 
 #   mutate(dif = trend - n, pct_change = 1 - n / trend)
 # 
-# res_2020 <- 
+# res_2021 <- 
 #   prettyNum(round(res_table$n, -1), ",")
 # 
-# res_2020_trend <- 
+# res_2021_trend <- 
 #   prettyNum(round(res_table$trend, -1), ",")
 # 
-# res_2020_pct <- 
+# res_2021_pct <- 
 #   scales::percent(1 - res_table$n / res_table$trend, 0.1)
 # 
-# res_2020_dif <- 
+# res_2021_dif <- 
 #   prettyNum(round(res_table$trend - res_table$n, -1), ",")
 # 
 # pandemic_reservations <- 
 #   reservations %>% 
-#   filter(date >= "2020-03-01") %>% 
+#   filter(date >= "2021-03-01") %>% 
 #   summarize(across(c(n, trend), sum)) %>% 
 #   mutate(dif = trend - n, pct = n / trend)
 # 
@@ -1239,23 +1196,23 @@ rm(property, daily, GH)
  #  pivot_longer(-date) %>% 
  #  filter(!is.na(value)) %>%
  #  ggplot() +
- #  annotate("rect", xmin = as.Date("2020-03-29"), xmax = as.Date("2020-06-25"),
+ #  annotate("rect", xmin = as.Date("2021-03-29"), xmax = as.Date("2021-06-25"),
  #           ymin = -Inf, ymax = Inf, alpha = 0.2) +
  #  geom_ribbon(aes(x = date, ymin = n, ymax = trend, group = 1),
  #              data = reservations, fill = col_palette[3], 
  #              alpha = 0.3) +
  #  geom_line(aes(date, value, color = name), lwd = 1) +
- #  geom_text(aes(x = as.Date("2020-07-31"), 
- #                y = mean(value[date == as.Date("2020-07-31")]),
+ #  geom_text(aes(x = as.Date("2021-07-31"), 
+ #                y = mean(value[date == as.Date("2021-07-31")]),
  #                label = paste(
  #                  prettyNum(round(abs(diff(
- #                    value[date == as.Date("2020-07-31")])), -1), ","),
+ #                    value[date == as.Date("2021-07-31")])), -1), ","),
  #                  "fewer", "reservations", "than", "expected", sep = "\n")), 
  #            family = "Futura Condensed", inherit.aes = FALSE, hjust = 1,
  #            nudge_x = -4) +
- #  geom_segment(aes(x = as.Date("2020-07-31"), xend = as.Date("2020-07-31"),
- #                   y = min(value[date == as.Date("2020-07-31")]),
- #                   yend = max(value[date == as.Date("2020-07-31")])),
+ #  geom_segment(aes(x = as.Date("2021-07-31"), xend = as.Date("2021-07-31"),
+ #                   y = min(value[date == as.Date("2021-07-31")]),
+ #                   yend = max(value[date == as.Date("2021-07-31")])),
  #               colour = col_palette[3],
  #               arrow = arrow(length = unit(0.1, "cm"), ends = "both",
  #                             type = "open")) +
@@ -1316,7 +1273,7 @@ rm(property, daily, GH)
 # # Get March-August seasonal
 # mar_jul_price_seasonal <-
 #   monthly_prices %>%
-#   filter(yearmon <= tsibble::yearmonth("2020-02")) %>%
+#   filter(yearmon <= tsibble::yearmonth("2021-02")) %>%
 #   model(x11 = feasts:::X11(price, type = "additive")) %>%
 #   components() %>%
 #   slice(39:43) %>%
@@ -1325,7 +1282,7 @@ rm(property, daily, GH)
 # # Get Feb trend
 # feb_price_trend <-
 #   monthly_prices %>%
-#   filter(yearmon <= tsibble::yearmonth("2020-02")) %>%
+#   filter(yearmon <= tsibble::yearmonth("2021-02")) %>%
 #   model(x11 = feasts:::X11(price, type = "additive")) %>%
 #   components() %>%
 #   slice(50) %>%
@@ -1333,8 +1290,8 @@ rm(property, daily, GH)
 # 
 # # Apply March-Aug seasonal component to Feb trend
 # mar_jul_price_trend <-
-#   tibble(yearmon = tsibble::yearmonth(c("2020-03", "2020-04", "2020-05",
-#                                         "2020-06", "2020-07")),
+#   tibble(yearmon = tsibble::yearmonth(c("2021-03", "2021-04", "2021-05",
+#                                         "2021-06", "2021-07")),
 #          trend = feb_price_trend + mar_jul_price_seasonal)
 # 
 # # Apply to daily averages to get trend
@@ -1350,7 +1307,7 @@ rm(property, daily, GH)
 # 
 #  nightly_price_dif <-
 #    average_prices %>%
-#    filter(date >= "2020-03-01") %>%
+#    filter(date >= "2021-03-01") %>%
 #    summarize(dif = 1 - sum(price) / sum(trend)) %>%
 #    pull(dif) %>%
 #    scales::percent(0.1)
@@ -1358,7 +1315,7 @@ rm(property, daily, GH)
 #  total_price_dif <-
 #    average_prices %>%
 #    rename(price_trend = trend) %>%
-#    filter(date >= "2020-03-01") %>%
+#    filter(date >= "2021-03-01") %>%
 #    left_join(reservations) %>%
 #    mutate(rev_dif = n * (price_trend - price)) %>%
 #    tally(rev_dif) %>%
@@ -1368,7 +1325,7 @@ rm(property, daily, GH)
 #  total_revenue_lost <-
 #    average_prices %>%
 #    rename(price_trend = trend) %>%
-#    filter(date >= "2020-03-01") %>%
+#    filter(date >= "2021-03-01") %>%
 #    left_join(reservations) %>%
 #    mutate(total_rev_dif = n * (price_trend - price) +
 #             (trend - n) * price_trend) %>%
@@ -1380,7 +1337,7 @@ rm(property, daily, GH)
 
 ```
 
-<!-- STR host revenue decreased by a staggering `r active_yoy_revenue` in 2020 compared to 2019. To offer some perspective, from 2018 to 2019, STR revenue increased by `r active_yoy_revenue19`. Throughout the May-December period of 2020, moreover, nightly prices have been an average of r nightly_price_dif lower than expected. Spread across the r res_total_pandemic nights reserved during this period, this means that STR operators collectively earned r total_price_dif less than they would have on their bookings in the absence of the pandemic. When the lower prices on reservations which did occur is combined with the reservations which did not occur, our estimate is that Prince Edward County’s STR hosts lost a total of r total_revenue_lost million in revenue between March and December 2020 because of the Covid-19 pandemic. -->
+<!-- STR host revenue decreased by a staggering `r active_yoy_revenue` in 2021 compared to 2019. To offer some perspective, from 2018 to 2019, STR revenue increased by `r active_yoy_revenue_2019`. Throughout the May-December period of 2021, moreover, nightly prices have been an average of r nightly_price_dif lower than expected. Spread across the r res_total_pandemic nights reserved during this period, this means that STR operators collectively earned r total_price_dif less than they would have on their bookings in the absence of the pandemic. When the lower prices on reservations which did occur is combined with the reservations which did not occur, our estimate is that Prince Edward County’s STR hosts lost a total of r total_revenue_lost million in revenue between March and December 2021 because of the Covid-19 pandemic. -->
 
 <br>
 
@@ -1396,7 +1353,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 # Host deciles table for figure
 host_deciles <-
   daily %>%
-  filter(housing, date >= start_2020, date <= end_2020, 
+  filter(housing, date >= start_2021, 
          status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price)) %>% 
@@ -1534,38 +1491,38 @@ host_deciles19 <-
 
 top_host_listings19 <- 
   property %>% 
-  filter(host_ID == host_rev[which.max(host_rev19$rev),]$host_ID) %>% 
+  filter(host_ID == host_rev[which.max(host_rev_2019$rev),]$host_ID) %>% 
   nrow()
 
-top_host_rev19 <- 
-  host_rev19 %>% 
+top_host_rev_2019 <- 
+  host_rev_2019 %>% 
   filter(rev == max(rev)) %>% 
   pull(rev) %>% 
   scales::dollar(accuracy = 0.1, scale = 1 / 1000000, suffix = " million")
 
-median_host_rev19 <- 
-  median(host_rev19$rev) %>%
+median_host_rev_2019 <- 
+  median(host_rev_2019$rev) %>%
   scales::dollar(accuracy = 100)
 
 n_hosts_over_250_19 <- 
-  host_rev19 %>% 
+  host_rev_2019 %>% 
   filter(rev >= 250000) %>% 
   nrow()
 
 host_rev_top_10_19 <- 
-  host_rev19 %>% 
+  host_rev_2019 %>% 
   summarize(top_10 = sum(rev[rev > quantile(rev, .9)]) / sum(rev)) %>% 
   pull(top_10) %>% 
   scales::percent(0.1)
 
 host_rev_top_5_19 <- 
-  host_rev19 %>% 
+  host_rev_2019 %>% 
   summarize(top_5 = sum(rev[rev > quantile(rev, .95)]) / sum(rev)) %>% 
   pull(top_5) %>% 
   scales::percent(0.1)
 
 host_rev_top_1_19 <- 
-  host_rev19 %>% 
+  host_rev_2019 %>% 
   summarize(top_1 = sum(rev[rev > quantile(rev, .99)]) / sum(rev)) %>% 
   pull(top_1) %>% 
   scales::percent(0.1)
@@ -1624,7 +1581,7 @@ if (build_figures) {
 
 ```
 
-Among all the STR hosts who earned revenue in the City of Prince Edward County in 2020, the median revenue was `r median_host_rev`. Throughout the City of Prince Edward County, there were `r n_hosts_over_250` hosts that earned more than $250,000 in 2020, which is `r diff_host_250` less hosts than in 2019. Figure \@ref(fig:fig-1-6) shows the percentage of the total `r annual_rev` in STR revenue which accrued to each decile of hosts. The figure shows that revenue is disproportionately concentrated among a small number of hosts; the top 10% earned `r host_rev_top_10`: the top 5% earned `r host_rev_top_5` of revenue, while the top 1% of hosts earned `r host_rev_top_1` of all revenue. The pandemic has thus not impacted greatly the sharp difference in revenue distribution among STR hosts. To put this revenue distribution in context, Montreal’s top 10% of STR hosts earned 68.8% of all revenue in 2019. On the other hand, Vancouver's top 10% hosts only earned 43.2% of all revenue in 2019.
+Among all the STR hosts who earned revenue in the City of Prince Edward County in 2021, the median revenue was `r median_host_rev`. Throughout the City of Prince Edward County, there were `r n_hosts_over_250` hosts that earned more than $250,000 in 2021, which is `r diff_host_250` less hosts than in 2019. Figure \@ref(fig:fig-1-6) shows the percentage of the total `r annual_rev` in STR revenue which accrued to each decile of hosts. The figure shows that revenue is disproportionately concentrated among a small number of hosts; the top 10% earned `r host_rev_top_10`: the top 5% earned `r host_rev_top_5` of revenue, while the top 1% of hosts earned `r host_rev_top_1` of all revenue. The pandemic has thus not impacted greatly the sharp difference in revenue distribution among STR hosts. To put this revenue distribution in context, Montreal’s top 10% of STR hosts earned 68.8% of all revenue in 2019. On the other hand, Vancouver's top 10% hosts only earned 43.2% of all revenue in 2019.
 
 ``` {r fig-1-6, include = TRUE, fig.cap = '(ref:fig-1-6)', fig.align = "center"}
 
@@ -1691,7 +1648,7 @@ if (build_figures) {
 
 ```
 
-In 2020, `r ml_listings` of active listings in Prince Edward County were multilistings, earning `r ml_revenue` of total host revenue. Multilistings had been growing steadily since 2018, both in terms of listings and revenue percentage, until the Covid-19 pandemic, when their proportion dropped somewhat (Figure \@ref(fig:fig-1-7)). Still, through the fall of 2020 multilistings were earning close to 5 out of every 10 dollars on STR platforms in Prince Edward County. 
+In 2021, `r ml_listings` of active listings in Prince Edward County were multilistings, earning `r ml_revenue` of total host revenue. Multilistings had been growing steadily since 2018, both in terms of listings and revenue percentage, until the Covid-19 pandemic, when their proportion dropped somewhat (Figure \@ref(fig:fig-1-7)). Still, through the fall of 2021 multilistings were earning close to 5 out of every 10 dollars on STR platforms in Prince Edward County. 
 
 ``` {r fig-1-7, include = TRUE, fig.cap = '(ref:fig-1-7)', fig.align = "center"}
 
