@@ -124,15 +124,8 @@ daily <-
   left_join(select(st_drop_geometry(property), property_ID, housing)) |> 
   relocate(housing, .after = listing_type)
 
-daily_all <- 
-  daily
-
-daily <- 
-  daily |> 
-  filter(housing)
-
 
 # Save output -------------------------------------------------------------
 
-qsavem(property, daily, daily_all, host, exchange_rates, 
-       file = "output/str_raw.qsm", nthreads = availableCores())
+qsavem(property, daily, host, exchange_rates, file = "output/str_raw.qsm", 
+       nthreads = availableCores())

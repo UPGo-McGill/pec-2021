@@ -24,7 +24,7 @@ handlers(global = TRUE)
 
 # Load previous data ------------------------------------------------------
 
-qload("output/str_raw.qsm", nthreads = availableCores())
+qload("output/str_processed.qsm", nthreads = availableCores())
 rm(daily, daily_all, host, exchange_rates)
 
 

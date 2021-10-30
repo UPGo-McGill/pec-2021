@@ -1,4 +1,4 @@
-#### 10 DATA CORRECTION ########################################################
+#### 07 DATA CORRECTION ########################################################
 
 #' This script is very time-consuming to run, and should be rerun when STR data
 #' has changed.
@@ -17,97 +17,74 @@ source("R/01_startup.R")
 
 # Load previous data ------------------------------------------------------
 
-qload("output/str_processed.qsm", nthreads = availableCores())
+qload("output/str_raw.qsm", nthreads = availableCores())
+
+# First change: remove is.na(booked_date) ---------------------------------
+
+daily <- daily <- 
+  daily |> 
+  mutate(status = if_else(
+    status == "R" & date >= "2019-12-01" & date <= "2020-03-31" &
+      month(date) %in% c(2, 3, 12) & is.na(booked_date), "B", status))
 
 
-# Recalculate active date -------------------------------------------------
+# Second change: remove most 0-day-gap ------------------------------------
 
-daily_active <-
-  daily %>%
-  filter(status != "B") %>%
-  group_by(property_ID) %>%
-  filter(date == max(date)) %>%
-  slice(1) %>%
-  ungroup() %>%
-  select(property_ID, active_new = date)
+booking_gaps <- 
+  daily |> 
+  filter(!is.na(res_ID)) |> 
+  group_by(res_ID) |> 
+  summarize(
+    start_year = year(min(date)),
+    start_month = month(min(date)),
+    length = max(date) - min(date) + 1,
+    gap = min(date) - min(booked_date))
+  
+adj <-
+  booking_gaps |> 
+  summarize(nov_2019 = mean(gap[start_year == 2019 & start_month == 11] <= 0),
+            nov_prev = mean(gap[start_year < 2019 & start_month == 11] <= 0),
+            dec_2019 = mean(gap[start_year == 2019 & start_month == 12] <= 0),
+            dec_prev = mean(gap[start_year < 2019 & start_month == 12] <= 0),
+            jan_2020 = mean(gap[start_year == 2020 & start_month == 1] <= 0),
+            jan_prev = mean(gap[start_year < 2020 & start_month == 1] <= 0)) |> 
+  transmute(nov_to_drop = (nov_2019 - nov_prev) / (nov_2019 * (1 - nov_prev)),
+            dec_to_drop = (dec_2019 - dec_prev) / (dec_2019 * (1 - dec_prev)),
+            jan_to_drop = (jan_2020 - jan_prev) / (jan_2020 * (1 - jan_prev)))
 
-property <-
-  property %>%
-  left_join(daily_active) %>%
-  mutate(active = active_new) %>%
-  select(-active_new)
+set.seed(1111)
 
-daily <-
-  daily %>%
-  group_by(property_ID, date, status) %>%
-  slice(1) %>%
-  ungroup() %>%
-  group_by(property_ID, date) %>%
-  filter(n() == 1 | (n() == 2 & status != "B")) %>%
-  ungroup()
+to_change <- 
+  booking_gaps |> 
+  filter(gap <= 0) |> 
+  mutate(rand = runif(n()))
 
-rm(daily_active)
+changed <- 
+  to_change |> 
+  filter((start_year == 2019 & start_month == 11 & rand <= adj$nov_to_drop) |
+           (start_year == 2019 & start_month == 12 & rand <= adj$dec_to_drop) |
+           (start_year == 2020 & start_month == 1 & rand <= adj$jan_to_drop))
 
-
-# Calculate multilistings -------------------------------------------------
-
-daily <-
-  daily %>%
-  strr_multi(host) %>%
-  as_tibble()
-
-
-# Calculate ghost hostels -------------------------------------------------
-
-GH <-
-  property %>%
-  strr_ghost(start_date = "2016-01-01", end_date = max(daily$date))
-
-
-# Add daily status to GH --------------------------------------------------
-
-daily_GH <-
-  daily %>%
-  filter(property_ID %in% unique(unlist(GH$property_IDs)))
-
-setDT(daily_GH)
-
-daily_GH <- daily_GH %>% select(property_ID:status)
-
-status_fun <- function(x, y) {
-  status <- unique(daily_GH[date == x & property_ID %in% y, status])
-  fcase("R" %in% status, "R", "A" %in% status, "A", "B" %in% status, "B")
-}
-
-status <- foreach(i = 1:nrow(GH), .combine = "c") %dopar% {
-  status_fun(GH$date[[i]], GH$property_IDs[[i]])
-}
-
-GH$status <- status
-GH <- GH %>% select(ghost_ID, date, status, host_ID:data, geometry)
-
-rm(daily_GH, status_fun, status)
+daily <- 
+  daily |> 
+  mutate(status = if_else(status == "R" & res_ID %in% changed$res_ID, "B", 
+                          status)) |> 
+  mutate(res_ID = if_else(status != "R", NA_integer_, res_ID))
 
 
-# Add GH status to daily --------------------------------------------------
+# Split daily file by housing ---------------------------------------------
 
-GH_daily <-
-  GH %>%
-  st_drop_geometry() %>%
-  select(date, property_IDs) %>%
-  unnest(property_IDs) %>%
-  mutate(GH = TRUE) %>%
-  select(property_ID = property_IDs, date, GH)
+daily_all <- 
+  daily
 
-daily <-
-  daily %>%
-  left_join(GH_daily, by = c("property_ID", "date")) %>%
-  mutate(GH = if_else(is.na(GH), FALSE, GH))
-
-rm(GH_daily)
+daily <- 
+  daily |> 
+  filter(housing)
 
 
 # Save output -------------------------------------------------------------
 
-qsavem(property, daily, daily_all, GH, file = "output/str_processed.qsm",
+qsavem(property, daily, daily_all, host, file = "output/str_processed.qsm",
        nthreads = availableCores())
+
+rm(adj, booking_gaps, changed, to_change)

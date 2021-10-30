@@ -14,11 +14,12 @@
 #' - None
 
 source("R/01_startup.R")
+library(matchr)
 
 
 # Load previous data ------------------------------------------------------
 
-qload("output/str_raw.qsm", nthreads = availableCores())
+qload("output/str_processed.qsm", nthreads = availableCores())
 ab_matches <- qread("output/matches_raw.qs", nthreads = availableCores())
 dl_location <- "/Volumes/Data 2/Scrape photos/pec"
 
