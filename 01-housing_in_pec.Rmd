@@ -141,7 +141,7 @@ rm(ocean, river, city)
 
 ## The housing context in Prince Edward County
 
-In the past years, Prince Edward County's housing market experienced numerous changes. The rise of short-term rental platforms has put pressure on the county's housing stock, with housing units being dedicated to tourist accommodations on a full-time basis. Average rents have been increasing, and vacancy rates are remaining under unhealthy levels. The Covid-19 pandemic exacerbated challenges regarding housing affordability in the county by bringing in an influx of new buyers looking for a second home, in part due to remote work. The following section provides an assessment of the housing situation in the county for both homeowners and renters, with a specific focus on affordability and availability. The common definition of housing that is affordable for which the costs do not exceed 30% of the household's disposable income, or what the Canadian Mortgage and Housing Corporation defines as the shelter cost-income ratio (2020). Additionally, a healthy rental market is considered one in which the vacancy rate is of 3% of above (ACTO 2021).
+In the past years, Prince Edward County's housing market experienced numerous changes. The rise of short-term rental platforms has put pressure on the county's housing stock, with housing units being dedicated to tourist accommodations on a full-time basis. Average rents have been increasing, and vacancy rates are remaining under unhealthy levels. The Covid-19 pandemic exacerbated challenges regarding housing affordability in the county by bringing in an influx of new buyers looking for a second home, in part due to remote work. The following section provides an assessment of the housing situation in the county for both homeowners and renters, with a specific focus on affordability and availability. The common definition of housing that is affordable for which the costs do not exceed 30% of the household's disposable income, or what the Canadian Mortgage and Housing Corporation defines as the shelter cost-income ratio (2020). Additionally, a healthy rental market is considered one in which the vacancy rate is of 3% of above (ACTO 2021). This chapter provides an analysis of housing conditions for both homeowners and renters in Prince Edward County.
 
 ## Being a homeowner in Prince Edward County
 
@@ -175,7 +175,7 @@ figure_4_1_fun <- function(regular = "", condensed = "") {
     geom_sf(data = province, colour = "transparent", fill = "grey93") +
     geom_sf(aes(fill = p_thirty_owner), colour = "white") +
     geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
                          na.value = "grey80",
                          limits = c(0.05, 0.25), oob = scales::squish, 
                          labels = scales::percent)  +
@@ -196,7 +196,7 @@ figure_4_1_fun <- function(regular = "", condensed = "") {
     geom_sf(data = province, colour = "transparent", fill = "grey93") +
     geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
     geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
                          na.value = "grey80",
                          limits = c(0.1, 0.2), oob = scales::squish, 
                          labels = scales::percent)  +
@@ -236,8 +236,6 @@ figure_4_1_fun()
 
 (ref:fig-4-1) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
 
-## The current state of the real estate market in Prince Edward County
-
 ``` {r make_fig_4_2}
 
 figure_4_2_fun <- function(regular = "", condensed = "") {
@@ -250,7 +248,7 @@ home_sales %>%
   group_by(year_month) %>% 
   summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
   ggplot() +
-  geom_line(aes(year_month, n), color = col_palette[5], lwd=1)+
+  geom_col(aes(year_month, n), fill = col_palette[5], lwd=0)+
   scale_y_continuous(name = NULL, label = scales::comma) +
   scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
                date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
@@ -270,7 +268,7 @@ if (build_figures) {
 
 ```
 
-The following section provides an overview of the state of the homeownership market in the County. With a relatively stable number of housing units available, the county is experiencing additional pressure in the past few years, which cannot be measured through 2016 census data. Two external market forces, namely short-term rentals and secondary home purchases by households from urban areas, have caused property prices to increases. According to Charles Dowdall, the largest year-over-year increases in housing sale prices occurred in the June 2020-June 2021 period, with an increase of 79.9%. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the county from 2016, totaling 3,017 sales. Figure \@ref(fig:fig-4-2) below summarizes the number of residential real estate sales in the county, starting on 6 January 2016.
+With a relatively stable number of housing units available, the county is experiencing additional pressure in the past few years, which cannot be measured through 2016 census data. Two external market forces, namely short-term rentals and secondary home purchases by households from urban areas, have caused property prices to increases. According to Charles Dowdall, the largest year-over-year increases in housing sale prices occurred in the June 2020-June 2021 period, with an increase of 79.9%. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the county from 2016, totaling 3,017 sales. Figure \@ref(fig:fig-4-2) below summarizes the number of residential real estate sales in the county, starting on 6 January 2016.
 
 ``` {r fig-4-2, include = TRUE, fig.cap = '(ref:fig-4-2)', fig.align = "center"}
 
@@ -570,7 +568,6 @@ diff_2021 <-
 
 figure_4_4_fun <- function(regular = "", condensed = "") {
   
-left_fig <- 
   DOM %>% 
   ggplot() +
   geom_line(aes(year_month, avg_DOM), color = col_palette[2], lwd=1)+
@@ -581,6 +578,22 @@ left_fig <-
   theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
         text = element_text(family = regular))
 
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_4_4.pdf"), 
+         plot = figure_4_4_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_4_4.pdf"))
+}
+
+```
+
+``` {r make_fig_4_5}
+
+figure_4_5_fun <- function(regular = "", condensed = "") {
+  
 right_fig <- 
   list_ask_price %>% 
   ggplot() +
@@ -593,22 +606,19 @@ right_fig <-
   theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
         text = element_text(family = regular))
 
-  left_fig + right_fig + plot_layout(guide = "collect") & 
-    theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
-
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_4_4.pdf"), 
-         plot = figure_4_4_fun("Futura", "Futura Condensed"), 
-         width = 12, height = 4.2, units = "in", useDingbats = FALSE)
+  ggsave(here("output", "figures", "figure_4_5.pdf"), 
+         plot = figure_4_5_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_4_4.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_5.pdf"))
 }
 
 ```
 
-There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figure \@ref(fig:fig-4-4) shows both of those indicators. The average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`.
+There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figures \@ref(fig:fig-4-4) and \@ref(fig:fig-4-5) show both of those indicators. The average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`.
 
 ``` {r fig-4-4, include = TRUE, fig.cap = '(ref:fig-4-4)', fig.align = "center"}
 
@@ -616,7 +626,15 @@ figure_4_4_fun()
 
 ```
 
-(ref:fig-4-4) _Monthly averages for days on the market (right) and difference between asking and sale prices (left)_
+(ref:fig-4-4) _Monthly averages of days on the market_
+
+``` {r fig-4-5, include = TRUE, fig.cap = '(ref:fig-4-5)', fig.align = "center"}
+
+figure_4_5_fun()
+
+```
+
+(ref:fig-4-5) _Monthly difference between asking and sale prices_
 
 ```{r para_5, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -714,7 +732,7 @@ left_join(second, third) %>%
 
 Out of the 3,017 sales which occurred in Prince Edward, a total of 213 residential properties were sold more than one time during 2016 and 2021 (Table \@ref(tab:tab-4-2)). This quick turnover is an indicator of the state of the homeownership market: whereas houses are usually bought for long term living situations, it is not uncommon in hot property markets to see properties being sold multiple times in a short timespan. To explore this situation in Prince Edward County, we have looked at the addresses that came up more than once in the sales database, and grouped this number per year. The number of properties sold for a second time was similar in 2017 and 2018, respectively with `r second_2017` and `r second_2018`. The number increased by more than 50% between 2018 and 2019 to reach `r second_2019`. 2020 is the year with the most recorded second sales, reaching `r second_2020`, more than twice that of the year before. This phenomenon was less pronounced in 2021, with only `r second_2021` second time sales, but with the most properties being sold for a third time, reaching `r third_2021`. The most times a single property was sold in this time period is four times, although observed only once. While the limited date range of this dataset poses issues as to the comparability in between years (i.e. there are more years between 2021 and 2016 to record a second sale, compared to 2017 and 2016, for example), it provides another indicator of the state of the housing market in Prince Edward County. Combined with an overall increasing number of sales and average sale prices, positive differences between the list price and the sale price and shrinking time on the market, we can observe that Prince Edward County has been faced with a booming homeownership market since 2016, which is also the year of the last available census data. 
 
-## Affording to live in Prince Edward County since 2016
+## Affording to be a homeowner in Prince Edward County
 
 ```{r para_6, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -810,9 +828,9 @@ diff_picton_1718 <-
 
 ```
 
-``` {r make_fig_4_5}
+``` {r make_fig_4_6}
 
-figure_4_5_fun <- function(regular = "", condensed = "") {
+figure_4_6_fun <- function(regular = "", condensed = "") {
   
 sale_price_2020_2017 %>% 
   ggplot() +
@@ -837,24 +855,24 @@ sale_price_2020_2017 %>%
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_4_5.pdf"), 
-         plot = figure_4_5_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_4_6.pdf"), 
+         plot = figure_4_6_fun("Futura", "Futura Condensed"), 
          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_4_5.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_6.pdf"))
 }
 
 ```
 
-Due to the relatively outdated nature of the last available census, it can be difficult to utilize this data to dress a portrait of the housing affordability in the County. However, we can still estimate based on the average sale prices by ward the income it would take to be able to afford being a homeowner in Prince Edward County without being in a situation of housing stress (which is set at the 30% threshold mentioned above). As we have seen in the first part of the chapter, homeowners in housing stress represent 17.3% of all homeowners, with varying averages by ward. The average sale price varies by ward, with North Marysburgh `r north_avg_price` having the highest average, and Athol the lowest `r athol_avg_price` for the years 2020 and 2021 only (Figure \@ref(fig:fig-4-5)).
+Due to the relatively outdated nature of the last available census, it can be difficult to utilize this data to dress a portrait of the housing affordability in the County. However, we can still estimate based on the average sale prices by ward the income it would take to be able to afford being a homeowner in Prince Edward County without being in a situation of housing stress (which is set at the 30% threshold mentioned above). As we have seen in the first part of the chapter, homeowners in housing stress represent 17.3% of all homeowners, with varying averages by ward. The average sale price varies by ward, with North Marysburgh `r north_avg_price` having the highest average, and Athol the lowest `r athol_avg_price` for the years 2020 and 2021 only (Figure \@ref(fig:fig-4-6)).
 
-``` {r fig-4-5, include = TRUE, fig.cap = '(ref:fig-4-5)', fig.align = "center"}
+``` {r fig-4-6, include = TRUE, fig.cap = '(ref:fig-4-6)', fig.align = "center"}
 
-figure_4_5_fun()
+figure_4_6_fun()
 
 ```
 
-(ref:fig-4-5) _Average sale prices by ward from 2016 to 2021_
+(ref:fig-4-6) _Average sale prices by ward in 2020 and 2021_
 
 ``` {r tab-4-3, include = TRUE}
 
@@ -879,6 +897,80 @@ affordable_homeownership_1718 %>%
   
 ```
 
-Based on the average sale prices for the past years, it was possible to estimate the average household income it would take to become a homeowner in Prince Edward County in an affordable manner. We completed the exercise using average sale prices for the 2017-2018 and 2020-2021 periods to highlight the recent market changes in the county. The calculations were based on a 25-year mortgage at a 1.75% interest rate and a 20% mortgage down payment (although 20% downpayment can be considered a rare feat, with most people having small down payments and needing to insure their mortgages). Monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) were calculated to provide a yearly homeonwership total costs, from which an affordable homeownership threshold was determined. The affordable homeonwership threshold represents the minimum household income required to have housing costs remain at 30% of income or below. These thresholds for both 2017-2018 and 2020-2021 were then compared to the 2016 census after-tax household income, by ward (2016 being the most recent data available). The differences between the affordable thresholds and the actual household incomes are displayed in Table \@ref(tab:tab-4-3). We can see that, for both time periods, the average after-tax household income in each ward is not sufficient to make homeownership affordable in the County (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period, there are five wards for which households would require more than $50,000 to make current homeownership market conditions affordable for them, whereas the highest difference in 2017-2018 was Picton with `r diff_picton_1718`.
+Based on the average sale prices for the past years, it was possible to estimate the average household income it would take to become a homeowner in Prince Edward County in an affordable manner. We completed the exercise using average sale prices for the 2017-2018 and 2020-2021 periods to highlight the recent market changes in the county. The calculations were based on a 25-year mortgage at a 1.75% interest rate and a 20% mortgage down payment (although 20% down payment can be considered a rare feat, with most people having small down payments and needing to insure their mortgages). Monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) were calculated to provide a yearly homeownership total costs, from which an affordable homeownership threshold was determined. The affordable homeownership threshold represents the minimum household income required to have housing costs remain at 30% of income or below. These thresholds for both 2017-2018 and 2020-2021 were then compared to the 2016 census after-tax household income, by ward (2016 being the most recent data available). The differences between the affordable thresholds and the actual household incomes are displayed in Table \@ref(tab:tab-4-3). We can see that, for both time periods, the average after-tax household income in each ward is not sufficient to make homeownership affordable in the County (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period, there are five wards for which households would require more than $50,000 to make current homeownership market conditions affordable for them, whereas the highest difference in 2017-2018 was Picton with `r diff_picton_1718`.
+
+# Being a renter in Prince Edward County
+
+```{r para_7, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+rent_sept <- qread("output/rent_sept.qs", nthreads = availableCores())
+  
+p_thirty_renter_well <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(desc(p_thirty_renter)) %>% 
+  slice(1) %>% 
+  pull(p_thirty_renter) %>%   
+  scales::percent(accuracy = 0.1)
+
+p_thirty_renter_picton <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(desc(p_thirty_renter)) %>% 
+  slice(2) %>% 
+  pull(p_thirty_renter) %>%   
+  scales::percent(accuracy = 0.1)
+
+p_thirty_renter_hallo <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(desc(p_thirty_renter)) %>% 
+  slice(3) %>% 
+  pull(p_thirty_renter) %>%   
+  scales::percent(accuracy = 0.1)
+
+avg_rent_bach <- 
+  rent_sept %>% 
+  group_by(bedrooms) %>% 
+  summarize(avg_rent = mean(rent)) %>% 
+  filter(bedrooms == 0) %>% 
+  pull(avg_rent) %>% 
+  scales::dollar(accuracy = 1)
+
+avg_rent_one <- 
+  rent_sept %>% 
+  group_by(bedrooms) %>% 
+  summarize(avg_rent = mean(rent)) %>% 
+  filter(bedrooms == 1) %>% 
+  pull(avg_rent) %>% 
+  scales::dollar(accuracy = 1)
+
+avg_rent_two <- 
+  rent_sept %>% 
+  group_by(bedrooms) %>% 
+  summarize(avg_rent = mean(rent)) %>% 
+  filter(bedrooms == 2) %>% 
+  pull(avg_rent) %>% 
+  scales::dollar(accuracy = 1)
+
+avg_rent_three <- 
+  rent_sept %>% 
+  group_by(bedrooms) %>% 
+  summarize(avg_rent = mean(rent)) %>% 
+  filter(bedrooms == 3) %>% 
+  pull(avg_rent) %>% 
+  scales::dollar(accuracy = 1)
+
+census_avg_rent <- 
+  paste("$936")
+  
+
+
+```
+
+The renter situation in Prince Edward County is different than that of homeowners. First of all, renters make up only 16.9% of all households in the County. However, almost half (48.9%) of renters are in a situation of housing stress. The ward with the most renters' housing stress is Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the calculated rental vacancy rate was 0.81% (Prince Edward County 2019). In the past years, renters have experienced tightening conditions in part due to the increased competition renters have with seasonal tourism. The pressure in the homeownership market has put increasing pressure on the County's rental stock. There have been accounts of bidding wars in the rental market in response to the limited units available. The workforce is struggling to find rents that fit their budget, even with hourly pays of 20 to $25 per hour. The pandemic has only heightened this situation, with the largest year-over-year increase in average rent occurring from June 2020 to June 2021, with a 52% increase. As of September 2021, the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedrooms and three-bedrooms were `r avg_rent_two` and `r avg_rent_three`, respectively. Those rents stand in great contrast with the 2016 census' registered average rent of `r census_avg_rent`.
+
+
+
 
 \newpage

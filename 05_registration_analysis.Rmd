@@ -165,10 +165,28 @@ Since the coming into effect of the licensing system, a total of `r total_licens
 
 ```{r STA_portrait, include = T}
 
+# Entire apt vs not entire apt
+n_entire_apt <- 
+  valid_STA_bc %>% 
+  st_drop_geometry() %>% 
+  filter(!is.na(entire_apt)) %>% 
+  count(entire_apt) %>% 
+  filter(entire_apt == TRUE) %>% 
+  pull(n)
 
+n_not_entire_apt <- 
+  valid_STA_bc %>% 
+  st_drop_geometry() %>% 
+  filter(!is.na(entire_apt)) %>% 
+  count(entire_apt) %>% 
+  filter(entire_apt == FALSE) %>% 
+  pull(n)
+
+# 
 
 ```
 
+Out of the `r n_valid_STA_bc` STAs operating with a license during the 10 months of operation, `r n_entire_apt` licenses were for entire home properties, or housing units entirely operated at a STA. The larger proportion of accommodations (`r n_not_entire_apt`) were not entire housing units, but rather a portion of a property or a traditional short-term accommodation, such as a hotel or a camp site. One third (`r n_3_bed`) of the licenses were emitted for accommodations with 3 bedrooms. Close to a quarter (`r n_2_bed`) were for 2-bedroom accommodations and more than one sixth (`r n_4_bed`) were for 4-bedroom accommodations.
 
 ```{r, include = T}
 
