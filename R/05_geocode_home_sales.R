@@ -70,6 +70,13 @@ home_sales <-
   st_transform(32618)
 
 
+# Sept 2021 rents ---------------------------------------------------------
+
+rent_sept <- 
+  read_xlsx("data/rent_pec_clean.xlsx")
+
+
 # Save --------------------------------------------------------------------
 
 qsave(home_sales, file = "output/home_sales.qs")
+qsave(rent_sept, file = "output/rent_sept.qs")
