@@ -356,9 +356,9 @@ summer_2021_on_dwellings <-
 
 ```
 
-``` {r make_fig_2_1}
+``` {r make_fig_4_1}
 
-figure_2_1_fun <- function(regular = "", condensed = "") {
+figure_4_1_fun <- function(regular = "", condensed = "") {
   
 housing_loss %>% 
   group_by(`Listing type`) %>% 
@@ -381,27 +381,27 @@ housing_loss %>%
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_1.pdf"), 
-         plot = figure_2_1_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_4_1.pdf"), 
+         plot = figure_4_1_fun("Futura", "Futura Condensed"), 
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_1.pdf"))
 }
 
 ```
 
-On average in 2021, there were `r FREH_2021` FREH listings in PEC, and `r GH_2021` more housing units which were operating as ghost hostels. In total, therefore, short-term rentals are taking `r housing_loss_2021` housing units off of PEC’s long-term market (Figure \@ref(fig:fig-2-1)). Notably, while the number of active daily listings declined by `r active_yoy_listings` between 2019 and 2021, the number of housing units which STRs took off of PEC’s housing market decreased at a much sharper rate. There were `r housing_loss_change` fewer dedicated STRs in 2021 compared to 2019, from `r housing_loss_2019` to `r housing_loss_2021`. This high decline in commercially-operated STRs reflects that the pandemic has disproportionately affected commercial operators in the County.
+On average in 2021, there were `r FREH_2021` FREH listings in PEC, and `r GH_2021` more housing units which were operating as ghost hostels. In total, therefore, short-term rentals are taking `r housing_loss_2021` housing units off of PEC’s long-term market (Figure \@ref(fig:fig-4-1)). Notably, while the number of active daily listings declined by `r active_yoy_listings` between 2019 and 2021, the number of housing units which STRs took off of PEC’s housing market decreased at a much sharper rate. There were `r housing_loss_change` fewer dedicated STRs in 2021 compared to 2019, from `r housing_loss_2019` to `r housing_loss_2021`. This high decline in commercially-operated STRs reflects that the pandemic has disproportionately affected commercial operators in the County.
 
-``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-2-1)', fig.align = "center"}
+``` {r fig-4-1, include = TRUE, fig.cap = '(ref:fig-4-1)', fig.align = "center"}
 
-figure_2_1_fun()
+figure_4_1_fun()
 
 ```
-(ref:fig-2-1) _Housing units converted to dedicated STRs in the Prince Edward County_
+(ref:fig-4-1) _Housing units converted to dedicated STRs in the Prince Edward County_
 
-``` {r make_fig_2_2}
+``` {r make_fig_4_2}
 
-figure_2_2_fun <- function(regular = "", condensed = "") {
+figure_4_2_fun <- function(regular = "", condensed = "") {
   
 seasonal_FREH %>% 
   mutate(season = ifelse(season == "winter", "Winter", "Summer")) %>% 
@@ -431,23 +431,23 @@ seasonal_FREH %>%
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_2.pdf"), 
-         plot = figure_2_2_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_4_2.pdf"), 
+         plot = figure_4_2_fun("Futura", "Futura Condensed"), 
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_2.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
 }
 
 ```
 
-As we saw in the previous chapter, PEC has a highly seasonal market. Some owner-occupiers might leave in the summer to take advantage of the high demand for STR, while they occupy their home in winter. A landlord can also take advantage of the STR market in the summer, and rent out their unit in the winter on a more longer-term market. We explored these possibilities by separating seasons: Summer months range from May to September included, and winter months from October to April. The number of full-time entire-homes active on the STR market in winter is at the same level than the FREH indicator. However, in the summer months, the number of full-time entire-home STR was around `r summer_FREH_avg_pre` in the summers of 2018 and 2019, what seems to be a plateau in PEC as no growth has been seen between these two years. This number was equivalent to `r summer_plateau_on_dwellings` of all dwellings in PEC. In the summer of 2021, the number of full-time STR was `r summer_FREH_avg_2021`, which is a significant increase on the 2020 level, but still below the pre-Covid level. It is the equivalent of `r summer_2021_on_dwellings` of all dwellings in PEC. Figure \@ref(fig:fig-2-2) showcases the beginning of a recovery for the commercially-operated STRs.  
+As we saw in the previous chapter, PEC has a highly seasonal market. Some owner-occupiers might leave in the summer to take advantage of the high demand for STR, while they occupy their home in winter. A landlord can also take advantage of the STR market in the summer, and rent out their unit in the winter on a more longer-term market. We explored these possibilities by separating seasons: Summer months range from May to September included, and winter months from October to April. The number of full-time entire-homes active on the STR market in winter is at the same level than the FREH indicator. However, in the summer months, the number of full-time entire-home STR was around `r summer_FREH_avg_pre` in the summers of 2018 and 2019, what seems to be a plateau in PEC as no growth has been seen between these two years. This number was equivalent to `r summer_plateau_on_dwellings` of all dwellings in PEC. In the summer of 2021, the number of full-time STR was `r summer_FREH_avg_2021`, which is a significant increase on the 2020 level, but still below the pre-Covid level. It is the equivalent of `r summer_2021_on_dwellings` of all dwellings in PEC. Figure \@ref(fig:fig-4-2) showcases the beginning of a recovery for the commercially-operated STRs.  
 
-``` {r fig-2-2, include = TRUE, fig.cap = '(ref:fig-2-2)', fig.align = "center"}
+``` {r fig-4-2, include = TRUE, fig.cap = '(ref:fig-4-2)', fig.align = "center"}
 
-figure_2_2_fun()
+figure_4_2_fun()
 
 ```
-(ref:fig-2-2) _Housing units operating on a full-time basis on the STR market of the Prince Edward County, per season_
+(ref:fig-4-2) _Housing units operating on a full-time basis on the STR market of the Prince Edward County, per season_
 
 ```{r para_3}
 
@@ -519,9 +519,9 @@ EW_housing_table %>%
 
 ```
 
-``` {r make_fig_2_3}
+``` {r make_fig_4_3}
 
-figure_2_3_fun <- function(regular = "", condensed = "") {
+figure_4_3_fun <- function(regular = "", condensed = "") {
   
   housing_loss_share %>% 
     ggplot(aes(date, housing_loss_pct, colour = `Listing type`)) +
@@ -536,29 +536,29 @@ figure_2_3_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_3.pdf"), 
-         plot = figure_2_3_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_4_3.pdf"), 
+         plot = figure_4_3_fun("Futura", "Futura Condensed"), 
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_3.pdf"))
 }
 
 ```
 
-On average, for the pre-Covid years, half of entire-home listings (`r eh_housing_loss_pre_covid`) and of the private-room listings (`r pr_housing_loss_pre_covid`) were taking housing off the long-term market. On average, in 2021, only a third of entire-home listings (`r eh_housing_loss`) and a fifth of private-room listings (`r pr_housing_loss`) were being operated in a full-time or close-to-full-time fashion (Figure \@ref(fig:fig-2-3)). The yearly up-and-down pattern on Figure \@ref(fig:fig-2-3) is that, in winter, a lower percentage of FREH listings are removed from the platform than for less commercial listings. In addition, there are more active listings in the summer, shrinking the percentage of entire home/apt STR that contributes to long-term housing-loss even if their number in absolute was stable before the pandemic.
+On average, for the pre-Covid years, half of entire-home listings (`r eh_housing_loss_pre_covid`) and of the private-room listings (`r pr_housing_loss_pre_covid`) were taking housing off the long-term market. On average, in 2021, only a third of entire-home listings (`r eh_housing_loss`) and a fifth of private-room listings (`r pr_housing_loss`) were being operated in a full-time or close-to-full-time fashion (Figure \@ref(fig:fig-4-3)). The yearly up-and-down pattern on Figure \@ref(fig:fig-4-3) is that, in winter, a lower percentage of FREH listings are removed from the platform than for less commercial listings. In addition, there are more active listings in the summer, shrinking the percentage of entire home/apt STR that contributes to long-term housing-loss even if their number in absolute was stable before the pandemic.
 
-Table \@ref(tab:tab-2-1) summarizes STR-induced housing loss patterns by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
+Table \@ref(tab:tab-4-1) summarizes STR-induced housing loss patterns by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
 
 
-``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
+``` {r fig-4-3, include = TRUE, fig.cap = '(ref:fig-4-3)', fig.align = "center"}
 
-figure_2_3_fun()
+figure_4_3_fun()
 
 ```
 
-(ref:fig-2-3) _The percentage of active STR listings contributing to long-term housing loss each day in PEC (14-day average)_
+(ref:fig-4-3) _The percentage of active STR listings contributing to long-term housing loss each day in PEC (14-day average)_
 
-``` {r tab-2-1, include = TRUE}
+``` {r tab-4-1, include = TRUE}
 
 library(kableExtra)
 
@@ -612,9 +612,9 @@ water <- rbind(select(river, -everything()), select(ocean, -everything()))
 rm(ocean, river, city, CMA)
 ```
 
-``` {r make_fig_2_4}
+``` {r make_fig_4_4}
 
-figure_2_4_fun <- function(regular = "", condensed = "") {
+figure_4_4_fun <- function(regular = "", condensed = "") {
   
   left_map <- 
     housing_loss_EW %>% 
@@ -663,26 +663,26 @@ figure_2_4_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_4.pdf"), 
-         plot = figure_2_4_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_4_4.pdf"), 
+         plot = figure_4_4_fun("Futura", "Futura Condensed"), 
          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_4.pdf"))
 }
 
 ```
 
-The `r housing_loss_2021` housing units taken off of PEC’s housing market in 2021 are `r housing_loss_pct_dwelling_2021` of the total amount of housing in the city, and this housing loss has been decentralized in all parts of the county. Figure \@ref(fig:fig-2-4) shows the proportion of each ward or dissemination area’s housing stock which was operated as a dedicated short-term rental in 2021. In Picton, `r housing_loss_pct_picton_2021` of all housing units were operating as dedicated STRs in 2021, even in the face of Covid-19. The figure is `r housing_loss_pct_wellington_2021` for Wellington and `r housing_loss_pct_bloomfield_2021` for Bloomfield.
+The `r housing_loss_2021` housing units taken off of PEC’s housing market in 2021 are `r housing_loss_pct_dwelling_2021` of the total amount of housing in the city, and this housing loss has been decentralized in all parts of the county. Figure \@ref(fig:fig-4-4) shows the proportion of each ward or dissemination area’s housing stock which was operated as a dedicated short-term rental in 2021. In Picton, `r housing_loss_pct_picton_2021` of all housing units were operating as dedicated STRs in 2021, even in the face of Covid-19. The figure is `r housing_loss_pct_wellington_2021` for Wellington and `r housing_loss_pct_bloomfield_2021` for Bloomfield.
 
 
-``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
+``` {r fig-4-4, include = TRUE, fig.cap = '(ref:fig-4-4)', fig.align = "center"}
 
 # INTERESTING WHEN WE HAVE CMHC DATA -- In the Downtown CMHC zone, the rental vacancy rate was `r downtown_spadina` in 2019, while the number of STRs contributing to housing loss in the Spadina-Fort York in 2019 was `r housing_loss_pct_spadina_2019`. This means that there were slightly more dedicated STRs in this neighbourhood than there were vacant apartments for rent. (2021 rental vacancy rates numbers were not yet available at the time of analysis.)
 
-figure_2_4_fun()
+figure_4_4_fun()
 
 ```
 
-(ref:fig-2-4) _The percentage of housing units converted to dedicated STRs in PEC, by ward (L) and dissemination area (R)_
+(ref:fig-4-4) _The percentage of housing units converted to dedicated STRs in PEC, by ward (L) and dissemination area (R)_
 
 \newpage
