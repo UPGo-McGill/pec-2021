@@ -961,16 +961,71 @@ avg_rent_three <-
   pull(avg_rent) %>% 
   scales::dollar(accuracy = 1)
 
+avg_rent_pec_sept_2021 <- 
+  mean(rent_sept$rent) %>% 
+  scales::dollar(accuracy = 1) 
+
 census_avg_rent <- 
   paste("$936")
+
+towns <- c("Picton", "Wellington", "Bloomfield")
+
+EW_rent <- 
+  EW_housing %>% 
+  st_drop_geometry() %>% 
+  mutate(ward = ifelse(!ward %in% towns, "Township", ward)) %>% 
+  group_by(ward) %>% 
+  summarise(avg_census_rent = weighted.mean(average_rent, renter),
+            avg_hh_inc = weighted.mean(at_hh_inc, dwellings))
+
+rent_diff_table <- 
+  rent_sept %>% 
+  group_by(ward) %>% 
+  summarize(sept_avg_rent = mean(rent)) %>% 
+  left_join(., EW_rent, by ="ward") %>% 
+  mutate(affordable_rent = (avg_hh_inc/12)*0.30,
+         rent_diff = affordable_rent - sept_avg_rent) %>% 
+  mutate(ward = ifelse(ward == "Township", "Townships", ward)) %>% 
+  select(ward, sept_avg_rent, avg_hh_inc, affordable_rent, rent_diff) %>% 
+  arrange(rent_diff)
+
+rent_diff_picton <- 
+  rent_diff_table %>% 
+  filter(ward == "Picton") %>% 
+  pull(rent_diff) %>% 
+  {. *-1} %>% 
+  scales::dollar(accuracy = 1)
+
+rent_diff_well <- 
+  rent_diff_table %>% 
+  filter(ward == "Wellington") %>% 
+  pull(rent_diff) %>% 
+  {. *-1} %>% 
+  scales::dollar(accuracy = 1)
   
-
-
+  
+  
 ```
 
-The renter situation in Prince Edward County is different than that of homeowners. First of all, renters make up only 16.9% of all households in the County. However, almost half (48.9%) of renters are in a situation of housing stress. The ward with the most renters' housing stress is Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the calculated rental vacancy rate was 0.81% (Prince Edward County 2019). In the past years, renters have experienced tightening conditions in part due to the increased competition renters have with seasonal tourism. The pressure in the homeownership market has put increasing pressure on the County's rental stock. There have been accounts of bidding wars in the rental market in response to the limited units available. The workforce is struggling to find rents that fit their budget, even with hourly pays of 20 to $25 per hour. The pandemic has only heightened this situation, with the largest year-over-year increase in average rent occurring from June 2020 to June 2021, with a 52% increase. As of September 2021, the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedrooms and three-bedrooms were `r avg_rent_two` and `r avg_rent_three`, respectively. Those rents stand in great contrast with the 2016 census' registered average rent of `r census_avg_rent`.
+``` {r tab-4-4, include = TRUE}
 
+library(kableExtra)
 
+rent_diff_table %>% 
+    mutate(sept_avg_rent = scales::dollar(sept_avg_rent, 1),
+         avg_hh_inc = scales::dollar(avg_hh_inc, 10),
+         affordable_rent = scales::dollar(affordable_rent, 1),
+         rent_diff = scales::dollar(rent_diff, 1)) %>% 
+  set_names(c("Ward", "Average rent, Sept. 2021", "After-tax household income, 2016 census", 
+              "Affordable rent threshold", "Difference with affordable rent threshold")) %>% 
+  kbl(caption = "Difference between Sept. 2021 average rents and affordable rent thresholds",
+      align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down") 
+  
+```
 
+The renter situation in Prince Edward County is different than that of homeowners. First of all, renters make up only 16.9% of all households in the County. However, almost half (48.9%) of renters are in a situation of housing stress. The ward with the most renters' housing stress is Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the calculated rental vacancy rate was 0.81% (Prince Edward County 2019). In the past years, renters have experienced tightening conditions in part due to the increased competition renters have with seasonal tourism. The pressure in the homeownership market has put increasing pressure on the County's rental stock. There have been accounts of bidding wars in the rental market in response to the limited units available. The workforce is struggling to find rents that fit their budget, even with hourly pays of 20 to $25 per hour. The pandemic has only heightened this situation, with the largest year-over-year increase in average rent occurring from June 2020 to June 2021, with a 52% increase. As of September 2021, the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedrooms and three-bedrooms were `r avg_rent_two` and `r avg_rent_three`, respectively. The total average rent of `r avg_rent_pec_sept_2021 ` in September 2021 stands in great contrast with the 2016 census' registered average rent of `r census_avg_rent`.
+
+In order to consider rent as affordable, a given household must not spend more than 30% of their income on shelter costs. With collected rents from Picton, Wellington, Bloomfield and the townships, it was possible to establish the affordability thresholds for renters per geographic locations. Table \@ref(tab:tab-4-4) summarizes these findings. In Picton, the average after-tax household income is not sufficient to make rent affordable in Prince Edward County: renters spend on average `r rent_diff_picton` more on rent than the affordable rent threshold. This number in Wellington is `r rent_diff_well`. The difference between affordable rents and actual average market rents needs to be taken as conservative estimates. The after-tax household income used for this calculation includes incomes from both owner and renter households. Renter households earn less on average than owner households, meaning that the household income used for this calculation might be inflated and overrepresented by that of the homeowners, which are also a majority of households in Prince Edward County.
 
 \newpage
