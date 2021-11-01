@@ -42,7 +42,7 @@ end_reg <- as.Date("2020-09-04")
 # Get properties active during the period when the registration was into effect
 reg_property <- 
   property %>% 
-  filter(last_active >= start_reg) %>% 
+  filter(active >= start_reg) %>% 
   filter(created <= end_reg) %>% 
   st_transform(32618)
 
@@ -161,14 +161,32 @@ On 9 October 2018, Prince Edward County's city council approved a by-law allowin
 
 # Overview of STA licenses
 
-Since the coming into effect of the licensing system, a total of `r total_licenses_all` license applications were received. Out of the total applications, `r valid_STA` were approved, with `r n_valid_STA_bc` of them occurring prior to the moratorium on STA licenses. The ward that received the most applications was Picton with `r picton_n_license`, followed by Hallowell with `r hallo_n_license` license applications, and Wellington with `r well_n_license` (Table \@ref(tab:tab-5-1)). `r ids_sta_pid` of the `r valid_STA_bc` short-term accommodations with valid licenses had one or more STR property within a 200-meter buffer of their address (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m). A total of `r unique_PIDs` active during the period of operation of the licensing system were located within the `r ids_sta_pid` STA buffers (a total of `r n_reg_property` properties were active on STR platforms during the same time period). Those matches will be further explored below.
+Since the coming into effect of the licensing system, a total of `r total_licenses_all` license applications were received. Out of the total applications, `r valid_STA` were approved, with `r n_valid_STA_bc` of them occurring prior to the moratorium on STA licenses. The ward that received the most applications was Picton with `r picton_n_license`, followed by Hallowell with `r hallo_n_license` license applications, and Wellington with `r well_n_license` (Table \@ref(tab:tab-5-1)). `r ids_sta_pid` of the `r valid_STA_bc` short-term accommodations with valid licenses had one or more STR property within a 200-meter buffer of their address (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m). A total of `r unique_PIDs` active during the period of operation of the licensing system were located within the `r ids_sta_pid` STA buffers (a total of `r n_reg_property` properties were active on STR platforms during the same time period). The small proportion of STRs on platforms such 
 
 ```{r STA_portrait, include = T}
 
+# Entire apt vs not entire apt
+n_entire_apt <- 
+  valid_STA_bc %>% 
+  st_drop_geometry() %>% 
+  filter(!is.na(entire_apt)) %>% 
+  count(entire_apt) %>% 
+  filter(entire_apt == TRUE) %>% 
+  pull(n)
 
+n_not_entire_apt <- 
+  valid_STA_bc %>% 
+  st_drop_geometry() %>% 
+  filter(!is.na(entire_apt)) %>% 
+  count(entire_apt) %>% 
+  filter(entire_apt == FALSE) %>% 
+  pull(n)
+
+# 
 
 ```
 
+Out of the `r n_valid_STA_bc` STAs operating with a license during the 10 months of operation, `r n_entire_apt` licenses were for entire home properties, or housing units entirely operated at a STA. The larger proportion of accommodations (`r n_not_entire_apt`) were not entire housing units, but rather a portion of a property or a traditional short-term accommodation, such as a hotel or a camp site. One third (`r n_3_bed`) of the licenses were emitted for accommodations with 3 bedrooms. Close to a quarter (`r n_2_bed`) were for 2-bedroom accommodations and more than one sixth (`r n_4_bed`) were for 4-bedroom accommodations. 
 
 ```{r, include = T}
 
