@@ -1082,6 +1082,7 @@ library(tsibble)
 library(feasts)
 library(fable)
 
+qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # Get daily reservations and prices
 reservations_and_prices <- 
@@ -1149,146 +1150,94 @@ reservations_and_prices <-
          price_trend = price_trend * price_trend_month / mean(price_trend)) %>%
   ungroup() %>%
   select(-c(yearmon:price_trend_month))
-# 
-# res_total_pandemic_dif <-
-#   prettyNum(round(pandemic_reservations$trend - pandemic_reservations$n, -2),
-#             ",")
-# 
-# res_total_pandemic <-
-#   prettyNum(round(pandemic_reservations$n, -2), ",")
-# 
-# res_total_pandemic_pct <-
-#   scales::percent(pandemic_reservations$n / pandemic_reservations$trend, 0.1)
-# 
-# res_total_pandemic_trend <-
-#   prettyNum(round(pandemic_reservations$trend, -2), ",")
 
-# rm(property, daily, GH)
+res_total_pandemic_dif <-
+  reservations_and_prices |> 
+  filter(date >= "2020-03-01") |> 
+  summarize(res_dif = sum(res_trend - res)) |> 
+  pull(res_dif) |> 
+  scales::comma(1)
 
-```
+res_total_pandemic <-
+  reservations_and_prices |> 
+  filter(date >= "2020-03-01") |> 
+  summarize(res_tot = sum(res)) |> 
+  pull(res_tot) |> 
+  scales::comma(1)
 
-``` {r make_fig_1_5}
+res_total_pandemic_pct <-
+  {(parse_number(res_total_pandemic) - parse_number(res_total_pandemic_dif)) / 
+  parse_number(res_total_pandemic)} %>%
+  scales::percent(0.1)
 
-# figure_1_5_fun <- function(regular = "", condensed = "") {
-#   
-#  reservations %>% 
-#  pivot_longer(-date) %>% 
-#  filter(!is.na(value)) %>%
-#  ggplot() +
-#  annotate("rect", xmin = as.Date("2021-03-29"), xmax = as.Date("2021-06-25"),
-#           ymin = -Inf, ymax = Inf, alpha = 0.2) +
-#  geom_ribbon(aes(x = date, ymin = n, ymax = trend, group = 1),
-#              data = reservations, fill = col_palette[3], 
-#              alpha = 0.3) +
-#  geom_line(aes(date, value, color = name), lwd = 1) +
-#  geom_text(aes(x = as.Date("2021-07-31"), 
-#                y = mean(value[date == as.Date("2021-07-31")]),
-#                label = paste(
-#                  prettyNum(round(abs(diff(
-#                    value[date == as.Date("2021-07-31")])), -1), ","),
-#                  "fewer", "reservations", "than", "expected", sep = "\n")), 
-#            family = "Futura Condensed", inherit.aes = FALSE, hjust = 1,
-#            nudge_x = -4) +
-#  geom_segment(aes(x = as.Date("2021-07-31"), xend = as.Date("2021-07-31"),
-#                   y = min(value[date == as.Date("2021-07-31")]),
-#                   yend = max(value[date == as.Date("2021-07-31")])),
-#               colour = col_palette[3],
-#               arrow = arrow(length = unit(0.1, "cm"), ends = "both",
-#                             type = "open")) +
-#  scale_x_date(name = NULL) +
-#  scale_y_continuous(name = NULL, limits = c(0, NA), label = scales::comma) +
-#  scale_color_manual(name = NULL, 
-#                     labels = c("Actual reservations", "Expected reservations"), 
-#                     values = col_palette[c(5, 1)]) +
-#  theme_minimal() +
-#  theme(legend.position = "bottom", 
-#        panel.grid.minor.x = element_blank(),
-#        text = element_text(face = "plain", family = "Futura"), 
-#        legend.title = element_text(face = "bold", family = "Futura", 
-#                                    size = 10),
-#        legend.text = element_text( size = 10, family = "Futura"))
-# 
-# }
-# 
-# if (build_figures) {
-#   ggsave(here("output", "figures", "figure_1_5.pdf"), 
-#          plot = figure_1_5_fun("Futura", "Futura Condensed"), 
-#          width = 8, height = 5, units = "in", useDingbats = FALSE)
-#   
-#   extrafont::embed_fonts(here("output", "figures", "figure_1_5.pdf"))
-# }
+res_total_pandemic_trend <-
+  reservations_and_prices |> 
+  filter(date >= "2020-03-01") |> 
+  summarize(res_tot = sum(res_trend)) |> 
+  pull(res_tot) |> 
+  scales::comma(1)
+
+rm(property, daily, daily_all, GH)
 
 ```
 
-<!-- Figure \@ref(fig:fig-1-5) provides a closer look at daily reservations since 2019, comparing the actual trajectory of reservations during the pandemic with what the trajectory of reservations would have been expected to be, based on previous growth in Prince Edward County's STR market but in the absence of the pandemic. (To do this, we use seasonal decomposition to identify the regular seasonal fluctuations in STR activity and separate them from the underlying patterns of growth or decline.) In total, from March through August 2021, we estimate that there have been r res_total_pandemic_dif fewer STR nights reserved than would normally have been expected to occur. The r res_total_pandemic total nights reserved in this time period is only r res_total_pandemic_pct of the r res_total_pandemic_trend nights total that would represent the previous growth trend. -->
+``` {r make_fig_2_4}
 
-``` {r fig-1-5, include = TRUE, fig.cap = '(ref:fig-1-5)', fig.align = "center"}
+figure_2_4_fun <- function(regular = "", condensed = "") {
 
-# figure_1_5_fun()
+  reservations_and_prices %>% 
+  mutate(res = slider::slide_dbl(res, mean, .before = 6, .complete = TRUE)) %>% 
+  select(date, res, res_trend) %>% 
+  pivot_longer(-date) %>% 
+  filter(!is.na(value)) %>%
+  mutate(label = case_when(
+    date == "2019-07-05" & name == "res" ~ "Actual reservations", 
+    date == "2020-08-05" & name == "res_trend" ~ "Expected reservations",
+    TRUE ~ NA_character_)) %>%
+  ggplot() +
+  geom_ribbon(aes(x = date, ymin = res, ymax = res_trend, group = 1),
+              data = {reservations_and_prices %>% 
+                  mutate(res = slider::slide_dbl(res, mean, .before = 6, .complete = TRUE))
+                }, fill = col_palette[3],
+              alpha = 0.3) +
+  geom_line(aes(date, value, color = name), lwd = 1) +
+    geom_label(aes(date, value, label = label, color = name), size = 3) +
+  scale_x_date(name = NULL, limits = as.Date(c("2018-01-01", NA))) +
+  scale_y_continuous(name = NULL, limits = c(0, NA), 
+                     label = scales::comma) +
+  scale_color_manual(name = NULL, 
+                     labels = c("Actual reservations", "Expected reservations"), 
+                     values = col_palette[c(5, 1)]) +
+  theme_minimal() +
+  theme(legend.position = "none",
+       panel.grid.minor.x = element_blank(),
+       text = element_text(face = "plain", family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_4.pdf"),
+         # plot = figure_2_4_fun("Futura", "Futura Condensed"),
+         plot = figure_2_4_fun(),
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+
+  extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
+}
 
 ```
 
-<!-- (ref:fig-1-5) _Actual and expected reservations during the Covid-19 pandemic (7-day average)_ -->
+Figure \@ref(fig:fig-2-4) provides a closer look at daily reservations since 2019, comparing the actual trajectory of reservations during the pandemic with what the trajectory of reservations would have been expected to be, based on previous growth in Prince Edward County's STR market but in the absence of the pandemic. (To do this, we use seasonal decomposition to identify the regular seasonal fluctuations in STR activity and separate them from the underlying patterns of growth or decline.) In total, from March through August 2021, we estimate that there have been r res_total_pandemic_dif fewer STR nights reserved than would normally have been expected to occur. The r res_total_pandemic total nights reserved in this time period is only r res_total_pandemic_pct of the r res_total_pandemic_trend nights total that would represent the previous growth trend.
+
+``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
+
+figure_2_4_fun()
+
+```
+
+(ref:fig-2-4) _Actual and expected reservations during the Covid-19 pandemic (7-day average)_
 
 ```{r prices, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
-# 
-# daily <- 
-#   daily %>% 
-#   # to not report on incomplete numbers, start at a date when VRBO is in our dataset
-#   filter(date >= "2017-06-01")
-# 
-# # Get average nightly prices
-# average_prices <-
-#   daily %>%
-#   filter(status == "R",
-#          listing_type == "Entire home/apt") %>%
-#   group_by(date) %>%
-#   summarize(price = mean(price))
-# 
-# # Create monthly price time series
-# monthly_prices <-
-#   average_prices %>%
-#   tsibble::as_tsibble() %>%
-#   tsibble::index_by(yearmon = tsibble::yearmonth(date)) %>%
-#   summarize(price = mean(price))
-# 
-# # Get March-August seasonal
-# mar_jul_price_seasonal <-
-#   monthly_prices %>%
-#   filter(yearmon <= tsibble::yearmonth("2021-02")) %>%
-#   model(x11 = feasts:::X11(price, type = "additive")) %>%
-#   components() %>%
-#   slice(39:43) %>%
-#   pull(seasonal)
-# 
-# # Get Feb trend
-# feb_price_trend <-
-#   monthly_prices %>%
-#   filter(yearmon <= tsibble::yearmonth("2021-02")) %>%
-#   model(x11 = feasts:::X11(price, type = "additive")) %>%
-#   components() %>%
-#   slice(50) %>%
-#   pull(trend)
-# 
-# # Apply March-Aug seasonal component to Feb trend
-# mar_jul_price_trend <-
-#   tibble(yearmon = tsibble::yearmonth(c("2021-03", "2021-04", "2021-05",
-#                                         "2021-06", "2021-07")),
-#          trend = feb_price_trend + mar_jul_price_seasonal)
-# 
-# # Apply to daily averages to get trend
-# average_prices <-
-#   average_prices %>%
-#   mutate(yearmon = tsibble::yearmonth(date)) %>%
-#   inner_join(mar_jul_price_trend) %>%
-#   group_by(yearmon) %>%
-#   mutate(trend = price * trend / mean(price)) %>%
-#   ungroup() %>%
-#   select(date, trend) %>%
-#   left_join(average_prices, .)
-# 
 #  nightly_price_dif <-
 #    average_prices %>%
 #    filter(date >= "2021-03-01") %>%
@@ -1321,7 +1270,59 @@ rm(property, daily, GH)
 
 ```
 
+``` {r make_fig_2_5}
+
+figure_2_5_fun <- function(regular = "", condensed = "") {
+
+  reservations_and_prices %>% 
+  mutate(price = slider::slide_dbl(price, mean, .before = 6, .complete = TRUE)) %>% 
+  select(date, price, price_trend) %>% 
+  pivot_longer(-date) %>% 
+  filter(!is.na(value)) %>%
+  mutate(label = case_when(
+    date == "2019-07-05" & name == "price" ~ "Actual nightly price", 
+    date == "2021-04-15" & name == "price_trend" ~ "Expected nightly price",
+    TRUE ~ NA_character_)) %>%
+  ggplot() +
+  geom_ribbon(aes(x = date, ymin = price, ymax = price_trend, group = 1),
+              data = {reservations_and_prices %>% 
+                  mutate(price = slider::slide_dbl(price, mean, .before = 6, .complete = TRUE))
+                }, fill = col_palette[3],
+              alpha = 0.3) +
+  geom_line(aes(date, value, color = name), lwd = 1) +
+    geom_label(aes(date, value, label = label, color = name), size = 3) +
+  scale_x_date(name = NULL, limits = as.Date(c("2018-01-01", NA))) +
+  scale_y_continuous(name = NULL, limits = c(150, NA), 
+                     label = scales::dollar) +
+  scale_color_manual(name = NULL, values = col_palette[c(5, 1)]) +
+  theme_minimal() +
+  theme(legend.position = "none",
+       panel.grid.minor.x = element_blank(),
+       text = element_text(face = "plain", family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_5.pdf"),
+         # plot = figure_2_4_fun("Futura", "Futura Condensed"),
+         plot = figure_2_5_fun(),
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+
+  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
+}
+
+```
+
 <!-- STR host daily revenue decreased by `r active_yoy_revenue` in 2021 compared to 2019. To offer some perspective, from 2018 to 2019, STR revenue increased by `r active_yoy_revenue_2019`. Throughout the May-December period of 2021, moreover, nightly prices have been an average of r nightly_price_diff lower than expected. Spread across the r res_total_pandemic nights reserved during this period, this means that STR operators collectively earned r total_price_dif less than they would have on their bookings in the absence of the pandemic. When the lower prices on reservations which did occur is combined with the reservations which did not occur, our estimate is that Prince Edward County’s STR hosts lost a total of r total_revenue_lost million in revenue between March and December 2021 because of the Covid-19 pandemic. -->
+
+``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
+
+figure_2_5_fun()
+
+```
+
+(ref:fig-2-5) _Actual and expected nightly prices during the Covid-19 pandemic (7-day average)_
+
 
 <br>
 
@@ -1336,8 +1337,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 # Host deciles table for figure
 host_deciles <-
   daily %>%
-  filter(date >= start_2021, 
-         status == "R", !is.na(host_ID)) %>%
+  filter(date >= start_2021, status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price)) %>% 
   summarize(all = sum(rev),
@@ -1521,13 +1521,13 @@ end_month <-
   as.numeric() %>% 
   {month.name[.]}
 
-rm(property, daily, GH)
+rm(property, daily, daily_all, GH)
 
 ```
 
-``` {r make_fig_1_6}
+``` {r make_fig_2_6}
 
-figure_1_6_fun <- function(regular = "", condensed = "") {
+figure_2_6_fun <- function(regular = "", condensed = "") {
   
   revenue_colour <- colorRampPalette(col_palette[c(7, 6, 1, 4, 3, 2, 5)])(10)
 
@@ -1563,24 +1563,25 @@ figure_1_6_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_1_6.pdf"), 
-         plot = figure_1_6_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_2_6.pdf"), 
+         # plot = figure_2_6_fun("Futura", "Futura Condensed"), 
+         plot = figure_2_6_fun(),
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_1_6.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_6.pdf"))
 }
 
 ```
 
 Among all the STR hosts who earned revenue in Prince Edward County in 2021, the median revenue from January to `r end_month` was `r median_host_rev`. Throughout the county, there were `r n_hosts_over_100` hosts that earned more than $100,000 in 2021, which is `r diff_host_100` more hosts than during the same months of 2019. Figure \@ref(fig:fig-1-6) shows the percentage of the total `r daily_rev` in STR daily revenue which accrued to each decile of hosts. The figure shows that revenue is disproportionately concentrated among a small number of hosts; the top 10% earned `r host_rev_top_10`: the top 5% earned `r host_rev_top_5` of revenue, while the top 1% of hosts earned `r host_rev_top_1` of all revenue. The pandemic hasn't impacted the revenue distribution among STR hosts, but we know that there are less hosts each making more revenue than in 2019. The financial incentive to operate STRs in PEC has therefore increased. To put this revenue distribution in context, Montreal’s top 10% of STR hosts earned 68.8% of all revenue in 2019. On the other hand, Vancouver's top 10% hosts only earned 43.2% of all revenue in 2019. **TKTK Are big cities the good comparison here? Probably to show how different PEC is from other STR destination! But what's of interested for the county? Such a comparison, or one that shows it's similar to other seasonal destination? Maybe both?**
 
-``` {r fig-1-6, include = TRUE, fig.cap = '(ref:fig-1-6)', fig.align = "center"}
+``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
 
-figure_1_6_fun()
+figure_2_6_fun()
 
 ```
 
-(ref:fig-1-6) _STR host revenue distribution in Prince Edward County_
+(ref:fig-2-6) _STR host revenue distribution in Prince Edward County_
 
 <br>
 
@@ -1612,50 +1613,51 @@ ML %>%
   pull(n) %>% 
   scales::percent(., accuracy = 0.1)
 
-rm(property, daily, GH)
+rm(property, daily, daily_all, GH)
 
 ```
 
-``` {r make_fig_1_7}
+``` {r make_fig_2_7}
+# 
+# figure_2_7_fun <- function(regular = "", condensed = "") {
+#   
+#   ML %>% 
+#     filter(date >= "2017-06-01") %>% 
+#     ggplot() +
+#     geom_line(aes(date, value, colour = `Multilisting percentage`), lwd = 1) +
+#     scale_x_date(name = NULL) +
+#     scale_y_continuous(name = NULL, 
+#                        label = scales::percent_format(accuracy = 1)) +
+#     scale_colour_manual(values = col_palette[c(5, 1)]) +
+#     theme_minimal() +
+#     theme(legend.position = "bottom",
+#           panel.grid.minor.x = element_blank(),
+#           text = element_text(family = regular, face = "plain"),
+#           legend.title = element_text(family = regular, face = "bold"),
+#           legend.text = element_text(family = regular))
+# 
+# }
+# 
+# if (build_figures) {
+#   ggsave(here("output", "figures", "figure_2_7.pdf"), 
+#         # plot = figure_2_7_fun("Futura", "Futura Condensed"),
+#         plot = figure_2_7_fun(),
+#          width = 8, height = 5, units = "in", useDingbats = FALSE)
+#   
+#   extrafont::embed_fonts(here("output", "figures", "figure_2_7.pdf"))
+# }
+# 
+```
 
-figure_1_7_fun <- function(regular = "", condensed = "") {
-  
-  ML %>% 
-    filter(date >= "2017-06-01") %>% 
-    ggplot() +
-    geom_line(aes(date, value, colour = `Multilisting percentage`), lwd = 1) +
-    scale_x_date(name = NULL) +
-    scale_y_continuous(name = NULL, 
-                       label = scales::percent_format(accuracy = 1)) +
-    scale_colour_manual(values = col_palette[c(5, 1)]) +
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor.x = element_blank(),
-          text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold"),
-          legend.text = element_text(family = regular))
+<!-- In 2021, `r ml_listings` of active listings in Prince Edward County were multilistings, earning `r ml_revenue` of total host revenue. Multilistings had been steady since 2018, at ~50% on average, both in terms of listings (`r ML_per_listings_rev[1]`) and revenue percentage (`r ML_per_listings_rev[2]`). If the Covid-19 pandemic impacted their proportion, it was marginal and only on the revenue side (Figure \@ref(fig:fig-1-7)). Multilistings were and are earning close to 1 out of every 2 dollars on STR platforms in Prince Edward County.  -->
 
-}
+``` {r fig-2-7, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
 
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_1_7.pdf"), 
-         plot = figure_1_7_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_1_7.pdf"))
-}
+# figure_2_7_fun()
 
 ```
 
-In 2021, `r ml_listings` of active listings in Prince Edward County were multilistings, earning `r ml_revenue` of total host revenue. Multilistings had been steady since 2018, at ~50% on average, both in terms of listings (`r ML_per_listings_rev[1]`) and revenue percentage (`r ML_per_listings_rev[2]`). If the Covid-19 pandemic impacted their proportion, it was marginal and only on the revenue side (Figure \@ref(fig:fig-1-7)). Multilistings were and are earning close to 1 out of every 2 dollars on STR platforms in Prince Edward County. 
-
-``` {r fig-1-7, include = TRUE, fig.cap = '(ref:fig-1-7)', fig.align = "center"}
-
-figure_1_7_fun()
-
-```
-
-(ref:fig-1-7) _The percentage of active listings and revenue accounted for by multilistings in Prince Edward County (14-day average)_
+<!-- (ref:fig-2-7) _The percentage of active listings and revenue accounted for by multilistings in Prince Edward County (14-day average)_ -->
 
 These figures should be taken as highly conservative estimates. Many commercial operators will use different Airbnb or Vrbo accounts to manage their listings. Moreover, many STR commercial operators only operate a single listing, but operate it on a full-time basis. A house owner with a secondary suite, or the owner of an investment apartment who operates a STR in it, are clearly commercial operators running listings which are not their principal residences, but they would not be counted by this method.
 
