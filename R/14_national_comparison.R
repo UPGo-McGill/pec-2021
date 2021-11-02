@@ -1,121 +1,214 @@
-#### 13 NATIONAL COMPARISON ####################################################
-
-#' This script is time-consuming to run, so it should only be rerun when STR
-#' data needs to be rebuilt from scratch.
-#'
-#' Output:
-#' - `national_comparison.qs`
-#'
-#' Script dependencies:
-#' - `13_FREH_model.R`
-#'
-#' External dependencies:
-#' - Access to the UPGo database
+#### Get other cities
 
 source("R/01_startup.R")
-
-# Load data ---------------------------------------------------------------
-
-qload("output/str_processed.qsm", nthreads = availableCores())
-load("output/national_comparison.Rdata")
-
-national_comparison_2019 <- 
-  national_comparison %>% 
-  rename(active_daily_listings_2019=active_daily_listings,
-         revenue_2019=revenue) %>% 
-  select(-listings_per_1000, -revenue_per_listing)
-
-rm(national_comparison)
-
-# Get geometries for 10 biggest cities ------------------------------------
-
-CSD <-
-  cancensus::get_census("CA16", list(C = "01"), level = "CSD",
-                        geo_format = "sf") %>%
-  arrange(-Population) %>%
-  slice(1:10) %>%
-  mutate(name = str_extract(name, '.*(?= )'),
-         name = stringi::stri_trans_general(name, "Latin-ASCII")) %>%
-  as_tibble() %>%
-  st_as_sf()
-
-
-# Get STR data for same cities --------------------------------------------
+library(future)
+plan(multisession)
 
 upgo_connect()
 
-property_CA <-
-  property_remote %>%
-  filter(country == "Canada", city %in% !!CSD$name) %>%
-  collect() %>%
-  strr_as_sf() %>%
-  st_filter(CSD)
+prop_CT <- 
+  property_remote |> 
+  filter(country == "Canada", region == "Prince Edward Island", city == "Charlottetown") |> 
+  collect()
 
-daily_CA <-
-  daily_remote %>%
-  filter(property_ID %in% !!property_CA$property_ID, year(start_date) == 2020) %>%
-  collect() %>%
-  strr_expand() %>%
-  # Reconcile geography inconsistencies between property and daily files
-  select(-country, -region, -city) %>%
-  left_join(select(st_drop_geometry(property_CA), property_ID, country:city))
+daily_CT <- 
+  daily_remote |> 
+  filter(property_ID %in% !!prop_CT$property_ID) |> 
+  collect()
+
+CD_CB <- 
+  cancensus::get_census("CA16", list(PR = "12"), "CD", geo_format = "sf") |> 
+  as_tibble() |> 
+  st_as_sf() |> 
+  filter(GeoUID %in% c(1215, 1216, 1217)) |> 
+  st_transform(4326)
+
+PID_CB <- 
+  property_remote |> 
+  filter(country == "Canada", region == "Nova Scotia") |> 
+  collect() |> 
+  strr_as_sf() |> 
+  st_filter(CD_CB) |>
+  pull(property_ID)
+
+prop_CB <- 
+  property_remote |> 
+  filter(property_ID %in% !!PID_CB) |> 
+  collect()
+
+daily_CB <- 
+  daily_remote |> 
+  filter(property_ID %in% !!prop_CB$property_ID) |> 
+  collect()
+
+prop_TF <- 
+  property_remote |> 
+  filter(country == "Canada", region == "British Columbia", city == "Tofino") |> 
+  collect()
+
+daily_TF <- 
+  daily_remote |> 
+  filter(property_ID %in% !!prop_TF$property_ID) |> 
+  collect()
+
+prop_WL <- 
+  property_remote |> 
+  filter(country == "Canada", region == "British Columbia", city == "Whistler") |> 
+  collect()
+
+daily_WL <- 
+  daily_remote |> 
+  filter(property_ID %in% !!prop_WL$property_ID) |> 
+  collect()
+
+prop_MT <-
+  property_remote |> 
+  filter(country == "Canada", region == "Québec", city == "Mont-Tremblant") |> 
+  collect()
+
+daily_MT <- 
+  daily_remote |> 
+  filter(property_ID %in% !!prop_MT$property_ID) |> 
+  collect()
+
+prop_BM <-
+  property_remote |>
+  filter(country == "Canada", region == "Ontario", city == "The Blue Mountains") |> 
+  collect()
+
+daily_BM <- 
+  daily_remote |> 
+  filter(property_ID %in% !!prop_BM$property_ID) |> 
+  collect()
+
+CD_GP <- 
+  cancensus::get_census("CA16", list(PR = "24"), "CD", geo_format = "sf") |> 
+  as_tibble() |> 
+  st_as_sf() |> 
+  filter(GeoUID %in% c(2401, 2402, 2403, 2404, 2405, 2406, 2407, 2408)) |> 
+  st_transform(4326)
+
+PID_GP <- 
+  property_remote |> 
+  filter(country == "Canada", region == "Québec") |> 
+  collect() |> 
+  strr_as_sf() |> 
+  st_filter(CD_GP) |>
+  pull(property_ID)
+
+prop_GP <- 
+  property_remote |> 
+  filter(property_ID %in% !!PID_GP) |> 
+  collect()
+
+daily_GP <- 
+  daily_remote |> 
+  filter(property_ID %in% !!prop_GP$property_ID) |> 
+  collect()
 
 upgo_disconnect()
 
 
-# Replace Toronto data with processed results -----------------------------
+# Process data ------------------------------------------------------------
 
-property_CA <-
-  property_CA %>%
-  filter(city != "Toronto") %>%
-  select(-first_active, -last_active) %>%
-  rbind(select(st_transform(property, 4326), -c(GeoUID:all_PIDs, active)))
+prop_comp <- 
+  bind_rows(mutate(prop_BM, location = "The Blue Mountains"),
+            mutate(prop_CB, location = "Cape Breton Island"),
+            mutate(prop_CT, location = "Charlottetown"),
+            mutate(prop_GP, location = "Gaspésie-Iles-de-la-Madeleine"),
+            mutate(prop_MT, location = "Mont-Tremblant"),
+            mutate(prop_TF, location = "Tofino"),
+            mutate(prop_WL, location = "Whistler")
+  )
 
-daily_CA <-
-  daily_CA %>%
-  filter(city != "Toronto") %>%
-  rbind(select(daily, -c(ward:FREH_3))) %>%
-  filter(year(date) == 2020)
+daily_comp_raw <- 
+  bind_rows(daily_BM, daily_CB, daily_CT, daily_GP, daily_MT, daily_TF, daily_WL)
+  
+daily_comp <-
+  bind_rows(mutate(strr_expand(daily_BM), location = "The Blue Mountains"),
+            mutate(strr_expand(daily_CB), location = "Cape Breton Island"),
+            mutate(strr_expand(daily_CT), location = "Charlottetown"),
+            mutate(strr_expand(daily_GP), location = "Gaspésie-Iles-de-la-Madeleine"),
+            mutate(strr_expand(daily_MT), location = "Mont-Tremblant"),
+            mutate(strr_expand(daily_TF), location = "Tofino"),
+            mutate(strr_expand(daily_WL), location = "Whistler")
+            )
+
+prop_comp <- 
+  prop_comp |> 
+  select(-housing) |> 
+  strr_housing() |> 
+  relocate(housing, .after = last_active)
+
+daily_comp_raw <- 
+  daily_comp_raw |> 
+  select(-housing) |> 
+  left_join(select(prop_comp, property_ID, housing)) |> 
+  relocate(housing, .after = listing_type)
+
+daily_comp <- 
+  daily_comp |> 
+  select(-housing) |> 
+  left_join(select(prop_comp, property_ID, housing)) |> 
+  relocate(housing, .after = listing_type)
 
 
-# Calculate figures -------------------------------------------------------
+# Apply 2019-2020 fix? ----------------------------------------------------
 
-national_comparison <-
-  daily_CA %>%
-  filter(status != "B", housing) %>%
-  group_by(city) %>%
-  summarize(active_daily_listings = n() / 366, .groups = "drop") %>%
-  left_join(select(st_drop_geometry(CSD), name, Dwellings),
-            by = c("city" = "name")) %>%
-  mutate(listings_per_1000 = 1000 * active_daily_listings / Dwellings)
+set.seed(1111)
 
-exchange_rates <- convert_currency(start_date = "2020-01-01",
-                                   end_date = "2020-12-31")
+daily_comp <-
+  daily_comp |> 
+  mutate(status = if_else(
+    status == "R" & date >= "2019-12-01" & date <= "2020-05-31" &
+      month(date) %in% c(1, 2, 3, 5, 12) & is.na(booked_date) & 
+      runif(n()) > 0.5, "A", status))
 
-national_comparison <-
-  daily_CA %>%
-  filter(status == "R", housing) %>%
+switch_to_A_comp <- 
+  daily_comp_raw |> 
+  filter(start_date >= "2019-11-01", start_date <= "2020-01-31", status == "R",
+         !is.na(booked_date)) |> 
+  mutate(gap = start_date - booked_date, odds = runif(n())) |> 
+  filter(gap <= 0, (odds < 0.5 | month(start_date) == 1)) |> 
+  pull(res_ID)
+
+daily_comp <- 
+  daily_comp |>
+  mutate(status = if_else(res_ID %in% switch_to_A_comp, "A", status))
+
+
+# Split daily file by housing ---------------------------------------------
+
+daily_comp <- 
+  daily_comp |> 
+  filter(housing)
+
+exchange_rates <- convert_currency(start_date = min(daily_comp$date),
+                                   end_date = max(daily_comp$date))
+
+daily_comp <-
+  daily_comp %>%
   mutate(year_month = substr(date, 1, 7)) %>%
   left_join(exchange_rates) %>%
   mutate(price = price * exchange_rate) %>%
-  select(-year_month, -exchange_rate) %>%
-  group_by(city) %>%
-  summarize(revenue = sum(price)) %>%
-  left_join(national_comparison, .)
-
-national_comparison <-
-  national_comparison %>%
-  mutate(revenue_per_listing = revenue / active_daily_listings)
-
-national_comparison <- 
-  national_comparison %>% 
-  left_join(., national_comparison_2019, by = "city") %>% 
-  mutate(YOY_active_listings = (active_daily_listings-active_daily_listings_2019)/active_daily_listings_2019,
-         YOY_revenue = (revenue-revenue_2019)/revenue_2019) %>% 
-  select(-revenue_2019, -active_daily_listings_2019)
+  select(-year_month, -exchange_rate)
 
 
-# Save output -------------------------------------------------------------
+# Add PEC data ------------------------------------------------------------
 
-qsave(national_comparison, file = "output/national_comparison.qs",
-      nthreads = availableCores())
+qload("output/str_processed.qsm", nthreads = availableCores())
+
+daily_comp <- 
+  daily |> 
+  select(property_ID:city) |> 
+  mutate(location = "Prince Edward County") |> 
+  bind_rows(daily_comp) |> 
+  filter(date >= "2017-06-01")
+
+qsave(daily_comp, file = "output/national_comparison.qs", 
+       nthreads = availableCores())
+
+rm(CD_CB, CD_GP, daily_BM, daily_CB, daily_comp_raw, daily_CT, daily_GP, 
+   daily_MT, daily_TF, daily_WL, exchange_rates, prop_BM, prop_CB, prop_comp, 
+   prop_CT, prop_GP, prop_MT, prop_TF, prop_WL, PID_CB, PID_GP, 
+   switch_to_A_comp)

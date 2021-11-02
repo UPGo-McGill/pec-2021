@@ -1617,7 +1617,7 @@ rm(property, daily, daily_all, GH)
 
 ```
 
-``` {r make_fig_2_7}
+``` {r make_fig_2_7_old}
 # 
 # figure_2_7_fun <- function(regular = "", condensed = "") {
 #   
@@ -1651,7 +1651,7 @@ rm(property, daily, daily_all, GH)
 
 <!-- In 2021, `r ml_listings` of active listings in Prince Edward County were multilistings, earning `r ml_revenue` of total host revenue. Multilistings had been steady since 2018, at ~50% on average, both in terms of listings (`r ML_per_listings_rev[1]`) and revenue percentage (`r ML_per_listings_rev[2]`). If the Covid-19 pandemic impacted their proportion, it was marginal and only on the revenue side (Figure \@ref(fig:fig-1-7)). Multilistings were and are earning close to 1 out of every 2 dollars on STR platforms in Prince Edward County.  -->
 
-``` {r fig-2-7, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
+``` {r fig-2-7-old, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
 
 # figure_2_7_fun()
 
@@ -1664,6 +1664,77 @@ These figures should be taken as highly conservative estimates. Many commercial 
 <br>
 
 ## Prince Edward County in comparison with other major tourist cities
+
+``` {r comparison, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "national_comparison.qs"))}
+
+daily_comp <- qread(here("output", "national_comparison.qs"), nthreads = availableCores())
+ 
+comp_table <-
+  daily_comp |> 
+  group_by(location, date) |> 
+  summarize(
+    active = sum(status %in% c("A", "R")),
+    res = sum(status == "R"),
+    price_eh = mean(price[status == "R" & listing_type == "Entire home/apt"]),
+    .groups = "drop") |> 
+  pivot_longer(c(active, res, price_eh), "category") |> 
+  mutate(category = case_when(
+    category == "active" ~ "Active listings",
+    category == "res" ~ "Reservations",
+    category == "price_eh" ~ "Nightly prices")) |> 
+  mutate(category = factor(category, levels = c(
+    "Active listings", "Reservations", "Nightly prices"))) |> 
+  mutate(location = factor(location, levels = c(
+    (unique(location))[c(1:4, 6:8)], "Prince Edward County")))
+
+rm(daily_comp)
+
+```
+
+``` {r make_fig_2_7}
+
+figure_2_7_fun <- function(regular = "", condensed = "") {
+  
+comp_table |> 
+  group_by(location, category) |> 
+  mutate(index = 100 * value / value[date == "2019-08-01"]) |> 
+  mutate(index = slide_dbl(index, mean, .before = 6, .complete = TRUE)) |> 
+  ungroup() |> 
+  filter(date >= "2020-01-05") |> 
+  ggplot(aes(date, index, colour = location, size = location)) +
+  geom_line() +
+  scale_x_date(name = NULL) +
+  scale_y_continuous(name = NULL) + 
+  scale_colour_manual(values = c("Prince Edward County" = col_palette[5]),
+                      na.value = "grey80") +
+  scale_size_manual(values = c("Prince Edward County" = 1.5), na.value = 0.5) +
+  facet_wrap(vars(category), scales = "free_y") +
+  theme_minimal() +
+    theme(legend.position = "none", panel.grid.minor.x = element_blank(),
+          text = element_text(family = regular),
+          strip.text = element_text(face = "bold"))
+  
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_7.pdf"), 
+         # plot = figure_2_7_fun("Futura", "Futura Condensed"), 
+         plot = figure_2_7_fun(),
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_7.pdf"))
+}
+
+```
+
+``` {r fig-2-7, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
+
+figure_2_7_fun()
+
+```
+
+
+
 
 TKTK
 
