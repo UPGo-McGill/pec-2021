@@ -1,0 +1,150 @@
+# Seasonality pattern of STR in PEC meets Covid-19
+
+<style type="text/css">
+  body{
+  font-family: Futura, Helvetica, Arial;
+}
+</style>
+
+<br>
+
+```{r setup, include = FALSE, echo = FALSE}
+
+library(here)
+source(here("R", "01_startup.R"))
+
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+# Function for checking file modifications
+mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
+
+# Set this to TRUE to output PDF figures
+build_figures <- FALSE
+
+qload(here("output", "/geometry.qsm"))
+qload(here("output", "/str_processed.qsm"))
+rent_sept <- qread("output/rent_sept.qs")
+
+options(tinytex.verbose = TRUE)
+
+```
+
+```{r new_objects}
+
+```
+
+```{r exec_summ}
+
+
+```
+
+**TKTK**
+
+<br>
+
+```{r para_1}
+
+num_bedrooms <- 
+  property %>% 
+  st_drop_geometry() %>% 
+  mutate(bedrooms = if_else(bedrooms >= 3, 3, bedrooms)) %>% 
+  select(property_ID, bedrooms)
+
+FREH_properties <- 
+  daily %>% 
+  filter(FREH_6) %>% 
+  distinct(property_ID) %>% 
+  pull()
+
+LTM_revenue <- 
+  daily %>% 
+  left_join(num_bedrooms) %>% 
+  filter(date >= max(daily$date) - years(1), status == "R", listing_type == "Entire home/apt",
+         property_ID %in% FREH_properties) %>%
+  mutate(ward = if_else(!ward %in% c("Picton", "Wellington", "Bloomfield"), 
+                        "Township", ward)) %>% 
+  group_by(property_ID, ward, bedrooms) %>% 
+  summarize(rev_LTM = sum(price)) 
+
+rev_2019 <- 
+  daily %>% 
+  left_join(num_bedrooms) %>% 
+  filter(date >= start_2019, date <= end_2019, status == "R", 
+         listing_type == "Entire home/apt", property_ID %in% FREH_properties) %>%
+  mutate(ward = if_else(!ward %in% c("Picton", "Wellington", "Bloomfield"), 
+                        "Township", ward)) %>% 
+  group_by(property_ID, ward, bedrooms) %>% 
+  summarize(rev_2019 = sum(price)) %>% 
+  ungroup()
+  
+avg_rent <- 
+rent_sept %>% 
+  group_by(ward, bedrooms) %>% 
+  summarize(rent = mean(rent))
+
+
+LTM_revenue %>% 
+  group_by(ward, bedrooms) %>% 
+  summarize(monthly_rev_LTM = mean(rev_LTM) / 12) %>% 
+  left_join(avg_rent) %>% 
+  mutate(diff = rent - monthly_rev_LTM)
+
+monthly_LTM_revenue <- 
+LTM_revenue %>% 
+  group_by(ward, bedrooms) %>% 
+  summarize(monthly_rev_LTM = mean(rev_LTM) / 12)
+
+rev_2019 %>% 
+  group_by(ward, bedrooms) %>% 
+  summarize(monthly_rev_2019 = mean(rev_2019) / 12) %>% 
+  left_join(monthly_LTM_revenue) %>% 
+  mutate(rise_rev = monthly_rev_LTM - monthly_rev_2019)
+
+```
+
+``` {r make_fig_6_1}
+
+figure_6_1_fun <- function(regular = "", condensed = "") {
+  
+    active_EW %>% 
+    ggplot() +
+    geom_sf(data = province, colour = "transparent", fill = "grey93") +
+    geom_sf(aes(fill = percentage), colour = "white") +
+    geom_sf(data = water, fill = "white", colour = "transparent") +
+    scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+                         na.value = "grey80",
+                         limits = c(0, 0.05), oob = scales::squish, 
+                         labels = scales::percent)  +
+    guides(fill = guide_colourbar(title = "STRs/\ndwelling",
+                                  title.vjust = 1)) + 
+    gg_bbox(active_EW) +
+    theme_void() +
+    theme(text = element_text(family = regular, face = "plain"),
+          legend.title = element_text(family = regular, face = "bold",
+                                      size = 7),
+          legend.title.align = 0.9,
+          legend.text = element_text(family = regular, size = 5),
+          panel.border = element_rect(colour = "white", size = 2))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_6_1.pdf"), 
+         plot = figure_6_1_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_6_1.pdf"))
+}
+
+```
+
+``` {r fig-6-1, include = TRUE, fig.cap = '(ref:fig-6-1)', fig.align = "center"}
+
+figure_6_1_fun()
+
+```
+
+\newpage

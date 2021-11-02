@@ -94,7 +94,7 @@ FREH_total <-
 GH_total <-
   GH %>%
   st_drop_geometry() %>%
-  filter(status != "B") %>% 
+  # filter(status != "B") %>% 
   group_by(date) %>%
   summarize(GH = sum(housing_units)) %>%
   mutate(GH = slide_dbl(GH, mean, .before = 29))
@@ -545,7 +545,7 @@ if (build_figures) {
 
 ```
 
-On average, for the pre-Covid years, half of entire-home listings (`r eh_housing_loss_pre_covid`) and of the private-room listings (`r pr_housing_loss_pre_covid`) were taking housing off the long-term market. On average, in 2021, only a third of entire-home listings (`r eh_housing_loss`) and a fifth of private-room listings (`r pr_housing_loss`) were being operated in a full-time or close-to-full-time fashion (Figure \@ref(fig:fig-4-3)). The yearly up-and-down pattern on Figure \@ref(fig:fig-4-3) is that, in winter, a lower percentage of FREH listings are removed from the platform than for less commercial listings. In addition, there are more active listings in the summer, shrinking the percentage of entire home/apt STR that contributes to long-term housing-loss even if their number in absolute was stable before the pandemic.
+On average, for the pre-Covid years, half of entire-home listings (`r eh_housing_loss_pre_covid`) and of the private-room listings (`r pr_housing_loss_pre_covid`) were taking housing off the long-term market. On average, in 2021, only a fourth of entire-home listings (`r eh_housing_loss`) but back to haf of private-room listings (`r pr_housing_loss`) were being operated in a full-time or close-to-full-time fashion (Figure \@ref(fig:fig-4-3)). The yearly up-and-down pattern on Figure \@ref(fig:fig-4-3) is that, in winter, a lower percentage of FREH listings are removed from the platform than for less commercial listings. In addition, there are more active listings in the summer, shrinking the percentage of entire home/apt STR that contributes to long-term housing-loss even if their number in absolute was stable before the pandemic.
 
 Table \@ref(tab:tab-4-1) summarizes STR-induced housing loss patterns by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
 
@@ -672,7 +672,7 @@ if (build_figures) {
 
 ```
 
-The `r housing_loss_2021` housing units taken off of PEC’s housing market in 2021 are `r housing_loss_pct_dwelling_2021` of the total amount of housing in the city, and this housing loss has been decentralized in all parts of the county. Figure \@ref(fig:fig-4-4) shows the proportion of each ward or dissemination area’s housing stock which was operated as a dedicated short-term rental in 2021. In Picton, `r housing_loss_pct_picton_2021` of all housing units were operating as dedicated STRs in 2021, even in the face of Covid-19. The figure is `r housing_loss_pct_wellington_2021` for Wellington and `r housing_loss_pct_bloomfield_2021` for Bloomfield.
+The `r housing_loss_2021` housing units taken off of PEC’s housing market in 2021 are `r housing_loss_pct_dwelling_2021` of the total amount of housing in the city, and this housing loss has been decentralized in all parts of the county. Figure \@ref(fig:fig-4-4) shows the proportion of each ward or dissemination area’s housing stock which was operated as a dedicated short-term rental in 2021. In Picton, `r housing_loss_pct_picton_2021` of all housing units were operating as dedicated STRs in 2021. The figure is `r housing_loss_pct_wellington_2021` for Wellington and `r housing_loss_pct_bloomfield_2021` for Bloomfield.
 
 
 ``` {r fig-4-4, include = TRUE, fig.cap = '(ref:fig-4-4)', fig.align = "center"}
