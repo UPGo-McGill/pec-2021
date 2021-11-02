@@ -45,7 +45,9 @@ options(tinytex.verbose = TRUE)
 
 <br>
 
-```{r para_1}
+## Short-term incentive program
+
+```{r short_term_incentive}
 
 num_bedrooms <- 
   property %>% 
@@ -67,67 +69,231 @@ LTM_revenue <-
   mutate(ward = if_else(!ward %in% c("Picton", "Wellington", "Bloomfield"), 
                         "Township", ward)) %>% 
   group_by(property_ID, ward, bedrooms) %>% 
-  summarize(rev_LTM = sum(price)) 
-
-rev_2019 <- 
-  daily %>% 
-  left_join(num_bedrooms) %>% 
-  filter(date >= start_2019, date <= end_2019, status == "R", 
-         listing_type == "Entire home/apt", property_ID %in% FREH_properties) %>%
-  mutate(ward = if_else(!ward %in% c("Picton", "Wellington", "Bloomfield"), 
-                        "Township", ward)) %>% 
-  group_by(property_ID, ward, bedrooms) %>% 
-  summarize(rev_2019 = sum(price)) %>% 
+  summarize(rev_LTM = sum(price)) %>% 
   ungroup()
   
 avg_rent <- 
 rent_sept %>% 
-  group_by(ward, bedrooms) %>% 
+  group_by(ward) %>% 
   summarize(rent = mean(rent))
 
+rev_to_weight_mean <- 
+  LTM_revenue %>% 
+  group_by(bedrooms) %>% 
+  summarize(monthly_rev_LTM = mean(rev_LTM) / 12,
+            weight = n())
 
-LTM_revenue %>% 
-  group_by(ward, bedrooms) %>% 
-  summarize(monthly_rev_LTM = mean(rev_LTM) / 12) %>% 
-  left_join(avg_rent) %>% 
-  mutate(diff = rent - monthly_rev_LTM)
+rent_to_weight_mean <- 
+  rent_sept %>% 
+  group_by(bedrooms) %>% 
+  summarize(monthly_rent = mean(rent),
+            weight = n())
 
-monthly_LTM_revenue <- 
-LTM_revenue %>% 
-  group_by(ward, bedrooms) %>% 
-  summarize(monthly_rev_LTM = mean(rev_LTM) / 12)
+avg_monthly_rev_LTM <- 
+weighted.mean(rev_to_weight_mean$monthly_rev_LTM,
+              rent_to_weight_mean$weight) %>% 
+  round(-1) %>% 
+  scales::dollar()
 
-rev_2019 %>% 
-  group_by(ward, bedrooms) %>% 
-  summarize(monthly_rev_2019 = mean(rev_2019) / 12) %>% 
-  left_join(monthly_LTM_revenue) %>% 
-  mutate(rise_rev = monthly_rev_LTM - monthly_rev_2019)
+avg_monthly_rent <- 
+weighted.mean(rent_to_weight_mean$monthly_rent,
+              rent_to_weight_mean$weight) %>% 
+  round(-1) %>% 
+  scales::dollar()
 
+var_rev_rent <- 
+{(weighted.mean(rev_to_weight_mean$monthly_rev_LTM,
+              rent_to_weight_mean$weight) - 
+weighted.mean(rent_to_weight_mean$monthly_rent,
+              rent_to_weight_mean$weight)) /
+weighted.mean(rent_to_weight_mean$monthly_rent,
+              rent_to_weight_mean$weight)} %>% 
+  scales::percent()
+
+
+```
+
+Prior to changing regulations, PEC might be interested in a short-term incentive program to bring short-term rentals back to the longer-term market. A financial incentive can be given to STR hosts to change the market on which their housing units operate. We looked at how much a commercial STR made monthly in the last twelve months, compared to rent data in September 2021. As 3+ bedrooms units are over-represented on the STR, we looked at the weighted average of monthly STR revenue and rent. Commercial listings made a weighted average of `r avg_monthly_rev_LTM` a month, while the weighted average monthly rent was of `r avg_monthly_rent` in September. It represents a difference of `r var_rev_rent`.
+
+```{r on_water, cache = TRUE, cache.lazy = FALSE}
+
+qload(here("output", "geometry.qsm"), nthreads = availableCores())
+
+ocean <-
+  read_sf(here("data", "shapefiles", "lhy_000h16a_e.shp")) %>%
+  st_transform(32618)
+
+ocean <-
+  ocean %>%
+  st_filter(select(city, -everything()))
+
+river <-
+  read_sf(here("data", "shapefiles", "lhy_000c16a_e.shp")) %>%
+  st_transform(32618)
+
+river <-
+  river %>%
+  st_filter(select(city, -everything()))
+
+water <- rbind(select(river, -everything()), select(ocean, -everything()))
+
+rm(ocean, river, city)
 ```
 
 ``` {r make_fig_6_1}
 
+rent_wards <- 
+EW %>% 
+  mutate(ward = if_else(type == "Township", "Township", ward)) %>%
+  group_by(ward) %>% 
+  summarize() %>% 
+  left_join(avg_rent)
+
+weight_rent_sept <- 
+rent_sept %>% 
+  group_by(ward, bedrooms)  %>% 
+  summarize(mean_rent = mean(rent),
+            weight = n())
+
+weight_revenue_ward <- 
+LTM_revenue %>% 
+  group_by(ward, bedrooms) %>% 
+  summarize(mean_rev = mean(rev_LTM) / 12,
+            weight = n()) 
+
+# Weighted average to compare with rents
+LTM_revenue_ward <- 
+tibble(ward = c("Bloomfield", "Wellington", "Township", "Picton"), mean_rev = c(weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Bloomfield",]$mean_rev,
+weight_rent_sept[weight_rent_sept$ward == "Bloomfield",]$weight),
+weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Wellington",]$mean_rev,
+weight_rent_sept[weight_rent_sept$ward == "Wellington",]$weight),
+weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Township",]$mean_rev,
+weight_rent_sept[weight_rent_sept$ward == "Township",]$weight),
+weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Picton",]$mean_rev,
+weight_rent_sept[weight_rent_sept$ward == "Picton",]$weight)))
+
+surplus_rent <- 
+LTM_revenue_ward %>% 
+  left_join(rent_wards) %>% 
+  mutate(surplus = round(mean_rev - rent, -1)) %>% 
+  st_as_sf()
+
 figure_6_1_fun <- function(regular = "", condensed = "") {
   
-    active_EW %>% 
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = percentage), colour = "white") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
-                         na.value = "grey80",
-                         limits = c(0, 0.05), oob = scales::squish, 
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "STRs/\ndwelling",
-                                  title.vjust = 1)) + 
-    gg_bbox(active_EW) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold",
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5),
-          panel.border = element_rect(colour = "white", size = 2))
+townships <- 
+surplus_rent[surplus_rent$ward == "Township",] %>% 
+  ggplot() +
+  geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(
+    aes(fill = surplus),
+    lwd = 0,
+    colour = "white"
+  ) +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+                       na.value = "grey80",
+                       limits = c(min(surplus_rent$surplus), 
+                                  max(surplus_rent$surplus)),
+                       oob = scales::squish, 
+                       labels = scales::dollar)+
+  gg_bbox(surplus_rent)+
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.key.width= unit(1.5, 'cm'),
+    legend.title = element_blank()
+  )+
+  geom_sf_label(aes(label = scales::dollar(round(surplus))),
+                nudge_y = 5000, nudge_x = -5000)+
+  ggtitle("Townships")
+
+picton <- 
+  surplus_rent[surplus_rent$ward == "Picton",] %>% 
+  ggplot() +
+  # geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(
+    aes(fill = surplus),
+    lwd = 0,
+    colour = "white"
+  ) +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+                       na.value = "grey80",
+                       limits = c(min(surplus_rent$surplus), 
+                                  max(surplus_rent$surplus)),
+                       oob = scales::squish, 
+                       labels = scales::dollar)+
+  gg_bbox(surplus_rent[surplus_rent$ward == "Picton",])+
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.key.width= unit(1.5, 'cm'),
+    legend.title = element_blank()
+  )+
+  geom_sf_label(aes(label = scales::dollar(round(surplus))))+
+  ggtitle("Picton")
+
+bloomfield <- 
+  surplus_rent[surplus_rent$ward == "Bloomfield",] %>% 
+  ggplot() +
+  # geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(
+    aes(fill = surplus),
+    lwd = 0,
+    colour = "white"
+  ) +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+                       na.value = "grey80",
+                       limits = c(min(surplus_rent$surplus), 
+                                  max(surplus_rent$surplus)),
+                       oob = scales::squish, 
+                       labels = scales::dollar)+
+  gg_bbox(surplus_rent[surplus_rent$ward == "Bloomfield",])+
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.key.width= unit(1.5, 'cm'),
+    legend.title = element_blank()
+  )+
+  geom_sf_label(aes(label = scales::dollar(round(surplus))))+
+  ggtitle("Bloomfield")
+
+wellington <- 
+  surplus_rent[surplus_rent$ward == "Wellington",] %>% 
+  ggplot() +
+  # geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(
+    aes(fill = surplus),
+    lwd = 0,
+    colour = "white"
+  ) +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+                       na.value = "grey80",
+                       limits = c(min(surplus_rent$surplus), 
+                                  max(surplus_rent$surplus)),
+                       oob = scales::squish, 
+                       labels = scales::dollar)+
+  gg_bbox(surplus_rent[surplus_rent$ward == "Wellington",])+
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.key.width= unit(1.5, 'cm'),
+    legend.title = element_blank()
+  )+
+  geom_sf_label(aes(label = scales::dollar(round(surplus))))+
+  ggtitle("Wellington")
+
+
+
+library(patchwork)
+
+combined <- 
+(townships + picton) / (bloomfield + wellington) & 
+  theme(legend.position = "bottom")
+
+combined + plot_layout(guides = "collect")
 
 }
 
@@ -146,5 +312,44 @@ if (build_figures) {
 figure_6_1_fun()
 
 ```
+
+(ref:fig-6-1) _Average amount of monthly subsidy necessary to turn a STR to the LTR market_
+
+``` {r short_term_incentive_2}
+
+subisdy_outside_wellington <- 
+surplus_rent %>% 
+  st_drop_geometry() %>% 
+  filter(ward != "Wellington") %>% 
+  summarize(mean(surplus)) %>% 
+  pull() %>% 
+  round(-1) %>% 
+  scales::dollar()
+
+subisdy_wellington <- 
+surplus_rent %>% 
+  st_drop_geometry() %>% 
+  filter(ward == "Wellington") %>% 
+  summarize(mean(surplus)) %>% 
+  pull() %>% 
+  round(-1) %>% 
+  scales::dollar()
+
+```
+
+While rents are similar across the county, monthly revenue in STR differ from a location to another. In fact, the great difference only occurs in Wellington.
+Figure \@ref(fig:fig-6-1) shows the average amount of monthly subsidy that would be necessary to turn a STR to the LTR market. On average, this short-term incentive program would cost the county `r subisdy_wellington` per unit in Wellington, and `r subisdy_outside_wellington` in the rest of the county. It does not make it much of a viable solution.
+
+## Regulation option 1
+
+Open the flood gate return to previous 2019 option, leading to X new STR. The price would go down, but what gives! They would allow it, punto.
+
+## Regulation option 2
+
+They want it to be a business license. They want to be able to put conditions on STR, which is different if it’s just zoning. Context of regulation: vast demand from outside of town. Try to shift STR to owner-occupied. Vast incentive for locals to leave the summer and rent STR for the summer. Get the vast demand in places where they operate sporadically. Very strict no secondary home STR. These business permits are only open for residents. If your legal residence isn’t that home, then you’re not allowed. Creating incentives for local to rent their place in summer. __Maybe different geographically: towns (principal residents) vs countryside (run wild).__
+
+## Regulation option 3
+Only able to get a business licence for principal residents all over. Grand fathering for people that already have a license for their second residence. 
+
 
 \newpage
