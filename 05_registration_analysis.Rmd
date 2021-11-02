@@ -276,9 +276,98 @@ figure_5_1_fun()
 
 (ref:fig-5-1) _Number of new STR properties created by day, 7-day rolling average_
 
+# How is the STA market related to Prince Edward County's housing market?
+
+The STA registration database enabled the analysis of the license applications with the house sales that occurred from 2016 to today. This acts a an indicator of the contribution of short-term rental to the County's current housing situation. Have properties been sold to then apply to become a STA? Or conversingly, have properties been converted into STAs, and then sold on the market as short-term rental investment properties? 
 
 ```{r, include = T}
 
+home_sales <- qread(here("output", "home_sales.qs"),
+                              nthreads = availableCores())
+
+sold_before_created <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created) %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created <- 
+{sold_before_created / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+sold_before_created_2017 <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created,
+         sale_date >= "2017-01-01") %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created_2017 <- 
+{sold_before_created_2017 / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+sold_before_created_2018 <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created,
+         sale_date >= "2018-01-01", sale_date <= "2018-12-31") %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created_2018 <- 
+{sold_before_created_2018 / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+sold_before_created_2019 <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created,
+         sale_date >= "2019-01-01", sale_date <= "2019-12-31") %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created_2019 <- 
+{sold_before_created_2019 / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+sold_before_created_2020 <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created,
+         sale_date >= "2020-01-01", sale_date <= "2020-12-31") %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created_2020 <- 
+{sold_before_created_2020 / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+created_before_sale <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date >= created) %>% 
+  count(address) %>% 
+  nrow()
 
 ```
+
+There are `r sold_before_created` housing units that were sold since 2016 that then applied for a STA license during the application period. Out of all the `r total_licenses_all` license applications received by the county, about a third (`r per_sold_before_created`) of them were for housing units that were bought after January 2016. `r per_sold_before_created_2017` license applications were for properties bought in 2017, `r per_sold_before_created_2018` for properties bought in 2018, `r per_sold_before_created_2019`in 2019, and finally `r per_sold_before_created_2020` in 2020. Registrations being linked to newly bought housing units shows that a number of units are bought with the purpose of turning them in STR, and the registration system allows for it. There was also a lower number of STA license applications (`r created_before_sale`) that were received for properties that were then sold shortly after, most likely as an investment property operating as a short-term rental.
+
+
+
+
 
