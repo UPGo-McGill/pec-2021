@@ -38,6 +38,8 @@ library(kableExtra)
 
 start_reg <- as.Date("2019-11-04")
 end_reg <- as.Date("2020-09-04")
+start_mora <- as.Date("2020-09-05")
+end_mora <- as.Date("2021-06-22")
 
 # Get properties active during the period when the registration was into effect
 reg_property <- 
@@ -182,16 +184,97 @@ n_not_entire_apt <-
   filter(entire_apt == FALSE) %>% 
   pull(n)
 
-# 
+n_created_reg <- 
+  property %>% 
+  st_drop_geometry() %>% 
+  filter(housing == TRUE) %>% 
+  filter(created >= start_reg, created <= end_mora) %>% 
+  group_by(created >= start_mora) %>% 
+  summarize(n = n()) %>% 
+  set_names(c("during_mora", "n")) %>% 
+  filter(during_mora == FALSE) %>% 
+  pull(n)
+
+n_created_mora <- 
+  property %>% 
+  st_drop_geometry() %>% 
+  filter(housing == TRUE) %>% 
+  filter(created >= start_reg, created <= end_mora) %>% 
+  group_by(created >= start_mora) %>% 
+  summarize(n = n()) %>% 
+  set_names(c("during_mora", "n")) %>% 
+  filter(during_mora == TRUE) %>% 
+  pull(n)
+
+n_created_post_mora <- 
+  property %>% 
+  st_drop_geometry() %>% 
+  filter(housing == TRUE) %>% 
+  filter(created >= end_mora) %>% 
+  nrow()
 
 ```
 
 Out of the `r n_valid_STA_bc` STAs operating with a license during the 10 months of operation, `r n_entire_apt` licenses were for entire home properties, or housing units entirely operated at a STA. The larger proportion of accommodations (`r n_not_entire_apt`) were not entire housing units, but rather a portion of a property or a traditional short-term accommodation, such as a hotel or a camp site. One third (`r n_3_bed`) of the licenses were emitted for accommodations with 3 bedrooms. Close to a quarter (`r n_2_bed`) were for 2-bedroom accommodations and more than one sixth (`r n_4_bed`) were for 4-bedroom accommodations. 
 
-```{r, include = T}
+# The effect of the STA registration system on the STR market
 
+```{r make_fig_5_1}
+
+figure_5_1_fun <- function(regular = "", condensed = "") {
+
+property %>% 
+  st_drop_geometry() %>% 
+  count(created) %>% 
+  mutate(n = slide_dbl(n, mean, .before = 6)) %>%
+  filter(created >= start_2019) %>% 
+  ggplot(aes(created, n)) +
+  geom_line(color = col_palette[3]) +
+  geom_text(aes(x = start_reg, y = 10,
+                label = "STA registration\nin effect"),
+            family = "Futura Condensed", 
+            inherit.aes = FALSE, hjust = 1) +
+  geom_text(aes(x = end_mora, y = 10,
+                label = "STA registration\nmoratorium"),
+            family = "Futura Condensed", 
+            inherit.aes = FALSE, hjust = 0) +
+  geom_segment(aes(x = as.Date("2019-10-01"), xend = as.Date("2019-12-01"),
+                   y = 9, yend = 8),
+               colour = "black",
+               arrow = arrow(length = unit(0.1, "cm"),type = "open"))+
+  geom_segment(aes(x = as.Date("2021-07-01"), xend = as.Date("2021-05-01"),
+                   y = 9, yend = 8),
+               colour = "black",
+               arrow = arrow(length = unit(0.1, "cm"),type = "open"))+
+  annotate("rect", xmin = start_reg, xmax = end_reg, fill = col_palette[1],
+           ymin = -Inf, ymax = Inf, alpha = 0.2) +
+  annotate("rect", xmin = start_mora, xmax = end_mora, fill = col_palette[2],
+           ymin = -Inf, ymax = Inf, alpha = 0.2) +
+  scale_x_date(name = NULL) +
+  scale_y_continuous(name = NULL) +
+  theme_minimal()
+  
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_5_1.pdf"), 
+         plot = figure_5_1_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_5_1.pdf"))
+}
 
 ```
+
+The STA registration system operated from November 2019 to September 2020, up until Prince Edward County's city council voted on a STA registration moratorium amidst the Covid-19 pandemic (Countylive 2020). No new short-term rental accommodations were technically allowed to be created in Prince Edward County from the end of September 2020. The STA registration moratorium was lifted in the end of June 2021 for bed & breakfasts and owner-occupied STRs only (Countylive 2021). Looking at Figure \@ref(fig:fig-5-1), we can see the number of new properties created on Airbnb and/or VRBO per day, both during the STA registration period and the STA registration moratorium. The number of listings being created started to decrease at the end of 2019. During the 10-month STA registration period, a total of `r n_created_reg` new STR listings operating out of housing units were created. In the following 7-month moratorium, `r n_created_mora` new listings were created, with an additional `r n_created_post_mora` in the partial partial moratorium period, spanning from June 2021 to the end of August (the end of the available data). Both the registration and the moratorium did not seem to have a direct effect on the creation of new STRs, which has remained similar in both periods studied. However, we can see that a resurgence of new listings being created occurred during the 2021 peak season.
+
+``` {r fig-5-1, include = TRUE, fig.cap = '(ref:fig-5-1)', fig.align = "center"}
+
+figure_5_1_fun()
+
+```
+
+(ref:fig-5-1) _Number of new STR properties created by day, 7-day rolling average_
 
 
 ```{r, include = T}
