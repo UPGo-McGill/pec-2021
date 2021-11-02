@@ -22,7 +22,7 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- FALSE
+build_figures <- TRUE
 
 
 ```
@@ -40,16 +40,14 @@ daily <-
 # 2021 active
 active_2021 <- 
   daily %>%
-  filter(housing, status %in% c("R", "A"), 
-         date >= start_2021) %>%
+  filter(status %in% c("R", "A"), date >= start_2021) %>%
   pull(property_ID) %>% 
   unique()
   
 # 2021 revenue
 revenue_2021 <-
   daily %>%
-  filter(housing, status == "R", 
-         date >= start_2021) %>%
+  filter(status == "R", date >= start_2021) %>%
   group_by(property_ID) %>%
   summarize(revenue_2021 = sum(price), .groups = "drop") %>% 
   inner_join(property, ., by = "property_ID")
@@ -57,16 +55,14 @@ revenue_2021 <-
 # 2019 active
 active_2019 <- 
   daily %>%
-  filter(housing, status %in% c("R", "A"), date <= end_2019, 
-         date >= start_2019) %>%
+  filter(status %in% c("R", "A"), date <= end_2019, date >= start_2019) %>%
   pull(property_ID) %>% 
   unique()
 
 # 2019 revenue
 revenue_2019 <-
   daily %>%
-  filter(housing, status == "R", date <= end_2019, 
-         date >= start_2019) %>%
+  filter(status == "R", date <= end_2019, date >= start_2019) %>%
   group_by(property_ID) %>%
   summarize(revenue_2019 = sum(price), .groups = "drop") %>% 
   inner_join(property, ., by = "property_ID")
@@ -74,7 +70,7 @@ revenue_2019 <-
 # Active listings
 active_listings <- 
   daily %>% 
-  filter(housing, status != "B") %>% 
+  filter(status != "B") %>% 
   count(date, listing_type) %>% 
   group_by(listing_type) %>% 
   mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE)) %>% 
@@ -82,7 +78,7 @@ active_listings <-
 
 active_listings <- 
   daily %>% 
-  filter(housing, status != "B") %>% 
+  filter(status != "B") %>% 
   count(date) %>% 
   mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE),
          listing_type = "All listings") %>% 
@@ -92,7 +88,7 @@ active_listings <-
 # Daily variation
 daily_variation <- 
   daily %>% 
-  filter(housing, status != "B", date != "2020-02-29") %>%
+  filter(status != "B", date != "2020-02-29") %>%
   group_by(date) %>% 
   summarize("Active listings" = n(), Revenue = sum(price[status == "R"])) %>% 
   mutate(across(where(is.numeric), 
@@ -110,7 +106,7 @@ daily_variation <-
 # EW breakdown
 EW_breakdown <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019, 
+  filter(status != "B", date >= start_2019, 
          !c(date >= start_2020 & date <= end_2020)) %>% 
   group_by(date, ward) %>% 
   summarize(n = n(),
@@ -133,7 +129,7 @@ EW_breakdown <-
 # Active listings by EW
 active_EW <-
   daily %>%
-  filter(housing, status != "B", date >= start_2021) %>%
+  filter(status != "B", date >= start_2021) %>%
   count(ward, date) %>% 
   group_by(ward) %>% 
   summarize(n = mean(n, na.rm = TRUE)) %>%
@@ -144,7 +140,7 @@ active_EW <-
 # Active listings by DA
 active_DA <-
   daily %>%
-  filter(housing, status != "B", date >= start_2021) %>%
+  filter(status != "B", date >= start_2021) %>%
   left_join(select(st_drop_geometry(property), property_ID, GeoUID)) %>% 
   count(GeoUID, date) %>% 
   group_by(GeoUID) %>% 
@@ -157,7 +153,7 @@ active_DA <-
 # Listing type breakdown
 listing_type_breakdown <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2021) %>% 
+  filter(status != "B", date >= start_2021) %>% 
   group_by(listing_type) %>% 
   summarize(
     active_listings = round(n() / yday(max(date))),
@@ -168,30 +164,30 @@ listing_type_breakdown <-
 
 listing_type_breakdown <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019 - years(1), 
+  filter(status != "B", date >= start_2019 - years(1), 
          date <= end_2019 - years(1)) %>% 
   group_by(listing_type) %>% 
   summarize(active_2019 = round(n() / 365)) %>% 
   left_join(listing_type_breakdown, .) %>% 
-  mutate(pct_listing_growth_2019_2021 = (active_listings - active_2019) / active_2019) %>% 
+  mutate(pct_listing_growth_2019_2021 = (active_listings - active_2019) / 
+           active_2019) %>% 
   select(-active_2019)
 
 # Host revenue table for calculations and table
 host_rev <-
   daily %>%
-  filter(housing, date >= start_2021, 
-         status == "R", !is.na(host_ID)) %>%
+  filter(date >= start_2021, status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price))
 
 host_rev_2019 <-
   daily %>%
-  filter(housing, date >= start_2019, date <= end_2019,
-         status == "R", !is.na(host_ID)) %>%
+  filter(date >= start_2019, date <= end_2019, status == "R", 
+         !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price))
 
-rm(property, daily, GH, DA, city)
+rm(property, daily, daily_all, GH, DA, city)
 
 
 ```
@@ -203,7 +199,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 # Average active and blocked daily listings in 2021
 avg_listings <- 
   daily %>% 
-  filter(housing, date >= start_2021) %>% 
+  filter(date >= start_2021) %>% 
   count(date, B = status == "B") %>% 
   group_by(B) %>% 
   summarize(avg = round(mean(n), digit = -1), .groups = "drop")
@@ -215,7 +211,7 @@ avg_listings_active <-
 # Average active and blocked daily listings in 2019
 avg_listings_2019 <- 
   daily %>% 
-  filter(housing, date >= start_2019, date <= end_2019) %>% 
+  filter(date >= start_2019, date <= end_2019) %>% 
   count(date, B = status == "B") %>% 
   group_by(B) %>% 
   summarize(avg = round(mean(n), digit = -1), .groups = "drop")
@@ -292,7 +288,7 @@ ml_listings <-
 # 2021 ML revenue
 ml_revenue <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2021) %>% 
+  filter(status == "R", date >= start_2021) %>% 
   group_by(multi) %>% 
   tally(price) %>% 
   summarize(multi_rev = n[2] / sum(n)) %>% 
@@ -302,8 +298,7 @@ ml_revenue <-
 # 2019 ML listings
 ml_listings_2019 <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2021, 
-         date <= end_2019) %>% 
+  filter(status != "B", date >= start_2021, date <= end_2019) %>% 
   count(multi) %>% 
   summarize(ML = n[2] / sum(n)) %>% 
   pull(ML) %>% 
@@ -312,19 +307,18 @@ ml_listings_2019 <-
 # 2019 ML revenue
 ml_revenue_2019 <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2021, 
-         date <= end_2019) %>% 
+  filter(status == "R", date >= start_2021, date <= end_2019) %>% 
   group_by(multi) %>% 
   tally(price) %>% 
   summarize(multi_rev = n[2] / sum(n)) %>% 
   pull(multi_rev) %>% 
   scales::percent(0.1)
 
-rm(property, daily, GH)
+rm(property, daily, daily_all, GH)
 
 ```
 
-**There are on a daily average `r avg_listings_active` active STR listings in Prince Edward County housing units in 2021, which collectively earns `r daily_rev` a day. This is a dramatic decline in comparison to 2019 (`r avg_listings_active_2019` daily active listings). STR activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning almost half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STR listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
+**There are on a daily average `r avg_listings_active` active STR listings in Prince Edward County housing units in 2021, which collectively earn `r daily_rev` a day. This is a dramatic decline in comparison to 2019 (`r avg_listings_active_2019` daily active listings). STR activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning almost half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STR listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
 
 <br>
 
@@ -341,7 +335,7 @@ avg_listings_active_2019 <-
 # Average number of hosts in 2021 (taking out blocked 365 days)
 avg_hosts <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2021) %>%
+  filter(status != "B", date >= start_2021) %>%
   count(date, host_ID) %>% 
   count(date) %>% 
   summarize(hosts = round(mean(n), digit = -1), .groups = "drop") %>% 
@@ -351,8 +345,7 @@ avg_hosts <-
 # Average number of hosts in 2019 (taking out blocked 365 days)
 avg_hosts_2019 <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019, 
-         date <= end_2019) %>%
+  filter(status != "B", date >= start_2019, date <= end_2019) %>%
   count(date, host_ID) %>% 
   count(date) %>% 
   summarize(hosts = round(mean(n), digit = -1), .groups = "drop") %>% 
@@ -364,7 +357,7 @@ avg_rev_per_listing <-
   # Since there aren't 365 days in 2021, we need to avg per day
   {(sum(revenue_2021$revenue_2021) / yday(max(daily$date))) /
     daily %>% 
-    filter(housing, status != "B", date >= start_2021) %>% 
+    filter(status != "B", date >= start_2021) %>% 
     count(date) %>% 
     summarize(avg_rev_per_active = round(mean(n)), .groups = "drop")} %>% 
   as.vector() %>% 
@@ -376,7 +369,7 @@ avg_rev_per_listing <-
 avg_rev_per_listing_2019 <- 
   {(sum(revenue_2019$revenue_2019) / 365) /
     daily %>% 
-    filter(housing, status != "B", date >= start_2019, date <= end_2019) %>% 
+    filter(status != "B", date >= start_2019, date <= end_2019) %>% 
     count(date) %>% 
     summarize(avg_rev_per_active_2019 = round(mean(n)), .groups = "drop")} %>% 
   as.vector() %>% 
@@ -388,7 +381,7 @@ avg_rev_per_listing_2019 <-
 avg_rev_per_host <- 
   {(sum(revenue_2021$revenue_2021) / yday(max(daily$date))) /
     daily %>% 
-    filter(housing, status != "B", date >= start_2021) %>%
+    filter(status != "B", date >= start_2021) %>%
     group_by(date) %>% 
     summarize(n_hosts = length(unique(host_ID)), .groups = "drop_last") %>% 
     summarize(avg_n_hosts = round(mean(n_hosts)), .groups = "drop")} %>% 
@@ -400,7 +393,7 @@ avg_rev_per_host <-
 avg_rev_per_host_2019 <- 
   {(sum(revenue_2019$revenue_2019) / 365) /
     daily %>% 
-    filter(housing, status != "B", date >= start_2019, date <= end_2019) %>% 
+    filter(status != "B", date >= start_2019, date <= end_2019) %>% 
     group_by(date) %>% 
     summarize(n_hosts = length(unique(host_ID)), .groups = "drop_last") %>% 
     summarize(avg_n_hosts20 = round(mean(n_hosts)), .groups = "drop")} %>% 
