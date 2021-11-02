@@ -150,7 +150,7 @@ figure_3_1_fun()
 
 Figure \@ref(fig:fig-3-1), prior to the two disruptions shown by vertical lines, shows not only an upward trend in the number of reservations in Prince Edward County, but also a strong seasonality pattern. The market usually sees its higher peaks in August and its lowest point in February, with a small peak in the holiday season. Overall, the summer months (from May to September) account for `r summer_months` of the total number of reservations in a year, which showcases the strong seasonality pattern.
 
-The arrow on the plot emphasizes the growth trend in the demand of the STR market in PEC before the disruptions that are the regulations and the COVID-19 pandemic. Between 2018 and 2019, summer months have seen an increase of `r yoy_2019`. Between 2019 and 2021, we have seen a decrease of `r yoy_2021` in the number of reserved days in the summer months.
+The arrow on the plot emphasizes the growth trend in demand of STRs in PEC before the disruptions that are the regulations and the COVID-19 pandemic. Between 2018 and 2019, summer months have seen an increase of `r yoy_2019`. Between 2019 and 2021, we have seen a decrease of `r yoy_2021` in the number of reserved days in the summer months.
 
 
 <!-- ### A short-lasting regulation -->
@@ -306,9 +306,9 @@ variation_df %>%
 
 ```
 
-While the seasonal pattern in the number of monthly full-time STR looks strong, the pattern is even stronger when looking at the actual demand in STR. In 2019, the number of reserved nights on a monthly basis ranged between `r min(precovid$precovid_reservations)` and `r max(precovid$precovid_reservations)`. Therefore, Table \@ref(tab:tab-3-2) reinforces the strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months. Pre-Covid, the peak month, August, stood out (in color) more than when during the last 12 months. Indeed, the seasonality pattern has flattened in the last 12 months, and while it is still very significant, it has weakened and the summer months get a smaller share of the total yearly reservations then they did prior to the pandemic.
+While the seasonal pattern in the number of monthly full-time STR looks strong, the pattern is even stronger when looking at the actual demand in STR. In 2019, the number of reserved nights on a monthly basis ranged between `r min(precovid$precovid_reservations)` and `r max(precovid$precovid_reservations)`. Therefore, Table \@ref(tab:tab-3-2) reinforces the strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months. In pre-Covid times, the peak month of August stood out (in color) more than when during the last 12 months. Indeed, the seasonality pattern has flattened in the last 12 months, and while it is still very significant, it has weakened and the summer months get a smaller share of the total yearly reservations then they did prior to the pandemic.
 
-In opposition to the impact of Covid on the supply side of the market, the demand, pictured in the number of days reserved, has seen much less sharper decrease. While the peak months of July and August 2021 have seen fewer bookings, this is not the case for the rest of the last twelve months, where there has been growth in bookings despite the pandemic.
+In opposition to the impact of Covid on the supply side of the market, the demand, pictured in the number of days reserved, has seen much less sharper decrease. While the peak months of July and August 2021 have seen fewer bookings, this is not the case for the majority of the rest of the last twelve months, where there has been growth in bookings despite the pandemic.
 
 ```{r para_5}
 
@@ -384,7 +384,7 @@ figure_3_2_fun()
 
 (ref:fig-3-2) _Percentage of yearly reservations happening each day, January to August (7-day average)_
 
-Table \@ref(tab:tab-3-1) and Table \@ref(tab:tab-3-2) show a sharp decrease in supply due to the pandemic, and a much smaller decrease (even growth in the majority of the months) in demand in the last 12 months. While local hosts may have been more reluctant to share their homes, the pandemic may have stimulated demand in Ontario for STR local vacation homes. This disequilibrium between supply and demand has caused prices to go up by an astonishing amount starting right after the pandemic, and prices haven't stopped rising since (Figure \@ref(fig:fig-3-2)). At its higher point, average daily prices in 2021 was `r peak_price_2021`, while it was `r peak_price_2019` in 2019. From January to August 2021, nightly prices have been `r var_rise_price` higher than during these same months of 2019.
+Table \@ref(tab:tab-3-1) and Table \@ref(tab:tab-3-2) show a sharp decrease in supply due to the pandemic, and a much smaller decrease (even growth in the majority of the months) in demand in the last 12 months. While local hosts may have been more reluctant to share their homes, the pandemic may have stimulated demand in Ontario for STR local vacation homes. This disequilibrium between supply and demand has caused prices to go up by an astonishing amount starting right after the pandemic, and prices haven't stopped rising since (Figure \@ref(fig:fig-3-2)). At its higher point, the average daily prices in 2021 was `r peak_price_2021`, while it was `r peak_price_2019` in 2019. From January to August 2021, nightly prices have been `r var_rise_price` higher than during these same months of 2019.
 
 
 ## Changes in the seasonality pattern
@@ -470,7 +470,7 @@ figure_3_3_fun()
 
 (ref:fig-3-3) _Percentage of yearly reservations happening each day, January to August (7-day average)_
 
-In years prior to the global pandemic, the percentage of reserved nights made in each month of the year followed a strong seasonality pattern, with August being the peak month at `r august_2019_per_R` of the annual total of reserved nights. Figure \@ref(fig:fig-3-3) shows that the pandemic disrupted this pattern. Indeed, in August 2021, the figure had dropped to `r august_2021_per_R`. We are observing a flatter line in 2021, with summer months having a relatively lower impact. The usual very strong seasonality pattern is different, weaker, flatter, in times of COVID. 
+In years prior to the global pandemic, the percentage of reserved nights made in each month of the year followed a strong seasonality pattern, with August being the peak month at `r august_2019_per_R` of the annual total of reserved nights. Figure \@ref(fig:fig-3-3) shows that the pandemic disrupted this pattern. Indeed, in August 2021, the figure had dropped to `r august_2021_per_R`. We are observing a flatter line in 2021, with summer months having a relatively lower impact. The usual very strong seasonality pattern is different, weaker, flatter, in times of Covid. 
 
 ```{r, make_fig_3_4}
 

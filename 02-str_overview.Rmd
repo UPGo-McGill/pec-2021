@@ -40,14 +40,16 @@ daily <-
 # 2021 active
 active_2021 <- 
   daily %>%
-  filter(status %in% c("R", "A"), date >= start_2021) %>%
+  filter(status %in% c("R", "A"), 
+         date >= start_2021) %>%
   pull(property_ID) %>% 
   unique()
   
 # 2021 revenue
 revenue_2021 <-
   daily %>%
-  filter(status == "R", date >= start_2021) %>%
+  filter(status == "R", 
+         date >= start_2021) %>%
   group_by(property_ID) %>%
   summarize(revenue_2021 = sum(price), .groups = "drop") %>% 
   inner_join(property, ., by = "property_ID")
@@ -55,14 +57,16 @@ revenue_2021 <-
 # 2019 active
 active_2019 <- 
   daily %>%
-  filter(status %in% c("R", "A"), date <= end_2019, date >= start_2019) %>%
+  filter(status %in% c("R", "A"), date <= end_2019, 
+         date >= start_2019) %>%
   pull(property_ID) %>% 
   unique()
 
 # 2019 revenue
 revenue_2019 <-
   daily %>%
-  filter(status == "R", date <= end_2019, date >= start_2019) %>%
+  filter(status == "R", date <= end_2019, 
+         date >= start_2019) %>%
   group_by(property_ID) %>%
   summarize(revenue_2019 = sum(price), .groups = "drop") %>% 
   inner_join(property, ., by = "property_ID")
@@ -176,7 +180,8 @@ listing_type_breakdown <-
 # Host revenue table for calculations and table
 host_rev <-
   daily %>%
-  filter(date >= start_2021, status == "R", !is.na(host_ID)) %>%
+  filter(date >= start_2021, 
+         status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price))
 
@@ -220,6 +225,13 @@ avg_listings_active_2019 <-
   avg_listings_2019$avg[1] %>% 
   prettyNum(",")
 
+# Variation daily active listings 2019 vs 2021
+var_active_listings_2019_2021 <- 
+  {(avg_listings[avg_listings$B == FALSE,]$avg -
+  avg_listings_2019[avg_listings_2019$B == FALSE,]$avg) /
+  avg_listings_2019[avg_listings_2019$B == FALSE,]$avg} %>% 
+  scales::percent()
+
 # Daily revenue in 2021
 daily_rev <- 
   {{revenue_2021$revenue_2021 %>% 
@@ -235,6 +247,16 @@ daily_rev_2019 <-
   round(-3) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
+
+# Variation revenue 2019 vs 2021
+var_daily_rev_2019_2021 <- 
+  {({{revenue_2021$revenue_2021 %>% 
+  sum()}/yday(max(daily$date))} -
+  {{revenue_2019$revenue_2019 %>% 
+  sum()}/365}) /
+  {{revenue_2019$revenue_2019 %>% 
+  sum()}/365}} %>% 
+  scales::percent()
 
 # EH listings
 eh_listings <- 
@@ -279,7 +301,7 @@ host_rev_top_1_2019 <-
 # 2021 ML listings
 ml_listings <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2021) %>% 
+  filter(status != "B", date >= start_2021) %>% 
   count(multi) %>% 
   summarize(ML = n[2] / sum(n)) %>% 
   pull(ML) %>% 
@@ -298,7 +320,8 @@ ml_revenue <-
 # 2019 ML listings
 ml_listings_2019 <- 
   daily %>% 
-  filter(status != "B", date >= start_2021, date <= end_2019) %>% 
+  filter(status != "B", date >= start_2021, 
+         date <= end_2019) %>% 
   count(multi) %>% 
   summarize(ML = n[2] / sum(n)) %>% 
   pull(ML) %>% 
@@ -307,7 +330,8 @@ ml_listings_2019 <-
 # 2019 ML revenue
 ml_revenue_2019 <- 
   daily %>% 
-  filter(status == "R", date >= start_2021, date <= end_2019) %>% 
+  filter(status == "R", date >= start_2021, 
+         date <= end_2019) %>% 
   group_by(multi) %>% 
   tally(price) %>% 
   summarize(multi_rev = n[2] / sum(n)) %>% 
@@ -318,7 +342,7 @@ rm(property, daily, daily_all, GH)
 
 ```
 
-**There are on a daily average `r avg_listings_active` active STR listings in Prince Edward County housing units in 2021, which collectively earn `r daily_rev` a day. This is a dramatic decline in comparison to 2019 (`r avg_listings_active_2019` daily active listings). STR activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning almost half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STR listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
+**There are on a daily average `r avg_listings_active` active STR listings in Prince Edward County housing units in 2021, which collectively earn `r daily_rev` a day. While the number of active listings has decreased considerably (`r var_active_listings_2019_2021`), the revenue has increased significantly (`r var_daily_rev_2019_2021`). STR activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STR listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
 
 <br>
 
@@ -435,7 +459,7 @@ if (build_figures) {
 
 ```
 
-Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STR market in a location, particularly with respect to change over time. In 2021, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-1-1)) operated by an average of `r avg_hosts` hosts. These hosts earned on a daily average `r daily_rev` in 2021—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per daily active host. These numbers are only a portion of Prince Edward County's STR market from before the pandemic. In 2019, the STR market revenue amounted to a daily average of`r daily_rev_2019`, with an average of `r avg_listings_active_2019` active listings on a given day operated by `r avg_hosts_2019` hosts. In 2019, the average listing earned `r avg_rev_per_listing_2019` a night and the average host, `r avg_rev_per_host_2019` a night. While there are less listings and hosts in 2021, which collectively earn less revenue, they make more profit then before the pandemic on an individual level.
+Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STR market in a location, particularly with respect to change over time. In 2021, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-1-1)) operated by an average of `r avg_hosts` hosts. These hosts earned collectively, on a daily average, `r daily_rev` in 2021—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per daily active host. While the number of active listings and active hosts has decreased considerably, the revenue has increased significantly. In 2019, the STR market revenue amounted to a daily average of `r daily_rev_2019`, with an average of `r avg_listings_active_2019` active listings on a given day operated by `r avg_hosts_2019` hosts. In 2019, the average listing earned `r avg_rev_per_listing_2019` a night and the average host earned `r avg_rev_per_host_2019` a night. 
 
 ``` {r fig-1-1, include = TRUE, fig.cap = '(ref:fig-1-1)', fig.align = "center"}
 
@@ -501,7 +525,7 @@ avg_revenue_all_hosts_2019 <-
 
 # Non-housing active listings in 2021
 non_housing_listings <- 
-  daily %>% 
+  daily_all %>% 
   filter(!housing, status != "B", date >= start_2021) %>%
   count(date) %>% 
   summarize(non_housing = round(mean(n), digit = -1)) %>% 
@@ -510,7 +534,7 @@ non_housing_listings <-
 
 # Non-housing active listings in 2019
 non_housing_listings_2019 <- 
-  daily %>% 
+  daily_all %>% 
   filter(!housing, status != "B", date >= start_2019, date <= end_2019) %>%
   count(date) %>% 
   summarize(non_housing = round(mean(n), digit = -1)) %>% 
@@ -530,7 +554,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 # Date and amount of highest activity
 highest_activity <- 
   daily %>% 
-  filter(housing, status != "B") %>% 
+  filter(status != "B") %>% 
   count(date) %>% 
   filter(n == max(n)) %>% 
   group_by(date) %>% 
@@ -548,7 +572,7 @@ highest_activity_amount <-
 # Active listing YOY change in 2019
 active_yoy_change_2019 <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019 - years(1), 
+  filter(status != "B", date >= start_2019 - years(1), 
          date <= end_2019) %>% 
   group_by(year_2019 = date >= start_2019) %>% 
   summarize(active_listings = n() / 365,
@@ -567,7 +591,7 @@ active_yoy_revenue_2019 <-
 # Active listing change 2019 to 2021
 active_yoy_change <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019, 
+  filter(status != "B", date >= start_2019, 
          !c(date >= start_2020 & date <= end_2020)) %>% 
   group_by(year_2021 = date >= start_2021) %>% 
   summarize(active_listings = n() / yday(max(date)),
@@ -578,18 +602,17 @@ active_yoy_change <-
 active_yoy_listings <- 
   active_yoy_change$active_listings %>% 
   {. * -1} %>% 
-  scales::percent(accuracy = 0.1)
+  scales::percent()
 
 active_yoy_revenue <- 
   active_yoy_change$revenue %>% 
-  {. * -1} %>% 
-  scales::percent(accuracy = 0.1)
+  scales::percent()
 
 rm(property, daily, GH)
 
 ```
 
-Active daily listings peaked in `r highest_activity_date` at `r highest_activity_amount`, and have since declined. Due to the Covid-19 pandemic, there were `r active_yoy_listings` fewer active listings on average per day in 2021 than in 2019, and `r active_yoy_revenue` less revenue on average per day. Prior to the pandemic, it seems like Prince Edward County's STR market had leveled off, with, for example, a slow growth between 2018 and 2019—active listings and revenue respectively increased by `r active_yoy_listings_2019` and `r active_yoy_revenue_2019` from 2018 to 2019. It is likely that this plateauing trend would have continued in 2020 and 2021 in the absence of a pandemic. In general, the number of STR listings available in Prince Edward County follows a strongly seasonal pattern, with the bulk of activity happening in what we call "summer months", the high-season between May and September included (Figure \@ref(fig:fig-1-1)). Detailed information about seasonality in Prince Edward County will be presented in the next chapter.
+Active daily listings peaked in `r highest_activity_date` at `r highest_activity_amount`, and have since declined. Due to the Covid-19 pandemic, there were `r active_yoy_listings` fewer active listings on average per day in 2021 than in 2019, but `r active_yoy_revenue` more revenue on average per day. The rise in revenue is a result of a sharper decrease in supply of STR than in the demand, resulting in an important rise in prices and concentration of revenue in the hands of a smaller amount of listings and hosts. Prior to the pandemic, it seems like Prince Edward County's the number of dailt active listings had leveled off, with, for example, a slow growth between 2018 and 2019—active listings and revenue respectively increased by `r active_yoy_listings_2019` and `r active_yoy_revenue_2019` from 2018 to 2019. It is likely that this plateauing trend would have continued in 2020 and 2021 in the absence of a pandemic. In general, the number of STR listings available in Prince Edward County follows a strongly seasonal pattern, with the bulk of activity happening in what we call "summer months", the high-season between May and September included (Figure \@ref(fig:fig-1-1)). Detailed information about seasonality in Prince Edward County will be presented in the next chapter.
   
 <br>
 
@@ -639,6 +662,12 @@ picton_per_cap <-
   pull(listings_pct_dwellings) %>% 
   scales::percent(0.1)
 
+athol_per_cap <- 
+  EW_breakdown %>% 
+  filter(ward == "Athol") %>% 
+  pull(listings_pct_dwellings) %>% 
+  scales::percent(0.1)
+
 wellington_per_cap <- 
   EW_breakdown %>% 
   filter(ward == "Wellington") %>% 
@@ -653,14 +682,14 @@ bloomfield_per_cap <-
 
 min_per_dwellings <- 
   EW_breakdown %>%
-  filter(!is.na(ward), !ward %in% c("Bloomfield", "Wellington")) %>% 
+  filter(!is.na(ward), !ward %in% c("Bloomfield", "Wellington", "Athol")) %>% 
   pull(listings_pct_dwellings) %>% 
   min() %>% 
   scales::percent(0.1)
 
 max_per_dwellings <- 
   EW_breakdown %>% 
-  filter(!is.na(ward), !ward %in% c("Bloomfield", "Wellington")) %>% 
+  filter(!is.na(ward), !ward %in% c("Bloomfield", "Wellington", "Athol")) %>% 
   pull(listings_pct_dwellings) %>% 
   max() %>% 
   scales::percent(0.1)
@@ -753,7 +782,7 @@ if (build_figures) {
 
 ```
 
-STR activity in Prince Edward County is highly decentralized (Figure \@ref(fig:fig-1-2)), but seems to be less important in the Northern part of the county. Notably, when divided by electoral wards, Picton accounts for `r picton_listing_pct` of all listings and for `r picton_rev_pct` of all host revenue. Picton is followed by Hallowell (`r hallowell_listing_pct` of active listings and the biggest share of total revenue at  `r hallowell_rev_pct`) and Wellington (`r wellington_listing_pct` of active listings and `r wellington_rev_pct` of revenue). When measured in per-capita terms, Bloomfield has by far the highest concentrations of STRs per dwellings, at `r bloomfield_per_cap`, followed by Wellington with `r wellington_per_cap`. In all other wards, STRs account for between `r min_per_dwellings` and `r max_per_dwellings` of total dwellings.
+STR activity in Prince Edward County is highly decentralized (Figure \@ref(fig:fig-1-2)), but seems to be less important in the Northern part of the county. Notably, when divided by electoral wards, Picton accounts for `r picton_listing_pct` of all listings and for `r picton_rev_pct` of all host revenue. Picton is followed by Hallowell (`r hallowell_listing_pct` of active listings and the biggest share of total revenue at  `r hallowell_rev_pct`) and Wellington (`r wellington_listing_pct` of active listings and `r wellington_rev_pct` of revenue). When measured in per-capita terms, Bloomfield has by far the highest concentrations of STRs per dwellings with a third (`r bloomfield_per_cap`) of its dwellings operating as STRs, followed by Athol (`r athol_per_cap`) and Wellington (`r wellington_per_cap`). In all other wards, STRs account for between `r min_per_dwellings` and `r max_per_dwellings` of total dwellings.
 
 ``` {r fig-1-2, include = TRUE, fig.cap = '(ref:fig-1-2)', fig.align = "center"}
 
@@ -844,7 +873,7 @@ studios <-
 
 eh_3_bedroom <- 
   property %>% 
-  filter(housing, scraped >= start_2021, 
+  filter(scraped >= start_2021, 
          listing_type == "Entire home/apt", !is.na(bedrooms)) %>% 
   st_drop_geometry() %>% 
   summarize(bed_3 = mean(bedrooms <= 3)) %>% 
@@ -870,7 +899,7 @@ listing_type_breakdown[1:2,] %>%
          pct_listing_growth_2019_2021 = scales::percent(pct_listing_growth_2019_2021, 0.1)) %>% 
   rename(`Listing type` = listing_type,
          `Active listings` = active_listings,
-         `Annual revenue (million)` = revenue,
+         `2021 revenue to date (August) (million)` = revenue,
          `Share of all listings` = pct_of_listings,
          `Share of all revenue` = pct_of_revenue,
          `Listing growth (2019-2021)` = pct_listing_growth_2019_2021
@@ -915,7 +944,7 @@ if (build_figures) {
 
 ```
 
-Until the end of 2019, there as been a decreasing growth in the number of active daily active STRs listing. Figure \@ref(fig:fig-1-3) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. The figure indicates that there was a yearly decreasing marginal growth until late 2019 and early 2020, by which time the number of STRs may have reached a plateau. The pandemic then caused a decline in the number of daily active STRs. Revenues, on the other hand, had seen degrowth in the winter season of 2018-2019, but apart from that have overall experienced constant growth. While revenues in summer 2020 had been mostly constant with a year prior, at around ~0% growth, We observe a strong growth during the summer of 2021, indicating an increase in tourist activity.
+Until the end of 2019, there as been a decreasing growth in the number of daily active STR listings. Figure \@ref(fig:fig-1-3) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. The figure indicates that there was a yearly decreasing marginal growth until late 2019 and early 2020, by which time the number of daily active STRs may have reached a plateau. The pandemic then caused a decline in the number of daily active STRs. Revenues, on the other hand, had seen degrowth in the winter season of 2018-2019, but apart from that have overall experienced constant growth. While revenues in summer 2020 had been mostly constant with a year prior, close to the ~0% growth line, We observe a strong growth during the summer of 2021, indicating an increase in tourist activity.
 
 ``` {r fig-1-3, include = TRUE, fig.cap = '(ref:fig-1-3)', fig.align = "center"}
 
@@ -932,24 +961,24 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 #' YOY listing growth, 2019
 listing_growth_2019 <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019 - years(1),
+  filter(status != "B", date >= start_2019 - years(1),
          date <= end_2019) %>% 
   group_by(year_2019 = date >= start_2019) %>% 
   summarize(n = n() / 365) %>% 
   summarize(change = (n[2] - n[1]) / n[1])  %>% 
   pull(change) %>% 
-  scales::percent(0.1)
+  scales::percent()
 
 #' YOY listing growth, 2021
 listing_growth_2021 <- 
   daily %>% 
-  filter(housing, status != "B", date >= start_2019, 
+  filter(status != "B", date >= start_2019, 
          !c(date >= start_2020 & date <= end_2020)) %>% 
   group_by(year_2021 = date >= start_2021) %>% 
   summarize(n = n() / yday(max(date))) %>% 
   summarize(change = (n[2] - n[1]) / n[1])  %>% 
   pull(change) %>% 
-  scales::percent(0.1)
+  scales::percent()
 
 
 rm(property, daily, GH)
@@ -965,7 +994,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 # YOY reservation change, 2019-2021
 reservation_change_2021 <- 
   daily %>%
-  filter(housing, status == "R", date >= start_2019, 
+  filter(status == "R", date >= start_2019, 
          !c(date >= start_2020 & date <= end_2020)) %>%
   group_by(year_2021 = date >= start_2021) %>%
   summarize(n = n() / yday(max(date))) %>%
@@ -976,7 +1005,7 @@ reservation_change_2021 <-
 # YOY reservation change, 2018-2019
 reservation_change_2019 <- 
   daily %>%
-  filter(housing, status == "R", date >= start_2019 - years(1),
+  filter(status == "R", date >= start_2019 - years(1),
          date <= end_2019) %>%
   group_by(year_2019 = date >= start_2019) %>%
   summarize(n = n()) %>%
@@ -987,7 +1016,7 @@ reservation_change_2019 <-
 # Reservation counts, 2019-2021
 reservation_count_2021 <- 
   daily %>%
-  filter(housing, status == "R", date >= start_2019, 
+  filter(status == "R", date >= start_2019, 
          !c(date >= start_2020 & date <= end_2020)) %>%
   group_by(year_2021 = date >= start_2021) %>%
   summarize(n = n() / yday(max(date))) %>% 
@@ -997,7 +1026,7 @@ reservation_count_2021 <-
 # Reservation counts, 2018-2019
 reservation_count_2019 <- 
   daily %>%
-  filter(housing, status == "R", date >= start_2019 - years(1),
+  filter(status == "R", date >= start_2019 - years(1),
          date <= end_2019) %>%
   group_by(year_2019 = date >= start_2019) %>%
   summarize(n = n() /365) %>% 
@@ -1007,7 +1036,7 @@ reservation_count_2019 <-
 # YOY revenue change, 2019-2021
 active_yoy_revenue_2021 <- 
   daily %>%
-  filter(housing, status == "R", date >= start_2019, 
+  filter(status == "R", date >= start_2019, 
          !c(date >= start_2020 & date <= end_2020)) %>%
   group_by(year_2021 = date >= start_2021) %>%
   summarize(revenue = sum(price) / yday(max(date))) %>%
@@ -1032,7 +1061,7 @@ active_by_status <-
 
 reserved_nights_increase_2019 <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2019 - years(1), 
+  filter(status == "R", date >= start_2019 - years(1), 
          date <= end_2019) %>% 
   count(year_2019 = date >= start_2019) %>% 
   summarize(growth = (n[2] - n[1]) / n[1]) %>% 
@@ -1041,7 +1070,7 @@ reserved_nights_increase_2019 <-
 
 reserved_nights_decrease_2021 <- 
   daily %>% 
-  filter(housing, status == "R", date >= start_2019, 
+  filter(status == "R", date >= start_2019, 
          !c(date >= start_2020 & date <= end_2020)) %>% 
   group_by(year_2021 = date >= start_2021) %>% 
   summarize(n = n() / yday(max(date))) %>% 
@@ -1228,7 +1257,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 # # Get average nightly prices
 # average_prices <-
 #   daily %>%
-#   filter(housing, status == "R",
+#   filter(status == "R",
 #          listing_type == "Entire home/apt") %>%
 #   group_by(date) %>%
 #   summarize(price = mean(price))
@@ -1315,8 +1344,6 @@ rm(property, daily, GH)
 
 A crucial concept for understanding the structure of a STR market is the distinction between casual STRs (“home sharing”) and dedicated STRs (“commercial operations”). One way to capture this distinction is to examine the distribution of revenue among STR hosts. Is revenue widely distributed between many part-time hosts of single listings, or concentrated among a small number of commercial operators who control many full-time listings?
 
-While hosts are identified on Airbnb or Vrbo with unique accounts, these accounts are not necessarily an accurate guide to the individuals or companies which operate STR listings, since a given person or group of people can create as many host accounts as they wish, and split their listings among these accounts. What may appear superficially as a large number of small STR operators could thus be in reality a much smaller number of operators controlling many accounts each. To address this possibility, we use custom image recognition software to identify identical photographs which are used across multiple listings, and thereby construct groups of host accounts which are either a single operator or a network of operators working in collaboration. If multiple, apparently separate host accounts use the identical photo on the webpages of their STR listings, this is very strong evidence that these accounts are related.
-
 ``` {r para_9, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 qload(here("output", "str_processed.qsm"), nthreads = availableCores())
@@ -1324,7 +1351,7 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 # Host deciles table for figure
 host_deciles <-
   daily %>%
-  filter(housing, date >= start_2021, 
+  filter(date >= start_2021, 
          status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price)) %>% 
@@ -1413,7 +1440,7 @@ host_rev_top_1 <-
 
 host_deciles_2019 <-
   daily %>%
-  filter(housing, date >= start_2019, date <= str_replace(max(daily$date), "^\\d{4}", "2019"), 
+  filter(date >= start_2019, date <= str_replace(max(daily$date), "^\\d{4}", "2019"), 
          status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price)) %>% 
@@ -1499,7 +1526,8 @@ host_rev_top_1_2019 <-
   scales::percent(0.1)
 
 diff_host_100 <- 
-  n_hosts_over_100_2019 - n_hosts_over_100
+  (n_hosts_over_100_2019 - n_hosts_over_100) %>% 
+  {. * -1}
 
 # End month
 end_month <- 
@@ -1559,7 +1587,7 @@ if (build_figures) {
 
 ```
 
-Among all the STR hosts who earned revenue in Prince Edward County in 2021, the median revenue from January to `r end_month` was `r median_host_rev`. Throughout the county, there were `r n_hosts_over_100` hosts that earned more than $100,000 in 2021, which is `r diff_host_100` less hosts than during the same months of 2019. Figure \@ref(fig:fig-1-6) shows the percentage of the total `r daily_rev` in STR daily revenue which accrued to each decile of hosts. The figure shows that revenue is disproportionately concentrated among a small number of hosts; the top 10% earned `r host_rev_top_10`: the top 5% earned `r host_rev_top_5` of revenue, while the top 1% of hosts earned `r host_rev_top_1` of all revenue. The pandemic hasn't impacted the revenue distribution among STR hosts. To put this revenue distribution in context, Montreal’s top 10% of STR hosts earned 68.8% of all revenue in 2019. On the other hand, Vancouver's top 10% hosts only earned 43.2% of all revenue in 2019. **TKTK Are big cities the good comparison here? Probably to show how different PEC is from other STR destination! But what's of interested for the county? Such a comparison, or one that shows it's similar to other seasonal destination? Maybe both?**
+Among all the STR hosts who earned revenue in Prince Edward County in 2021, the median revenue from January to `r end_month` was `r median_host_rev`. Throughout the county, there were `r n_hosts_over_100` hosts that earned more than $100,000 in 2021, which is `r diff_host_100` more hosts than during the same months of 2019. Figure \@ref(fig:fig-1-6) shows the percentage of the total `r daily_rev` in STR daily revenue which accrued to each decile of hosts. The figure shows that revenue is disproportionately concentrated among a small number of hosts; the top 10% earned `r host_rev_top_10`: the top 5% earned `r host_rev_top_5` of revenue, while the top 1% of hosts earned `r host_rev_top_1` of all revenue. The pandemic hasn't impacted the revenue distribution among STR hosts, but we know that there are less hosts each making more revenue than in 2019. The financial incentive to operate STRs in PEC has therefore increased. To put this revenue distribution in context, Montreal’s top 10% of STR hosts earned 68.8% of all revenue in 2019. On the other hand, Vancouver's top 10% hosts only earned 43.2% of all revenue in 2019. **TKTK Are big cities the good comparison here? Probably to show how different PEC is from other STR destination! But what's of interested for the county? Such a comparison, or one that shows it's similar to other seasonal destination? Maybe both?**
 
 ``` {r fig-1-6, include = TRUE, fig.cap = '(ref:fig-1-6)', fig.align = "center"}
 
@@ -1644,7 +1672,7 @@ figure_1_7_fun()
 
 (ref:fig-1-7) _The percentage of active listings and revenue accounted for by multilistings in Prince Edward County (14-day average)_
 
-These figures should be taken as highly conservative estimates. Many commercial operators will use different Airbnb or Vrbo accounts to manage their listings. If multiple listings share the same photographs then our image recognition software will be able to connect them together, but it is otherwise difficult to determine whether two accounts belong to the same person. Moreover, many STR commercial operators only operate a single listing, but operate it on a full-time basis. A house owner with a secondary suite, or the owner of an investment apartment who operates a STR in it, are clearly commercial operators running listings which are not their principal residences, but they would not be counted by this method.
+These figures should be taken as highly conservative estimates. Many commercial operators will use different Airbnb or Vrbo accounts to manage their listings. Moreover, many STR commercial operators only operate a single listing, but operate it on a full-time basis. A house owner with a secondary suite, or the owner of an investment apartment who operates a STR in it, are clearly commercial operators running listings which are not their principal residences, but they would not be counted by this method.
 
 <br>
 
