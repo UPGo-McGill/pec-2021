@@ -22,17 +22,15 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- FALSE
+build_figures <- TRUE
 
 ```
 
 ```{r housing_objects, cache=TRUE, cache.lazy=FALSE}
 
-home_sales <- qread(here("output", "home_sales.qs"),
-                              nthreads = availableCores())
+home_sales <- qread(here("output", "home_sales.qs"), nthreads = availableCores())
 
 qload(here("output", "geometry.qsm"), nthreads = availableCores())
-
 
 DA_housing <- 
   cancensus::get_census(
@@ -77,7 +75,8 @@ agg_list <-
   setdiff(names(EW_housing), c("GeoUID", "geometry", "area")) %>% 
   setdiff(avg_list)
 
-round_list <- c("average_rent", "average_ho_cost", "average_value_dwellings", "dwellings", "renter", "owner")
+round_list <- c("average_rent", "average_ho_cost", "average_value_dwellings", 
+                "dwellings", "renter", "owner")
 
 EW_housing <- 
   EW %>% 
@@ -145,6 +144,59 @@ In the past years, Prince Edward County's housing market experienced numerous ch
 
 ## Being a homeowner in Prince Edward County
 
+``` {r make_fig_1_1}
+
+figure_1_1_fun <- function(regular = "", condensed = "") {
+  
+  scale_factor <-
+  home_sales |> 
+  st_drop_geometry() |> 
+  filter(year(sale_date) == 2020) |> 
+  summarize(scale = sum(month(sale_date) >= 7) / sum(month(sale_date) <= 6)) |> 
+  pull(scale) |> 
+  {\(x) x + 1}()
+
+  data_for_graph <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = mean(sale_price, na.rm = TRUE)) |> 
+  mutate(n = if_else(sale_date == 2021, round(n * scale_factor), as.numeric(n)),
+         shift = sale_date + n ^ 0.45 / 50)
+  
+  ggplot(data_for_graph) +
+  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date <= 2019),
+              se = FALSE, colour = col_palette[2], method = "lm", 
+              formula = y ~ log(x - 2015)) +
+  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date >= 2019),
+              se = FALSE, colour = col_palette[7], method = "lm") +
+  geom_point(aes(sale_date, avg, size = n), colour = col_palette[5]) +
+  geom_text(aes(shift, avg, label = n)) +
+  scale_x_continuous(name = NULL, limits = c(2016, 2021.5), breaks = 2016:2021) +
+  scale_y_continuous(name = NULL, limits = c(300000, 800000), 
+                     labels = scales::dollar) +
+  scale_size(limits = c(0, 1200), range = c(0, 20)) +
+  theme_minimal() +
+  theme(legend.position = "none", panel.grid.minor.x = element_blank())
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_1.pdf"), 
+         # plot = figure_1_1_fun("Futura", "Futura Condensed"), 
+         plot = figure_1_1_fun("Futura", "Futura Condensed"), 
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_1.pdf"))
+}
+
+
+```
+
+
+
 ```{r para_1, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 p_thirty_owner_bloomfield <- 
@@ -167,62 +219,62 @@ p_thirty_owner_athol <-
 
 ``` {r make_fig_4_1}
 
-figure_4_1_fun <- function(regular = "", condensed = "") {
-  
-  left_map <- 
-    DA_housing %>% 
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "white") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
-                         na.value = "grey80",
-                         limits = c(0.05, 0.25), oob = scales::squish, 
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
-                                  title.vjust = 1)) + 
-    gg_bbox(DA_housing) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold",
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5),
-          panel.border = element_rect(colour = "white", size = 2))
-  
-  right_map <- 
-    EW_housing %>% 
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
-                         na.value = "grey80",
-                         limits = c(0.1, 0.2), oob = scales::squish, 
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
-                                  title.vjust = 1)) + 
-    gg_bbox(DA_housing) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold",
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5),
-          panel.border = element_rect(colour = "white", size = 2))
-  
-  left_map + right_map + plot_layout(guide = "collect") & 
-    theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_4_1.pdf"), 
-         plot = figure_4_1_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_4_1.pdf"))
-}
+# figure_4_1_fun <- function(regular = "", condensed = "") {
+#   
+#   left_map <- 
+#     DA_housing %>% 
+#     ggplot() +
+#     geom_sf(data = province, colour = "transparent", fill = "grey93") +
+#     geom_sf(aes(fill = p_thirty_owner), colour = "white") +
+#     geom_sf(data = water, fill = "white", colour = "transparent") +
+#     scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
+#                          na.value = "grey80",
+#                          limits = c(0.05, 0.25), oob = scales::squish, 
+#                          labels = scales::percent)  +
+#     guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+#                                   title.vjust = 1)) + 
+#     gg_bbox(DA_housing) +
+#     theme_void() +
+#     theme(text = element_text(family = regular, face = "plain"),
+#           legend.title = element_text(family = regular, face = "bold",
+#                                       size = 7),
+#           legend.title.align = 0.9,
+#           legend.text = element_text(family = regular, size = 5),
+#           panel.border = element_rect(colour = "white", size = 2))
+#   
+#   right_map <- 
+#     EW_housing %>% 
+#     ggplot() +
+#     geom_sf(data = province, colour = "transparent", fill = "grey93") +
+#     geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
+#     geom_sf(data = water, fill = "white", colour = "transparent") +
+#     scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
+#                          na.value = "grey80",
+#                          limits = c(0.1, 0.2), oob = scales::squish, 
+#                          labels = scales::percent)  +
+#     guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+#                                   title.vjust = 1)) + 
+#     gg_bbox(DA_housing) +
+#     theme_void() +
+#     theme(text = element_text(family = regular, face = "plain"),
+#           legend.title = element_text(family = regular, face = "bold",
+#                                       size = 7),
+#           legend.title.align = 0.9,
+#           legend.text = element_text(family = regular, size = 5),
+#           panel.border = element_rect(colour = "white", size = 2))
+#   
+#   left_map + right_map + plot_layout(guide = "collect") & 
+#     theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
+# 
+# }
+# 
+# if (build_figures) {
+#   ggsave(here("output", "figures", "figure_4_1.pdf"), 
+#          plot = figure_4_1_fun("Futura", "Futura Condensed"), 
+#          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+#   
+#   extrafont::embed_fonts(here("output", "figures", "figure_4_1.pdf"))
+# }
 
 ```
 
@@ -230,7 +282,7 @@ From 2008 to 2018, the median home price in the county has almost doubled, going
 
 ``` {r fig-4-1, include = TRUE, fig.cap = '(ref:fig-4-1)', fig.align = "center"}
 
-figure_4_1_fun()
+# figure_4_1_fun()
 
 ```
 
@@ -238,33 +290,33 @@ figure_4_1_fun()
 
 ``` {r make_fig_4_2}
 
-figure_4_2_fun <- function(regular = "", condensed = "") {
-  
-home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(year_month = format(sale_date, "%Y-%m")) %>% 
-  mutate(year_month = paste0(year_month, "-01")) %>% 
-  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
-  group_by(year_month) %>% 
-  summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
-  ggplot() +
-  geom_col(aes(year_month, n), fill = col_palette[5], lwd=0)+
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_4_2.pdf"), 
-         plot = figure_4_2_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
-}
+# figure_4_2_fun <- function(regular = "", condensed = "") {
+#   
+# home_sales %>% 
+#   st_drop_geometry() %>% 
+#   mutate(year_month = format(sale_date, "%Y-%m")) %>% 
+#   mutate(year_month = paste0(year_month, "-01")) %>% 
+#   mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
+#   group_by(year_month) %>% 
+#   summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
+#   ggplot() +
+#   geom_col(aes(year_month, n), fill = col_palette[5], lwd=0)+
+#   scale_y_continuous(name = NULL, label = scales::comma) +
+#   scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
+#                date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
+#   theme_minimal() +
+#   theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
+#         text = element_text(family = regular))
+# 
+# }
+# 
+# if (build_figures) {
+#   ggsave(here("output", "figures", "figure_4_2.pdf"), 
+#          plot = figure_4_2_fun("Futura", "Futura Condensed"), 
+#          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+#   
+#   extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
+# }
 
 ```
 
@@ -272,7 +324,7 @@ With a relatively stable number of housing units available, the county is experi
 
 ``` {r fig-4-2, include = TRUE, fig.cap = '(ref:fig-4-2)', fig.align = "center"}
 
-figure_4_2_fun()
+# figure_4_2_fun()
 
 ```
 
@@ -451,29 +503,29 @@ home_sales %>%
 
 ``` {r make_fig_4_3}
 
-figure_4_3_fun <- function(regular = "", condensed = "") {
-  
-home_sales_variation %>% 
-  ggplot(aes(year_month, value, colour = var)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  geom_line(lwd = 1, na.rm = TRUE) +
-  scale_x_date(name = NULL) +
-  scale_y_continuous(name = NULL, limits = c(-1, NA), 
-                     labels = scales::percent) +
-  scale_color_manual(name = NULL, values = col_palette[c(1, 3)]) +
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_4_3.pdf"), 
-         plot = figure_4_3_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_4_3.pdf"))
-}
+# figure_4_3_fun <- function(regular = "", condensed = "") {
+#   
+# home_sales_variation %>% 
+#   ggplot(aes(year_month, value, colour = var)) +
+#   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+#   geom_line(lwd = 1, na.rm = TRUE) +
+#   scale_x_date(name = NULL) +
+#   scale_y_continuous(name = NULL, limits = c(-1, NA), 
+#                      labels = scales::percent) +
+#   scale_color_manual(name = NULL, values = col_palette[c(1, 3)]) +
+#   theme_minimal() +
+#   theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
+#         text = element_text(family = regular))
+# 
+# }
+# 
+# if (build_figures) {
+#   ggsave(here("output", "figures", "figure_4_3.pdf"), 
+#          plot = figure_4_3_fun("Futura", "Futura Condensed"), 
+#          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+#   
+#   extrafont::embed_fonts(here("output", "figures", "figure_4_3.pdf"))
+# }
 
 ```
 
@@ -483,7 +535,7 @@ There is a high increase in the number of residential sales starting in the seco
 
 ``` {r fig-4-3, include = TRUE, fig.cap = '(ref:fig-4-3)', fig.align = "center"}
 
-figure_4_3_fun()
+# figure_4_3_fun()
 
 ```
 
@@ -1023,6 +1075,66 @@ rent_diff_table %>%
   kable_styling(latex_options="scale_down") 
   
 ```
+
+``` {r make_fig_1_2}
+
+figure_1_2_fun <- function(regular = "", condensed = "") {
+  
+}
+
+```
+
+
+``` {r fig-1-2, include = TRUE, fig.cap = '(ref:fig-1-2)', fig.align = "center"}
+
+affordability_map_data <- 
+  affordable_homeownership_1718 %>% 
+  left_join(., affordable_homeownership_2021 %>% select(-at_hh_inc), by = "ward") %>% 
+  select(ward, avg_sale_price_1718, avg_sale_price_2021,
+         at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) |> 
+  pivot_longer(c(diff_affordable_real_1718, diff_affordable_real_2021),
+               names_to = "years") |> 
+  mutate(years = if_else(str_detect(years, "1718"), "2017-2018", "2020-2021"))
+
+figure_1_2_fun <- function(regular = "", condensed = "") {
+  
+EW |> 
+  left_join(affordability_map_data) |> 
+  ggplot() +
+  geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(aes(fill = value), colour = "white", size = 0.1) +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  facet_wrap(vars(years)) +
+  scale_fill_steps2(low = col_palette[6],
+                    high = col_palette[3], limits = c(-90000, 90000),
+                    breaks = 10000 * c(-9, -6, -3, 0, 3, 6, 9),
+                    labels = scales::dollar)  +
+  guides(fill = guide_colourbar(title = "Average\naffordability gap",
+                                title.vjust = 1)) + 
+  gg_bbox(EW) +
+  theme_void() +
+  theme(text = element_text(family = regular, face = "plain"),
+        legend.title = element_text(family = regular, face = "bold",
+                                    size = 7),
+        legend.title.align = 0.9,
+        legend.text = element_text(family = regular, size = 5),
+        panel.border = element_rect(colour = "white", size = 2),
+        strip.text = element_text(face = "bold"),
+        legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_2.pdf"), 
+         # plot = figure_1_2_fun("Futura", "Futura Condensed"), 
+         plot = figure_1_2_fun(), 
+         width = 8, height = 3.5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_2.pdf"))
+}
+
+```
+
 
 The renter situation in Prince Edward County is different than that of homeowners. First of all, renters make up only 16.9% of all households in the County. However, almost half (48.9%) of renters are in a situation of housing stress. The ward with the most renters' housing stress is Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the calculated rental vacancy rate was 0.81% (Prince Edward County 2019). In the past years, renters have experienced tightening conditions in part due to the increased competition renters have with seasonal tourism. The pressure in the homeownership market has put increasing pressure on the County's rental stock. There have been accounts of bidding wars in the rental market in response to the limited units available. The workforce is struggling to find rents that fit their budget, even with hourly pays of 20 to $25 per hour. The pandemic has only heightened this situation, with the largest year-over-year increase in average rent occurring from June 2020 to June 2021, with a 52% increase. As of September 2021, the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedrooms and three-bedrooms were `r avg_rent_two` and `r avg_rent_three`, respectively. The total average rent of `r avg_rent_pec_sept_2021 ` in September 2021 stands in great contrast with the 2016 census' registered average rent of `r census_avg_rent`.
 

@@ -431,6 +431,7 @@ figure_2_1_fun <- function(regular = "", condensed = "") {
     ggplot(aes(date, n, colour = listing_type, size = listing_type)) +
     geom_line(na.rm = TRUE) +
     geom_label(aes(label = label), size = 3, family = condensed) +
+    scale_x_date(name = NULL) + 
     scale_y_continuous(name = NULL, label = scales::comma) +
     scale_colour_manual(name = NULL, values = col_palette[c(5, 1:3)]) +
     scale_size_manual(values = c("All listings" = 1.5, "Entire home/apt" = 0.75,
@@ -445,7 +446,7 @@ if (build_figures) {
   ggsave(here("output", "figures", "figure_2_1.pdf"), 
          # plot = figure_2_1_fun("Futura", "Futura Condensed"), 
          plot = figure_2_1_fun(), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
 }
@@ -936,7 +937,7 @@ if (build_figures) {
   ggsave(here("output", "figures", "figure_2_3.pdf"), 
          # plot = figure_2_3_fun("Futura", "Futura Condensed"), 
          plot = figure_2_3_fun(), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
 }
@@ -1219,7 +1220,7 @@ if (build_figures) {
   ggsave(here("output", "figures", "figure_2_4.pdf"),
          # plot = figure_2_4_fun("Futura", "Futura Condensed"),
          plot = figure_2_4_fun(),
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
 
   extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
 }
@@ -1306,7 +1307,7 @@ if (build_figures) {
   ggsave(here("output", "figures", "figure_2_5.pdf"),
          # plot = figure_2_4_fun("Futura", "Futura Condensed"),
          plot = figure_2_5_fun(),
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
 
   extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
 }
@@ -1720,7 +1721,7 @@ if (build_figures) {
   ggsave(here("output", "figures", "figure_2_7.pdf"), 
          # plot = figure_2_7_fun("Futura", "Futura Condensed"), 
          plot = figure_2_7_fun(),
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_2_7.pdf"))
 }
