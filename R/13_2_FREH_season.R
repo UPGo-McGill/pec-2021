@@ -197,7 +197,11 @@ seasonal_FREH %>%
                                "Summer" = col_palette[1],
                                "Winter" = col_palette[2]))+
   scale_y_continuous(name = NULL, label = scales::comma) +
-  theme_minimal()
+  theme_minimal()+
+  xlab("")+
+  ylab("")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
 
 
 # Save --------------------------------------------------------------------
