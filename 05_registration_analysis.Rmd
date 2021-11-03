@@ -274,6 +274,119 @@ figure_5_1_fun()
 
 (ref:fig-5-1) _Number of new STR properties created by day, 7-day rolling average_
 
+```{r STA_STR_analysis, include = T}
+
+STA_by_status <- 
+  STA %>%
+  st_buffer(., 200) %>% 
+  filter(created >= "2020-09-05") %>% 
+  st_join(property %>% filter(created >= "2020-09-05")) %>% 
+  st_drop_geometry() %>% 
+  group_by(id, status, entire_apt) %>% 
+  summarize(strs = list(property_ID)) 
+
+n_STA_post_mora <- 
+  STA_by_status %>% 
+  nrow()
+
+p_pending_post_mora <- 
+  STA_by_status %>% 
+  group_by(status) %>% 
+  summarize(n = n(), perc = n/n_STA_post_mora) %>% 
+  filter(status == "Pending") %>% 
+  pull(perc) %>% 
+  scales::percent(accuracy = 0.1)
+
+p_active_post_mora <- 
+  STA_by_status %>% 
+  group_by(status) %>% 
+  summarize(n = n(), perc = n/n_STA_post_mora) %>% 
+  filter(status == "Active") %>% 
+  pull(perc) %>% 
+  scales::percent(accuracy = 0.1)
+
+p_entire_home <- 
+  STA_by_status %>% 
+  group_by(entire_apt) %>% 
+  summarize(n = n(), perc = n/n_STA_post_mora) %>% 
+  filter(entire_apt == TRUE) %>% 
+  pull(perc) %>% 
+  scales::percent(accuracy = 0.1)
+
+PID_STA <- 
+  STA_by_status %>% 
+  filter(!is.na(strs)) %>% 
+  nrow()
+
+p_STA_PID_active <- 
+  STA_by_status %>% 
+  filter(!is.na(strs)) %>% 
+  group_by(status) %>% 
+  summarize(n=n(), perc = n/PID_STA) %>% 
+  filter(status == "Active") %>% 
+  pull(perc) %>% 
+  scales::percent(accuracy = 0.1)
+
+PIDs_post_mora <- 
+  STA %>%
+  st_buffer(., 200) %>% 
+  filter(created >= "2020-09-05") %>% 
+  st_join(property %>% filter(created >= "2020-09-05")) %>% 
+  st_drop_geometry() %>% 
+  filter(!is.na(property_ID)) %>% 
+  distinct(property_ID, .keep_all=TRUE) %>% 
+  pull(property_ID)
+
+PIDS_post_mora_total <- 
+  daily %>% 
+  filter(property_ID %in% PIDs_post_mora) %>% 
+  group_by(property_ID) %>% 
+  summarize(n_total = n())
+
+PIDS_post_mora_status <- 
+  daily %>% 
+  filter(property_ID %in% PIDs_post_mora) %>% 
+  group_by(property_ID, status) %>% 
+  summarize(n_status = n()) %>% 
+  left_join(., PIDS_post_mora_total, by = "property_ID") %>% 
+  mutate(perc = n_status / n_total)
+
+grouped_status_PIDS_post_mora <- 
+  PIDS_post_mora_status %>% 
+  group_by(status) %>% 
+  summarize(perc = mean(perc, na.rm=TRUE))
+
+p_R_post_mora <- 
+  grouped_status_PIDS_post_mora %>% 
+  filter(status == "R") %>% 
+  pull(perc) %>% 
+  scales::percent(accuracy = 0.1)
+
+p_A_post_mora <- 
+  grouped_status_PIDS_post_mora %>% 
+  filter(status == "A") %>% 
+  pull(perc) %>% 
+  scales::percent(accuracy = 0.1)
+
+p_B_post_mora <- 
+  grouped_status_PIDS_post_mora %>% 
+  filter(status == "B") %>% 
+  pull(perc) %>% 
+  scales::percent(accuracy = 0.1)
+
+```
+
+Out of the `r n_STA_post_mora` license applications that were received since the moratorium, one third (`r p_entire_home`)
+were for STAs operated out of an entire housing unit, with the remainder being owner-occupied STAs or traditional STA
+accommodations, such as B&Bs. About half (`r p_pending_post_mora`) of these applications were still pending and 
+`r p_active_post_mora` of the applications have been approved. We have managed to identify `r PID_STA` applications
+out of the `r n_STA_post_mora` (more than half) whose 200-m buffers comprised at least one new property being created on STR
+platforms following the STA license application. Despite the registration moratorium, most of these newly-created properties
+were active during the moratorium, and yet only `r p_STA_PID_active` of the license applications found within the buffer have
+been approved. On average, the STR listings found within the properties having applied after the moratorium have been reserved
+`r p_R_post_mora` of the nights since their creation, available for reservations `r p_A_post_mora` of the nights, and blocked 
+for reservations `r p_B_post_mora` of the time. 
+
 # How is the STA market related to Prince Edward County's housing market?
 
 The STA registration database enabled the analysis of the license applications with the house sales that occurred from 2016 to today. This acts a an indicator of the contribution of short-term rental to the County's current housing situation. Have properties been sold to then apply to become a STA? Or conversingly, have properties been converted into STAs, and then sold on the market as short-term rental investment properties? 
