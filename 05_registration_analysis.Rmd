@@ -42,8 +42,7 @@ end_mora <- as.Date("2021-06-22")
 # Get properties active during the period when the registration was into effect
 reg_property <- 
   property %>% 
-  filter(active >= start_reg) %>% 
-  filter(created <= end_reg) %>% 
+  filter(scraped >= start_reg) %>% 
   st_transform(32618)
 
 n_reg_property <- 
@@ -55,6 +54,9 @@ total_licenses_all <-
   STA %>% 
   st_drop_geometry() %>% 
   nrow()
+
+p_registration_compliance <- 
+  (total_licenses_all/ reg_property %>% nrow()) %>% scales::percent(accuracy = 0.1)
 
 valid_STA <-
   STA %>% 
@@ -161,7 +163,9 @@ On 9 October 2018, Prince Edward County's city council approved a by-law allowin
 
 # Overview of STA licenses
 
-Since the coming into effect of the licensing system, a total of `r total_licenses_all` license applications were received. Out of the total applications, `r valid_STA` were approved, with `r n_valid_STA_bc` of them occurring prior to the moratorium on STA licenses. The ward that received the most applications was Picton with `r picton_n_license`, followed by Hallowell with `r hallo_n_license` license applications, and Wellington with `r well_n_license` (Table \@ref(tab:tab-5-1)). `r ids_sta_pid` of the `r valid_STA_bc` short-term accommodations with valid licenses had one or more STR property within a 200-meter buffer of their address (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m). A total of `r unique_PIDs` active during the period of operation of the licensing system were located within the `r ids_sta_pid` STA buffers (a total of `r n_reg_property` properties were active on STR platforms during the same time period). The small proportion of STRs on platforms such 
+Since the start of the registration, a total of `r n_reg_property` listings were found on STR platforms. Consdering the `r total_licenses_all` license applications, the compliance rate of STRs stands at `r p_registration_compliance`, indicating that about half of STRs in the County have either complied or are in the process of complying with the new registration system. 
+
+Out of the `r total_licenses_all` total applications received, `r valid_STA` were approved, with `r n_valid_STA_bc` of them occurring prior to the moratorium on STA licenses. The ward that received the most applications was Picton with `r picton_n_license`, followed by Hallowell with `r hallo_n_license`, and Wellington with `r well_n_license` (Table \@ref(tab:tab-5-1)). `r ids_sta_pid` of the `r valid_STA_bc` short-term accommodations with valid licenses had one or more STR property within a 200-meter buffer of their address (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m). 
 
 ```{r STA_portrait, include = T}
 
@@ -389,7 +393,7 @@ for reservations `r p_B_post_mora` of the time.
 
 # How is the STA market related to Prince Edward County's housing market?
 
-The STA registration database enabled the analysis of the license applications with the house sales that occurred from 2016 to today. This acts a an indicator of the contribution of short-term rental to the County's current housing situation. Have properties been sold to then apply to become a STA? Or conversingly, have properties been converted into STAs, and then sold on the market as short-term rental investment properties? 
+The STA registration database enabled the analysis of the license applications with the house sales that occurred from 2016 to today. This acts a an indicator of the contribution of short-term rental to the County's current housing situation. Have properties been sold to then apply to become a STA? Or conversly, have properties been converted into STAs, and then sold on the market as short-term rental investment properties? 
 
 ```{r, include = T}
 
@@ -432,13 +436,64 @@ home_sales %>%
   count(address) %>% 
   nrow()
 
+total_sales <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  count(year) %>% 
+  set_names(c("year", "total"))
+
+proportion_home_sales_STA <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created) %>% 
+  mutate(year = year(sale_date)) %>% 
+  count(year) %>% 
+  left_join(., total_sales, by = "year") %>% 
+  mutate(perc = n/total,
+         perc_adjusted = perc/(total_licenses_all/ reg_property %>% nrow()))
+
 ```
 
-There are `r sold_before_created` housing units that were sold since 2016 that then applied for a STA license during the application period. Out of all the `r total_licenses_all` license applications received by the county, about a third (`r per_sold_before_created`) of them were for housing units that were bought after January 2016. And  `r sold_before_created_covid` (`r per_sold_before_created_covid` of all license applications) were for houses bought after March 2020, when Covid hit and fueled the surge in house demand and prices. Registrations being linked to newly bought housing units shows that a number of units are bought with the purpose of turning them in STR, and the registration system allows for it. 
+```{r make_fig_5_2}
 
-There was also a number of STA license applications (`r created_before_sale`) that were received for properties that were then sold shortly after, most likely as an investment property operating as a short-term rental.
+figure_5_2_fun <- function(regular = "", condensed = "") {
 
+proportion_home_sales_STA %>% 
+  ggplot()+
+  geom_col(aes(x=year, y=perc_adjusted), fill=col_palette[1], alpha=0.3)+
+  geom_col(aes(x=year, y=perc), fill=col_palette[6], alpha=0.3)+
+  geom_line(aes(x=year, y=perc_adjusted), color=col_palette[1])+
+  geom_line(aes(x=year, y=perc), color=col_palette[6])+
+  scale_x_continuous(name=NULL)+
+  scale_y_continuous(name=NULL, label = scales::percent)+
+  theme_minimal()
+  
+}
 
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_5_2.pdf"), 
+         plot = figure_5_2_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_5_2.pdf"))
+}
+
+```
+
+There are `r sold_before_created` housing units that were sold since 2016 that then applied for a STA license during the application period. Out of all the `r total_licenses_all` license applications received by the county, about a third (`r per_sold_before_created`) of them were for housing units that were bought after January 2016. More recently, `r sold_before_created_covid` (`r per_sold_before_created_covid` of all license applications) were for houses bought after March 2020, when Covid hit and fueled the surge in housing demand and sale prices. Registrations being linked to newly bought housing units shows that a number of units are bought with the purpose of turning them in STRs. There was also a number of STA license applications (`r created_before_sale`) that were received for properties that were then sold shortly after. Considering that STA licensing is granfathered even through property sales, those housing units were most likely sold as an investment property operating as a short-term rental.
+
+Figure \@ref(fig:fig-5-2)
+
+``` {r fig-5-2, include = TRUE, fig.cap = '(ref:fig-5-2)', fig.align = "center"}
+
+figure_5_2_fun()
+
+```
+
+(ref:fig-5-2) _Percentage of home sales for short-term rentals per year, real numbers (orange) and adjusted with compliance rate (yellow)_
 
 
 
