@@ -34,6 +34,8 @@ fun_seasonal_FREH <- function(start_date, end_date) {
   lst_summer <- list()
   lst_winter <- list()
   
+  lst_ft_props <- list()
+  
   # how many active properties at a date, out of FREH properties in that summer
   for(i in 1:nb_years) {
     
@@ -112,7 +114,20 @@ fun_seasonal_FREH <- function(start_date, end_date) {
         group_by(season) %>% 
         mutate(n = mean(n)) %>% 
         mutate(year_season = paste0("Winter ", year(min(date))))
+      
+      # ONLY TO RETRIEVE A LIST FOR FULL-TIME PROPERTIES
+      lst_ft_props[[even_nb[i]]] <- 
+        daily %>% 
+        filter(property_ID %in% props,
+               date >= end_date + years(i-1), 
+               date < start_date + years(i)) %>%
+        filter(property_ID %in% unlist(list(
+          unlist(lst_summer[[i]]), unlist(lst_summer[[i+1]])))) %>% 
+        mutate(year_season = paste0("Winter ", year(min(date)))) %>% 
+        select(property_ID, year_season) %>% 
+        distinct()
     }
+      
     
     lst_winter[[i]] <- list(props)
   }
@@ -157,18 +172,32 @@ fun_seasonal_FREH <- function(start_date, end_date) {
       mutate(n = mean(n)) %>% 
       mutate(year_season = paste0("Summer ", year(min(date))))
     
+    # ONLY TO RETRIEVE A LIST FOR FULL-TIME PROPERTIES
+    lst_ft_props[[odd_nb[i]]] <- 
+      daily %>% 
+      filter(property_ID %in% props,
+             date >= start_date + years(i), 
+             date < end_date + years(i)) %>%
+      filter(property_ID %in% unlist(list(
+        unlist(lst_winter[[i]]), unlist(lst_winter[[i+1]])))) %>% 
+      mutate(year_season = paste0("Summer ", year(min(date)))) %>% 
+      select(property_ID, year_season) %>% 
+      distinct()
+    
 
   }
   
-  # bind the prior list
+  # bind the prior list of seasons
   out <- do.call("rbind", seasons_list)
   
+  # Making sure that seasons are in order
   season_levels <- 
     out %>% 
     arrange(date) %>% 
     pull(year_season) %>% 
     unique()
   
+  # Average per season, distinct
   out <- 
     out %>% 
     arrange(date) %>% 
@@ -181,13 +210,22 @@ fun_seasonal_FREH <- function(start_date, end_date) {
     select(-date) %>% 
     distinct() 
   
-  out
+  
+  # a list of all full time properties with their seasons attached
+  full_time_properties <- do.call("rbind", lst_ft_props)
+  
+  
+  list(out, full_time_properties)
 }
 
-seasonal_FREH <- fun_seasonal_FREH(summer_start, summer_end)
+fun_seasonal_FREH_output <- fun_seasonal_FREH(summer_start, summer_end)
+
+full_time_listings <- fun_seasonal_FREH_output[[2]]
+
+seasonal_FREH <- fun_seasonal_FREH_output[[1]]
 
 # Plot
-seasonal_FREH %>% 
+seasonal_FREH[[1]] %>% 
   ggplot()+
   geom_bar(aes(year_season, n, fill = season), stat= "identity")+
   theme(plot.title = element_text(size=10),
@@ -207,3 +245,4 @@ seasonal_FREH %>%
 # Save --------------------------------------------------------------------
 
 qsave(seasonal_FREH, file = "output/seasonal_FREH.qs")
+qsave(full_time_listings, file = "output/full_time_listings.qs")
