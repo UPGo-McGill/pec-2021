@@ -161,11 +161,11 @@ STA %>%
 
 On 9 October 2018, Prince Edward County's city council approved a by-law allowing the registration of short-term accommodations (STA) on its territory. The new licensing program requires STA hosts to acquire one license per accommodation, to be renewed annually. The license fees depend on the number of guest room within the accommodation. The density of STAs operating within the county is set for each zone or area of the County, based on the zoning by-law. The percentage of STAs out of total existing dwelling units is set at 15%, with varying radius thresholds depending on the zones. The County recognizes four different types of STAs: traditional B&Bs, where owner lives on site; partial or entire principal residence STAs; partial or entire secondary residence STAs; and on-farm tourist homes. The licensing system came into effect in November 2019. The Covid-related travel restrictions started in the month of March 2020, with a moratorium on STA licensing established by the County on 30 September 2020. The STA registration was reinstated in the County for traditional B&Bs and principal residence STA on 22 June 2021, leaving other types of STAs accommodation still enable to be granted a license. The following chapter provides an analysis of Prince Edward County's STA licensing system in relation to short-term rentals.
 
-# Overview of STA licenses
+## Overview of STA licenses
 
 Since the start of the registration, a total of `r n_reg_property` listings were found on STR platforms. Consdering the `r total_licenses_all` license applications, the compliance rate of STRs stands at `r p_registration_compliance`, indicating that about half of STRs in the County have either complied or are in the process of complying with the new registration system. 
 
-Out of the `r total_licenses_all` total applications received, `r valid_STA` were approved, with `r n_valid_STA_bc` of them occurring prior to the moratorium on STA licenses. The ward that received the most applications was Picton with `r picton_n_license`, followed by Hallowell with `r hallo_n_license`, and Wellington with `r well_n_license` (Table \@ref(tab:tab-5-1)). `r ids_sta_pid` of the `r valid_STA_bc` short-term accommodations with valid licenses had one or more STR property within a 200-meter buffer of their address (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m). 
+Out of the `r total_licenses_all` total applications received, `r valid_STA` were approved, with `r n_valid_STA_bc` of them occurring prior to the moratorium on STA licenses. The ward that received the most applications was Picton with `r picton_n_license`, followed by Hallowell with `r hallo_n_license`, and Wellington with `r well_n_license` (Table \@ref(tab:tab-5-1)). `r ids_sta_pid` of the `r total_n_license` short-term accommodations with valid licenses had one or more STR property within a 200-meter buffer of their address (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m). 
 
 ```{r STA_portrait, include = T}
 
@@ -217,9 +217,9 @@ n_created_post_mora <-
 
 ```
 
-Out of the `r n_valid_STA_bc` STAs operating with a license during the 10 months of operation, `r n_entire_apt` licenses were for entire home properties, or housing units entirely operated at a STA. The larger proportion of accommodations (`r n_not_entire_apt`) were not entire housing units, but rather a portion of a property or a traditional short-term accommodation, such as a hotel or a camp site. One third (`r n_3_bed`) of the licenses were emitted for accommodations with 3 bedrooms. Close to a quarter (`r n_2_bed`) were for 2-bedroom accommodations and more than one sixth (`r n_4_bed`) were for 4-bedroom accommodations. 
+Out of the `r n_valid_STA_bc` STAs operating with a license during the 10 months of operation, `r n_entire_apt` licenses were for entire home properties, or housing units entirely operated at a STA. The larger proportion of accommodations (`r n_not_entire_apt`) were not entire housing units, but rather a portion of a property or a traditional short-term accommodation, such as a hotel or a camp site. One third (r n_3_bed`) of the licenses were emitted for accommodations with 3 bedrooms. Close to a quarter (r n_2_bed`) were for 2-bedroom accommodations and more than one sixth (r n_4_bed`) were for 4-bedroom accommodations. 
 
-# The effect of the STA registration system on the STR market
+## The effect of the STA registration system on the STR market
 
 ```{r make_fig_5_1}
 
@@ -272,7 +272,7 @@ The STA registration system operated from November 2019 to September 2020, up un
 
 ``` {r fig-5-1, include = TRUE, fig.cap = '(ref:fig-5-1)', fig.align = "center"}
 
-figure_5_1_fun()
+# figure_5_1_fun()
 
 ```
 
@@ -380,18 +380,9 @@ p_B_post_mora <-
 
 ```
 
-Out of the `r n_STA_post_mora` license applications that were received since the moratorium, one third (`r p_entire_home`)
-were for STAs operated out of an entire housing unit, with the remainder being owner-occupied STAs or traditional STA
-accommodations, such as B&Bs. About half (`r p_pending_post_mora`) of these applications were still pending and 
-`r p_active_post_mora` of the applications have been approved. We have managed to identify `r PID_STA` applications
-out of the `r n_STA_post_mora` (more than half) whose 200-m buffers comprised at least one new property being created on STR
-platforms following the STA license application. Despite the registration moratorium, most of these newly-created properties
-were active during the moratorium, and yet only `r p_STA_PID_active` of the license applications found within the buffer have
-been approved. On average, the STR listings found within the properties having applied after the moratorium have been reserved
-`r p_R_post_mora` of the nights since their creation, available for reservations `r p_A_post_mora` of the nights, and blocked 
-for reservations `r p_B_post_mora` of the time. 
+Out of the `r n_STA_post_mora` license applications that were received since the moratorium, one third (`r p_entire_home`) were for STAs operated out of an entire housing unit, with the remainder being owner-occupied STAs or traditional STA accommodations, such as B&Bs. About half (`r p_pending_post_mora`) of these applications were still pending and`r p_active_post_mora` of the applications have been approved. We have managed to identify `r PID_STA` applications out of the `r n_STA_post_mora` (more than half) whose 200-m buffers comprised at least one new property being created on STR platforms following the STA license application. Despite the registration moratorium, most of these newly-created properties were active during the moratorium, and yet only `r p_STA_PID_active` of the license applications found within the buffer have been approved. On average, the STR listings found within the properties having applied after the moratorium have been reserved `r p_R_post_mora` of the nights since their creation, available for reservations `r p_A_post_mora` of the nights, and blocked for reservations `r p_B_post_mora` of the time. 
 
-# How is the STA market related to Prince Edward County's housing market?
+## How is the STA market related to Prince Edward County's housing market?
 
 The STA registration database enabled the analysis of the license applications with the house sales that occurred from 2016 to today. This acts a an indicator of the contribution of short-term rental to the County's current housing situation. Have properties been sold to then apply to become a STA? Or conversly, have properties been converted into STAs, and then sold on the market as short-term rental investment properties? 
 
@@ -485,8 +476,6 @@ if (build_figures) {
 
 There are `r sold_before_created` housing units that were sold since 2016 that then applied for a STA license during the application period. Out of all the `r total_licenses_all` license applications received by the county, about a third (`r per_sold_before_created`) of them were for housing units that were bought after January 2016. More recently, `r sold_before_created_covid` (`r per_sold_before_created_covid` of all license applications) were for houses bought after March 2020, when Covid hit and fueled the surge in housing demand and sale prices. Registrations being linked to newly bought housing units shows that a number of units are bought with the purpose of turning them in STRs. There was also a number of STA license applications (`r created_before_sale`) that were received for properties that were then sold shortly after. Considering that STA licensing is granfathered even through property sales, those housing units were most likely sold as an investment property operating as a short-term rental.
 
-Figure \@ref(fig:fig-5-2)
-
 ``` {r fig-5-2, include = TRUE, fig.cap = '(ref:fig-5-2)', fig.align = "center"}
 
 figure_5_2_fun()
@@ -495,5 +484,83 @@ figure_5_2_fun()
 
 (ref:fig-5-2) _Percentage of home sales for short-term rentals per year, real numbers (orange) and adjusted with compliance rate (yellow)_
 
+```{r para_X}
 
+
+dates <- list()
+
+for(i in 1:nrow(STA)){
+  if (!is.na(STA$expiry[i])) {
+      dates[[i]] <- list(as.Date(
+    STA[i,]$created:STA[i,]$expiry, origin = "1970-01-01"))
+  }
+}
+
+active_license <- 
+tibble(date = as.Date(unlist(dates), origin = "1970-01-01")) %>% 
+  count(date) %>% 
+  mutate(group = "Active Licenses")
+
+compliance_perc <- 
+daily %>% 
+  filter(status != "B",
+         date >= min(active_license$date)) %>% 
+  count(date, name = "strs") %>% 
+  left_join(tibble(date = as.Date(unlist(dates), origin = "1970-01-01")) %>% 
+  count(date, name = "licenses")) %>% 
+  filter(licenses > 1) %>% 
+  arrange(date) %>% 
+  mutate(perc = if_else(licenses / strs > 1, 1, licenses / strs)) %>% 
+  summarize(mean(perc)) %>% 
+  pull() %>% 
+  scales::percent(0.1)
+
+
+```
+
+
+```{r make_fig_5_3}
+
+figure_5_3_fun <- function(regular = "", condensed = "") {
+
+daily %>% 
+  filter(status != "B",
+         date >= min(active_license$date)) %>% 
+  count(date) %>% 
+  mutate(group = "STRs") %>% 
+  bind_rows(active_license) %>% 
+  arrange(date) %>% 
+  group_by(group) %>%
+  mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE)) %>% 
+  ggplot()+
+  geom_line(aes(date, n, color = group), size = 1)+
+  scale_color_manual(values = c(col_palette[2], col_palette[1]))+
+  xlim(c(min(active_license$date), max(daily$date)))+
+  theme_minimal()+
+  ylab("")+
+  xlab("")+
+  theme(legend.title = element_blank(),
+        legend.position = "bottom")
+  
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_5_3.pdf"), 
+         plot = figure_5_3_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_5_3.pdf"))
+}
+
+```
+
+Since the emplementation of the regulation, on average on a daily basis, `r compliance_perc` of active listings were potentially operating with an active license. Figure \@ref(fig:fig-5-3)
+
+``` {r fig-5-3, include = TRUE, fig.cap = '(ref:fig-5-3)', fig.align = "center"}
+
+figure_5_3_fun()
+
+```
+
+(ref:fig-5-3) _Daily compliance: Active licenses in circulation and daily number of active STRs_
 
