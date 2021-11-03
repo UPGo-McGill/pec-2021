@@ -15,87 +15,190 @@
 
 source("R/01_startup.R")
 
-qload("output/str_processed.R")
+qload("output/str_processed.qsm")
 
-winter_start <- as.Date("2017-10-01") - years(1)
-winter_end <- as.Date("2018-05-01") - years(1)
+summer_start <- as.Date("2017-05-01")
+summer_end <- as.Date("2017-10-01")
 
 
 # Function that looks at each season, and tells the amount of FREH --------
 
-fun_seasonal_FREH <- function(start_date, end_date, threshold = 0.90) {
+fun_seasonal_FREH <- function(start_date, end_date) {
   
   # how many years to look at FREH seasons
-  nb_years <- year(max(daily$date)) - 2017
+  nb_years <- 5
   
   # create a list of numbers of seasons
-  seasons_list <- list(1:nb_years*2)
+  seasons_list <- list()
   
-  # how many active properties at a date, out of FREH properties in that winter
+  lst_summer <- list()
+  lst_winter <- list()
+  
+  # how many active properties at a date, out of FREH properties in that summer
   for(i in 1:nb_years) {
     
-    max_days <- 
+    total_days <- 
       daily %>% 
-      filter(date >= start_date + years(i), date < end_date + years(i)) %>% 
-      summarize((max(date)-min(date))) %>% pull() %>% as.numeric()
+      filter(date >= start_date + years(i-1), 
+             date < end_date + years(i-1)) %>% 
+      group_by(property_ID) %>% 
+      summarize(max_days = as.numeric((max(date)-min(date))))
     
-    props <-
+    props <- 
       daily %>% 
       filter(housing,
              listing_type == "Entire home/apt",
-             date >= start_date + years(i), date < end_date + years(i)) %>% 
+             date >= start_date + years(i-1), 
+             date < end_date + years(i-1)) %>% 
+      left_join(total_days, by = "property_ID") %>% 
       group_by(property_ID) %>% 
-      filter(sum(status %in% c("A", "R")) >= max_days*threshold) %>% 
-      pull(property_ID)
+      filter(sum(status %in% c("A", "R")) >= max_days*0.66,
+             sum(status == "R") >= max_days*0.25) %>% 
+      pull(property_ID) %>% 
+      unique()
     
     odd_nb <- which(1:(nb_years*2) %% 2  == 1)
     
     seasons_list[[odd_nb[i]]] <- 
       daily %>% 
       filter(property_ID %in% props,
-             date >= start_date + years(i), date < end_date + years(i),
-             status != "B") %>%
+             date >= start_date + years(i-1), 
+             date < end_date + years(i-1)) %>%
       count(date) %>% 
-      mutate(season = "winter")
+      mutate(season = "summer") %>% 
+      mutate(year_season = paste0("Summer ", year(min(date))))
     
+    lst_summer[[i]] <- list(props)
+  }
+  
+  # how many active properties at a date, out of FREH properties in that winter
+  for(i in 1:nb_years) {
+    
+    total_days <- 
+      daily %>% 
+      filter(date >= end_date + years(i-1), 
+             date < start_date + years(i)) %>% 
+      group_by(property_ID) %>% 
+      summarize(max_days = as.numeric((max(date)-min(date))))
+    
+    props <-
+      daily %>% 
+      filter(housing,
+             listing_type == "Entire home/apt",
+             date >= end_date + years(i-1), 
+             date < start_date + years(i)) %>% 
+      left_join(total_days, by = "property_ID") %>% 
+      group_by(property_ID) %>% 
+      filter(sum(status %in% c("A", "R")) >= max_days*0.75,
+             sum(status == "R") >= 7) %>% 
+      pull(property_ID) %>% 
+      unique()
+
+    even_nb <- which(1:(nb_years*2) %% 2  == 0)[-length(which(1:(nb_years*2) %% 2  == 0))]
+    
+    if(i<5) {
+      
+      seasons_list[[even_nb[i]]] <- 
+        daily %>% 
+        filter(property_ID %in% props,
+               date >= end_date + years(i-1), 
+               date < start_date + years(i)) %>%
+        mutate(season = if_else(property_ID %in% unlist(list(
+          unlist(lst_summer[[i]]), unlist(lst_summer[[i+1]]))), 
+          "full_time", 
+          "winter")) %>% 
+        group_by(season) %>%
+        count(date) %>% 
+        group_by(season) %>% 
+        mutate(n = mean(n)) %>% 
+        mutate(year_season = paste0("Winter ", year(min(date))))
+    }
+    
+    lst_winter[[i]] <- list(props)
   }
   
   # how many active properties at a date, out of FREH properties in that summer
-  for(i in 1:nb_years) {
+  for(i in 1:(nb_years-1)) {
     
-    max_days <- 
+    total_days <- 
       daily %>% 
-      filter(date < start_date + years(i+1), date >= end_date + years(i)) %>% 
-      summarize((max(date)-min(date))) %>% pull() %>% as.numeric()
+      filter(date >= start_date + years(i), 
+             date < end_date + years(i)) %>% 
+      group_by(property_ID) %>% 
+      summarize(max_days = as.numeric((max(date)-min(date))))
     
     props <- 
       daily %>% 
       filter(housing,
              listing_type == "Entire home/apt",
-             date < start_date + years(i+1), date >= end_date + years(i)) %>% 
+             date >= start_date + years(i), 
+             date < end_date + years(i)) %>% 
+      left_join(total_days, by = "property_ID") %>% 
       group_by(property_ID) %>% 
-      filter(sum(status %in% c("A", "R")) >= max_days*threshold) %>% 
-      pull(property_ID)
+      filter(sum(status %in% c("A", "R")) >= max_days*0.75,
+             sum(status == "R") >= max_days*0.25) %>% 
+      pull(property_ID) %>% 
+      unique()
     
-    even_nb <- which(1:(nb_years*2) %% 2  == 0)
+    odd_nb <- which(1:(nb_years*2) %% 2  == 1)[-1]
     
-    seasons_list[[even_nb[i]]] <- 
+    seasons_list[[odd_nb[i]]] <- 
       daily %>% 
       filter(property_ID %in% props,
-             date < start_date + years(i+1), date >= end_date + years(i),
-             status != "B") %>%
+             date >= start_date + years(i), 
+             date < end_date + years(i)) %>%
+      mutate(season = if_else(property_ID %in% unlist(list(
+        unlist(lst_winter[[i]]), unlist(lst_winter[[i+1]]))), 
+        "full_time", 
+        "summer")) %>% 
+      group_by(season) %>%
       count(date) %>% 
-      mutate(season = "summer")
+      group_by(season) %>% 
+      mutate(n = mean(n)) %>% 
+      mutate(year_season = paste0("Summer ", year(min(date))))
     
-    
+
   }
   
   # bind the prior list
-  do.call("rbind", seasons_list)
+  out <- do.call("rbind", seasons_list)
   
+  season_levels <- 
+    out %>% 
+    arrange(date) %>% 
+    pull(year_season) %>% 
+    unique()
+  
+  out <- 
+    out %>% 
+    arrange(date) %>% 
+    mutate(season = case_when(season == "full_time" ~ "Full-time",
+                              season == "summer" ~ "Summer",
+                              season == "winter" ~ "Winter"),
+           year_season = factor(year_season, levels = season_levels),
+           season = factor(season, levels = c("Summer", "Winter", "Full-time"))) %>%
+    filter(year_season != "Summer 2017") %>% 
+    select(-date) %>% 
+    distinct() 
+  
+  out
 }
 
-seasonal_FREH <- fun_seasonal_FREH(winter_start, winter_end, threshold = 0.9)
+seasonal_FREH <- fun_seasonal_FREH(summer_start, summer_end)
+
+# Plot
+seasonal_FREH %>% 
+  ggplot()+
+  geom_bar(aes(year_season, n, fill = season), stat= "identity")+
+  theme(plot.title = element_text(size=10),
+        legend.title = element_blank())+
+  scale_fill_manual("legend", 
+                    values = c("Full-time" = col_palette[3],
+                               "Summer" = col_palette[1],
+                               "Winter" = col_palette[2]))+
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  theme_minimal()
+
 
 # Save --------------------------------------------------------------------
 
