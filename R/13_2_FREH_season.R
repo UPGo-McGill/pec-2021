@@ -54,7 +54,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
              date < end_date + years(i-1)) %>% 
       left_join(total_days, by = "property_ID") %>% 
       group_by(property_ID) %>% 
-      filter(sum(status %in% c("A", "R")) >= max_days*0.66,
+      filter(sum(status %in% c("A", "R")) >= max_days*0.75,
              sum(status == "R") >= max_days*0.25) %>% 
       pull(property_ID) %>% 
       unique()
@@ -215,7 +215,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
   full_time_properties <- do.call("rbind", lst_ft_props)
   
   
-  list(out, full_time_properties)
+  list(out, full_time_properties, lst_summer)
 }
 
 fun_seasonal_FREH_output <- fun_seasonal_FREH(summer_start, summer_end)
@@ -225,7 +225,7 @@ full_time_listings <- fun_seasonal_FREH_output[[2]]
 seasonal_FREH <- fun_seasonal_FREH_output[[1]]
 
 # Plot
-seasonal_FREH[[1]] %>% 
+seasonal_FREH %>% 
   ggplot()+
   geom_bar(aes(year_season, n, fill = season), stat= "identity")+
   theme(plot.title = element_text(size=10),
