@@ -142,13 +142,6 @@ rm(ocean, river, city)
 
 ``` {r make_fig_6_1}
 
-rent_wards <- 
-EW %>% 
-  mutate(ward = if_else(type == "Township", "Township", ward)) %>%
-  group_by(ward) %>% 
-  summarize() %>% 
-  left_join(avg_rent)
-
 weight_rent_sept <- 
 rent_sept %>% 
   group_by(ward, bedrooms)  %>% 
@@ -159,23 +152,47 @@ weight_revenue_ward <-
 LTM_revenue %>% 
   group_by(ward, bedrooms) %>% 
   summarize(mean_rev = mean(rev_LTM) / 12,
-            weight = n()) 
+            weight = n())
 
-# Weighted average to compare with rents
+# Weighted average to compare with rents, weight of STRs
 LTM_revenue_ward <- 
 tibble(ward = c("Bloomfield", "Wellington", "Township", "Picton"), mean_rev = c(weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Bloomfield",]$mean_rev,
-weight_rent_sept[weight_rent_sept$ward == "Bloomfield",]$weight),
+weight_revenue_ward[weight_revenue_ward$ward == "Bloomfield",]$weight),
+
 weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Wellington",]$mean_rev,
-weight_rent_sept[weight_rent_sept$ward == "Wellington",]$weight),
+weight_revenue_ward[weight_revenue_ward$ward == "Wellington",]$weight),
+
 weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Township",]$mean_rev,
-weight_rent_sept[weight_rent_sept$ward == "Township",]$weight),
+weight_revenue_ward[weight_revenue_ward$ward == "Township",]$weight),
+
 weighted.mean(weight_revenue_ward[weight_revenue_ward$ward == "Picton",]$mean_rev,
-weight_rent_sept[weight_rent_sept$ward == "Picton",]$weight)))
+weight_revenue_ward[weight_revenue_ward$ward == "Picton",]$weight)))
+
+# Weight average to compare with revenue, weight of STRs
+set_rent_ward <- 
+tibble(ward = c("Bloomfield", "Wellington", "Township", "Picton"), mean_rent = c(weighted.mean(weight_rent_sept[weight_rent_sept$ward == "Bloomfield",]$mean_rent,
+weight_revenue_ward[weight_revenue_ward$ward == "Bloomfield",]$weight),
+
+weighted.mean(weight_rent_sept[weight_rent_sept$ward == "Wellington",]$mean_rent,
+weight_revenue_ward[weight_revenue_ward$ward == "Wellington",]$weight),
+
+weighted.mean(weight_rent_sept[weight_rent_sept$ward == "Township",]$mean_rent,
+weight_revenue_ward[weight_revenue_ward$ward == "Township",]$weight),
+
+weighted.mean(weight_rent_sept[weight_rent_sept$ward == "Picton",]$mean_rent,
+weight_revenue_ward[weight_revenue_ward$ward == "Picton",]$weight)))
+
+rent_wards <- 
+EW %>% 
+  mutate(ward = if_else(type == "Township", "Township", ward)) %>%
+  group_by(ward) %>% 
+  summarize() %>% 
+  left_join(set_rent_ward)
 
 surplus_rent <- 
 LTM_revenue_ward %>% 
   left_join(rent_wards) %>% 
-  mutate(surplus = round(mean_rev - rent, -1)) %>% 
+  mutate(surplus = round(mean_rev - mean_rent, -1)) %>% 
   st_as_sf()
 
 figure_6_1_fun <- function(regular = "", condensed = "") {

@@ -121,8 +121,8 @@ fun_seasonal_FREH <- function(start_date, end_date) {
         filter(property_ID %in% props,
                date >= end_date + years(i-1), 
                date < start_date + years(i)) %>%
-        filter(property_ID %in% unlist(list(
-          unlist(lst_summer[[i]]), unlist(lst_summer[[i+1]])))) %>% 
+        # filter(property_ID %in% unlist(list(
+        #   unlist(lst_summer[[i]]), unlist(lst_summer[[i+1]])))) %>% 
         mutate(year_season = paste0("Winter ", year(min(date)))) %>% 
         select(property_ID, year_season) %>% 
         distinct()
@@ -178,8 +178,8 @@ fun_seasonal_FREH <- function(start_date, end_date) {
       filter(property_ID %in% props,
              date >= start_date + years(i), 
              date < end_date + years(i)) %>%
-      filter(property_ID %in% unlist(list(
-        unlist(lst_winter[[i]]), unlist(lst_winter[[i+1]])))) %>% 
+      # filter(property_ID %in% unlist(list(
+      #   unlist(lst_winter[[i]]), unlist(lst_winter[[i+1]])))) %>% 
       mutate(year_season = paste0("Summer ", year(min(date)))) %>% 
       select(property_ID, year_season) %>% 
       distinct()
