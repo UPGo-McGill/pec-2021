@@ -22,7 +22,7 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- FALSE
+build_figures <- TRUE
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
@@ -195,6 +195,8 @@ LTM_revenue_ward %>%
   mutate(surplus = round(mean_rev - mean_rent, -1)) %>% 
   st_as_sf()
 
+street <- qread("output/street.qs")
+
 figure_6_1_fun <- function(regular = "", condensed = "") {
   
 townships <- 
@@ -206,8 +208,11 @@ surplus_rent[surplus_rent$ward == "Township",] %>%
     lwd = 0,
     colour = "white"
   ) +
+  geom_sf(data = street, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
-  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+  scale_fill_stepsn(
+    name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
+    colors = col_palette[c(5, 3, 4, 6)], 
                        na.value = "grey80",
                        limits = c(min(surplus_rent$surplus), 
                                   max(surplus_rent$surplus)),
@@ -217,8 +222,7 @@ surplus_rent[surplus_rent$ward == "Township",] %>%
   theme_void() +
   theme(
     legend.position = "bottom",
-    legend.key.width= unit(1.5, 'cm'),
-    legend.title = element_blank()
+    legend.key.width= unit(1.5, 'cm')
   )+
   geom_sf_label(aes(label = scales::dollar(round(surplus))),
                 nudge_y = 5000, nudge_x = -5000)+
@@ -233,8 +237,11 @@ picton <-
     lwd = 0,
     colour = "white"
   ) +
+  geom_sf(data = street, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
-  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+  scale_fill_stepsn(
+    name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
+    colors = col_palette[c(5, 3, 4, 6)], 
                        na.value = "grey80",
                        limits = c(min(surplus_rent$surplus), 
                                   max(surplus_rent$surplus)),
@@ -244,8 +251,7 @@ picton <-
   theme_void() +
   theme(
     legend.position = "bottom",
-    legend.key.width= unit(1.5, 'cm'),
-    legend.title = element_blank()
+    legend.key.width= unit(1.5, 'cm')
   )+
   geom_sf_label(aes(label = scales::dollar(round(surplus))))+
   ggtitle("Picton")
@@ -259,8 +265,11 @@ bloomfield <-
     lwd = 0,
     colour = "white"
   ) +
+  geom_sf(data = street, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
-  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+  scale_fill_stepsn(
+    name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
+    colors = col_palette[c(5, 3, 4, 6)], 
                        na.value = "grey80",
                        limits = c(min(surplus_rent$surplus), 
                                   max(surplus_rent$surplus)),
@@ -270,8 +279,7 @@ bloomfield <-
   theme_void() +
   theme(
     legend.position = "bottom",
-    legend.key.width= unit(1.5, 'cm'),
-    legend.title = element_blank()
+    legend.key.width= unit(1.5, 'cm')
   )+
   geom_sf_label(aes(label = scales::dollar(round(surplus))))+
   ggtitle("Bloomfield")
@@ -285,8 +293,11 @@ wellington <-
     lwd = 0,
     colour = "white"
   ) +
+  geom_sf(data = street, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
-  scale_fill_gradientn(colors = col_palette[c(5, 3, 4, 6)], 
+  scale_fill_stepsn(
+    name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
+    colors = col_palette[c(5, 3, 4, 6)], 
                        na.value = "grey80",
                        limits = c(min(surplus_rent$surplus), 
                                   max(surplus_rent$surplus)),
@@ -296,8 +307,7 @@ wellington <-
   theme_void() +
   theme(
     legend.position = "bottom",
-    legend.key.width= unit(1.5, 'cm'),
-    legend.title = element_blank()
+    legend.key.width= unit(1.5, 'cm')
   )+
   geom_sf_label(aes(label = scales::dollar(round(surplus))))+
   ggtitle("Wellington")

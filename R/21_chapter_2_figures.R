@@ -49,24 +49,11 @@ active_listings <-
 
 figure_2_1_1 <-
   active_listings %>% 
+  filter(date >= "2017-06-07") %>%
   ggplot(aes(date, n, colour = listing_type, size = listing_type)) +
-  annotate("segment", x = key_date_covid, xend = key_date_covid,
-           y = -Inf, yend = Inf, alpha = 0.3) +
-  annotate("curve", x = as.Date("2019-08-01"), xend = key_date_covid - days(10),
-           y = 5000, yend = 4700, curvature = -.2, lwd = 0.25,
-           arrow = arrow(length = unit(0.05, "inches"))) +
-  annotate("text", x = as.Date("2019-05-01"), y = 5000,
-           label = "COVID-19 \nAirbnb's response", family = "Futura Condensed") +
-  annotate("segment", x = key_date_regulations, xend = key_date_regulations,
-           y = -Inf, yend = Inf, alpha = 0.3) +
-  annotate("curve", x = as.Date("2018-06-01"), xend = key_date_regulations - days(10),
-           y = 5200, yend = 5100, curvature = -.2, lwd = 0.25,
-           arrow = arrow(length = unit(0.05, "inches"))) +
-  annotate("text", x = as.Date("2018-02-01"), y = 5200,
-           label = "Regulations", family = "Futura Condensed")+
   geom_line() +
   scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, limits = c(as.Date("2016-01-01"), NA)) +
+  scale_x_date(name = NULL, limits = c(as.Date("2017-06-07"), NA)) +
   scale_colour_manual(name = NULL, values = col_palette[c(5, 1:3)],
                       guide = guide_legend(
                         override.aes = list(size = c(1.5, 0.75, 0.75, 0.75)))) +
@@ -80,96 +67,10 @@ figure_2_1_1 <-
 ggsave("output/figures/figure_2_1_1.pdf", plot = figure_2_1_1, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)
 
-extrafont::embed_fonts("output/figures/figure_2_1.pdf")
+extrafont::embed_fonts("output/figures/figure_2_1_1.pdf")
 
-# Figure 2.1.1.2 Actual and trend active listings after regulations -----------------
 
-# Create and decompose reservations time series
-active_listings_trend <- 
-  active_listings %>% 
-  filter(listing_type == "All listings") %>% 
-  tsibble::as_tsibble() %>% 
-  tsibble::index_by(yearmon = tsibble::yearmonth(date)) %>% 
-  summarize(n = sum(n, na.rm = T)) %>% 
-  filter(yearmon <= tsibble::yearmonth("2020-02")) %>% 
-  model(x11 = feasts:::X11(n, type = "additive")) %>% 
-  components()
 
-# Get August 2017 - July 2018 seasonal
-aug_jul_seasonal <- 
-  active_listings_trend %>%
-  slice(35:46) %>% 
-  pull(seasonal)
-
-# Get July trend
-jul_trend <- 
-  active_listings_trend %>% 
-  slice(46) %>% 
-  pull(trend)
-
-# Apply March-Sep seasonal component to Feb trend
-trends <-
-  tibble(
-    date = as.Date(c("2018-08-31", "2018-09-16", "2018-10-16", "2018-11-16",
-                     "2018-12-16", "2019-01-16", "2019-02-16", "2019-03-16",
-                     "2019-04-16", "2019-05-16", "2019-06-16", "2019-07-16")),
-    trend = (jul_trend + aug_jul_seasonal) / c(31, 30, 31, 30, 31, 31, 28, 31, 30, 31, 30, 31))
-
-# Set August 31 value to average of August and September
-# trends[7,]$trend <- mean(trends[6:7,]$trend)
-
-active_listings_trend <- 
-  active_listings %>% 
-  filter(listing_type == "All listings") %>% 
-  mutate(n = slide_dbl(n, mean, .before = 6)) %>% 
-  filter(date >= "2016-01-01") %>% 
-  left_join(trends) %>% 
-  select(-listing_type) %>% 
-  mutate(trend = if_else(date == "2018-08-01", n, trend)) %>%
-  filter(date >= "2018-08-31", date <= "2019-07-16") %>%
-  mutate(trend = zoo::na.approx(trend))
-
-active_listings_trend <- 
-  active_listings %>% 
-  filter(listing_type == "All listings") %>% 
-  mutate(n = slide_dbl(n, mean, .before = 6)) %>% 
-  filter(date >= "2016-01-01", date <= "2019-07-16") %>% 
-  select(-listing_type) %>% 
-  bind_rows(active_listings_trend) 
-
-# figure_2_1_1_2 <-
-active_listings_trend %>%
-  pivot_longer(-date) %>% 
-  filter(!is.na(value)) %>%
-  ggplot() +
-  annotate("segment", x = as.Date("2018-08-31"), xend = as.Date("2018-08-31"),
-           y = -Inf, yend = Inf, alpha = 0.3)+
-  annotate("curve", x = as.Date("2019-04-01"), xend = as.Date("2018-08-31") + days(10),
-           y = 4850, yend = 4700, curvature = -.2, lwd = 0.25,
-           arrow = arrow(length = unit(0.05, "inches"))) +
-  annotate("text", x = as.Date("2019-05-01"), y = 5000,
-           label = "Regulations", family = "Futura Condensed")+
-  geom_ribbon(aes(x = date, ymin = n, ymax = trend, group = 1),
-              data = filter(active_listings_trend, !is.na(trend)), fill = col_palette[6], 
-              alpha = 0.3) +
-  geom_line(aes(date, value, color = name), lwd = 1.5) +
-  scale_x_date(name = NULL) +
-  scale_y_continuous(name = NULL) +
-  scale_color_manual(name = NULL, 
-                     labels = c("Actual active listings", "Expected active listings"), 
-                     values = col_palette[c(5, 4)]) +
-  theme_minimal() +
-  theme(legend.position = "bottom", 
-        panel.grid.minor.x = element_blank(),
-        text = element_text(face = "plain"), #, family = "Futura"
-        legend.title = element_text(face = "bold", #, family = "Futura"
-                                    size = 10),
-        legend.text = element_text( size = 10))#, family = "Futura"
-
-ggsave("output/figures/figure_2_1_1_2.pdf", plot = figure_2_1_1_2, width = 8, 
-       height = 5, units = "in", useDingbats = FALSE)
-
-extrafont::embed_fonts("output/figures/figure_2_1_1_2.pdf")
 
 # Figure 2.1.2 All displayed daily listings -----------------------------------
 
@@ -193,13 +94,9 @@ active_listings <-
 figure_2_1_2 <-
   active_listings %>% 
   ggplot(aes(date, n, colour = listing_type, size = listing_type)) +
-  annotate("segment", x = key_date_covid, xend = key_date_covid,
-           y = -Inf, yend = Inf, alpha = 0.3) +
-  annotate("segment", x = key_date_regulations, xend = key_date_regulations,
-           y = -Inf, yend = Inf, alpha = 0.3) +
   geom_line() +
   scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, limits = c(as.Date("2016-01-01"), NA)) +
+  scale_x_date(name = NULL, limits = c(as.Date("2017-06-01"), NA)) +
   scale_colour_manual(name = NULL, values = col_palette[c(5, 1:3)],
                       guide = guide_legend(
                         override.aes = list(size = c(1.5, 0.75, 0.75, 0.75)))) +
@@ -213,7 +110,7 @@ figure_2_1_2 <-
 ggsave("output/figures/figure_2_1_2.pdf", plot = figure_2_1_2, width = 8, 
        height = 5, units = "in", useDingbats = FALSE)
 
-extrafont::embed_fonts("output/figures/figure_2_1.pdf")
+extrafont::embed_fonts("output/figures/figure_2_1_2.pdf")
 
 
 # Figure 2.2 YOY listing and revenue growth rates -------------------------
@@ -234,14 +131,11 @@ daily_variation <-
 
 figure_2_2 <- 
   daily_variation %>% 
+  filter(date >= "2018-06-01") %>%
   ggplot(aes(date, value, colour = var)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  annotate("segment", x = key_date_covid, xend = key_date_covid,
-           y = -Inf, yend = Inf, alpha = 0.3) +
-  annotate("segment", x = key_date_regulations, xend = key_date_regulations,
-           y = -Inf, yend = Inf, alpha = 0.3) +
   geom_line(lwd = 1) +
-  scale_x_date(name = NULL) +
+  scale_x_date(name = NULL, limits = c(as.Date("2018-06-01"), NA)) +
   scale_y_continuous(name = NULL, limits = c(-1, NA), 
                      labels = scales::percent) +
   scale_color_manual(name = NULL, values = col_palette[c(5, 1)]) +
@@ -270,8 +164,7 @@ active_area <-
 
 active_DA <-
   daily %>%
-  filter(housing, status != "B", date >= LTM_start_date,
-         date <= LTM_end_date) %>%
+  filter(housing, status != "B", date >= "2021-01-01", date <= "2021-12-31") %>%
   left_join(select(st_drop_geometry(property), property_ID, GeoUID)) %>% 
   count(GeoUID, date) %>% 
   group_by(GeoUID) %>% 
@@ -286,78 +179,10 @@ make_listing_map <- function(df) {
     geom_sf(data = province, colour = "transparent", fill = "grey93") +
     geom_sf(aes(fill = percentage),
             colour = if (nrow(df) == 19) "white" else "transparent") +
-    scale_fill_gradientn(colors = col_palette[c(5, 3, 1)], na.value = "grey80",
-                         limits = c(0, 0.05), oob = scales::squish, 
+    scale_fill_stepsn(colors = col_palette[c(5, 3, 1)], na.value = "grey80",
+                         limits = c(0, 0.1), oob = scales::squish, 
                          labels = scales::percent)  +
     guides(fill = guide_colourbar(title = "STRs/\ndwelling",
-                                  title.vjust = 1)) + 
-    gg_bbox(df) +
-    theme_void() #+
-    # theme(text = element_text(family = "Futura", face = "plain"),
-    #       legend.title = element_text(family = "Futura", face = "bold",
-    #                                   size = 7),
-    #       legend.title.align = 0.9,
-    #       legend.text = element_text(family = "Futura", size = 5),
-    #       panel.border = element_rect(colour = "white", size = 2))
-}
-
-figure_2_3_left <- make_listing_map(active_area)
-
-figure_2_3_right <- 
-  make_listing_map(active_DA) +
-  geom_rect(xmin = 607000, ymin = 5038000, xmax = 614000, ymax = 5045000,
-            fill = NA, colour = "black", size = 0.3)
-
-# fig_2_3_zoom <- 
-#   figure_2_3_right +
-#   geom_sf(data = streets_downtown, size = 0.3, colour = "white") +
-#   coord_sf(xlim = c(607000, 614000), ylim = c(5038000, 5045000),
-#            expand = FALSE) +
-#   theme(legend.position = "none",
-#         panel.border = element_rect(fill = NA, colour = "black", size = 0.6))
-
-layout <- c(
-  area(1, 1, 42, 40),
-  area(1, 41, 42, 80),
-  area(3, 41, 22, 60)
-)
-
-figure_2_3 <- 
-  figure_2_3_left + figure_2_3_right + #fig_2_3_zoom + 
-  plot_layout(design = layout) + plot_layout(guides = 'collect') & 
-  theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
-
-ggsave("output/figures/figure_2_3.pdf", plot = figure_2_3, width = 8, 
-       height = 4.2, units = "in", useDingbats = FALSE)
-
-extrafont::embed_fonts("output/figures/figure_2_3.pdf")
-
-
-# Figure 2.4 Percentage of listings in condos -----------------------------
-
-active_condos_area <- 
-  daily %>% 
-  filter(housing, date >= LTM_start_date, 
-         date <= LTM_end_date, status != "B") %>% 
-  left_join(listing_probabilities_2019) %>% 
-  group_by(date, area) %>% 
-  summarize(n_listings = n(),
-            n_condo = sum(condo, na.rm = TRUE)) %>% 
-  group_by(area) %>% 
-  summarize(n_listings_2019 = mean(n_listings),
-            n_condo_listings_2019 = mean(n_condo)) %>% 
-  left_join(LA, .) %>% 
-  mutate(p_condo = n_condo_listings_2019 / n_listings_2019)
-
-make_condo_map <- function(df) {
-  ggplot(df) +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_condo), 
-            colour = if (nrow(df) == 19) "white" else "transparent") +
-    scale_fill_gradientn(colors = col_palette[c(3, 4, 1)], na.value = "grey80",
-                         limits = c(0, 1), oob = scales::squish, 
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "% of STRs\nwhich are condos",
                                   title.vjust = 1)) + 
     gg_bbox(df) +
     theme_void() +
@@ -369,81 +194,37 @@ make_condo_map <- function(df) {
           panel.border = element_rect(colour = "white", size = 2))
 }
 
-figure_2_4_left <- make_condo_map(active_condos_area)
+# figure_2_3_left <- make_listing_map(active_area)
 
-figure_2_4_right <- 
-  make_condo_map(DA_probabilities_2019) +
-  geom_rect(xmin = 607000, ymin = 5038000, xmax = 614000, ymax = 5045000,
-            fill = NA, colour = "black", size = 0.3)
+figure_2_3_right <- 
+  make_listing_map(active_DA) #+
+  # geom_rect(xmin = 607000, ymin = 5038000, xmax = 614000, ymax = 5045000,
+  #           fill = NA, colour = "black", size = 0.3)
 
-fig_2_4_zoom <- 
-  figure_2_4_right +
-  geom_sf(data = streets_downtown, size = 0.3, colour = "white") +
-  coord_sf(xlim = c(607000, 614000), ylim = c(5038000, 5045000),
-           expand = FALSE) +
-  theme(legend.position = "none",
-        panel.border = element_rect(fill = NA, colour = "black", size = 0.6))
+# fig_2_3_zoom <- 
+#   figure_2_3_right +
+#   geom_sf(data = streets_downtown, size = 0.3, colour = "white") +
+#   coord_sf(xlim = c(607000, 614000), ylim = c(5038000, 5045000),
+#            expand = FALSE) +
+#   theme(legend.position = "none",
+#         panel.border = element_rect(fill = NA, colour = "black", size = 0.6))
 
-layout <- c(
-  area(1, 1, 42, 40),
-  area(1, 41, 42, 80),
-  area(3, 41, 22, 60)
-)
+# layout <- c(
+#   area(1, 1, 42, 40),
+#   area(1, 41, 42, 80),
+#   area(3, 41, 22, 60)
+# )
 
-figure_2_4 <- 
-  figure_2_4_left + figure_2_4_right + fig_2_4_zoom + 
-  plot_layout(design = layout) + plot_layout(guides = 'collect') & 
-  theme(legend.position = "bottom")
+figure_2_3 <- 
+  # figure_2_3_left + 
+  figure_2_3_right #+ #fig_2_3_zoom + 
+  # plot_layout(design = layout) + plot_layout(guides = 'collect') & 
+  # theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
 
-ggsave("output/figures/figure_2_4.pdf", plot = figure_2_4, width = 8, 
+ggsave("output/figures/figure_2_3.pdf", plot = figure_2_3, width = 8, 
        height = 4.2, units = "in", useDingbats = FALSE)
 
-extrafont::embed_fonts("output/figures/figure_2_4.pdf")
-
-
-# Figure 2.5 Condo scatterplot --------------------------------------------
-
-condo_scatter <-
-  DA_probabilities_2019 %>% 
-  mutate(str_pct = n_listings / dwellings) %>% 
-  select(GeoUID, dwellings, p_condo, str_pct, geometry) %>% 
-  left_join(select(st_drop_geometry(st_join(st_centroid(DA), LA)), 
-                   -dwellings.x, -dwellings.y)) %>% 
-  mutate(area = case_when(
-    area == "Ville-Marie" ~ "Ville-Marie",
-    area == "Le Plateau-Mont-Royal" ~ "Le Plateau-Mont-Royal",
-    TRUE ~ "Other")) %>% 
-  mutate(area = factor(area, levels = c("Other", "Le Plateau-Mont-Royal",
-                                              "Ville-Marie")))
-
-figure_2_5 <- 
-  condo_scatter %>% 
-  ggplot(aes(p_condo, str_pct, colour = area)) +
-  geom_point() + 
-  geom_point(data = filter(condo_scatter, area == "Other"),
-             colour = "grey") +
-  geom_point(data = filter(condo_scatter, area == "Le Plateau-Mont-Royal"),
-             colour = col_palette[5]) +
-  geom_point(data = filter(condo_scatter, area == "Ville-Marie"),
-             colour = col_palette[1]) +
-  geom_smooth(method = lm, se = FALSE) +
-  scale_colour_manual(name = "area", 
-                      values = c("grey", col_palette[c(5, 1)])) +
-  scale_x_continuous(name = "% condominiums",
-                     labels = scales::percent) +
-  scale_y_continuous(name = "% STRs", 
-                     labels = scales::percent_format(accuracy = 1)) +
-  coord_cartesian(ylim = c(0, 0.5)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        panel.grid.minor.x = element_blank(),
-        text = element_text(family = "Futura"),
-        legend.title = element_text(family = "Futura", face = "bold"))
-
-ggsave("output/figures/figure_2_5.pdf", plot = figure_2_5, width = 8, 
-       height = 5, units = "in", useDingbats = FALSE)
-
-extrafont::embed_fonts("output/figures/figure_2_5.pdf")
+extrafont::embed_fonts("output/figures/figure_2_3.pdf")
 
 
 # Figure 2.6 Host revenue distribution ------------------------------------
@@ -452,7 +233,7 @@ revenue_colour <- colorRampPalette(col_palette[c(1, 3, 6, 4, 2, 5)])(10)
 
 host_deciles <-
   daily %>%
-  filter(housing, date >= LTM_start_date, date <= LTM_end_date, 
+  filter(housing, date >= "2021-01-01", date <= "2021-12-31", 
          status == "R", !is.na(host_ID)) %>%
   group_by(host_ID) %>%
   summarize(rev = sum(price)) %>% 
@@ -550,13 +331,9 @@ ML <-
 
 figure_2_7 <- 
   ML %>% 
-  filter(date >= "2017-01-01") %>% 
+  filter(date >= "2017-06-01") %>% 
   ggplot() +
   geom_line(aes(date, value, colour = `Multilisting percentage`), lwd = 1) +
-  annotate("segment", x = key_date_covid, xend = key_date_covid,
-           y = -Inf, yend = Inf, alpha = 0.3) +
-  annotate("segment", x = key_date_regulations, xend = key_date_regulations,
-           y = -Inf, yend = Inf, alpha = 0.3) +
   scale_y_continuous(name = NULL, 
                      label = scales::percent_format(accuracy = 1)) +
   scale_colour_manual(values = col_palette[c(5, 1)]) +
@@ -586,13 +363,10 @@ commercial_listings <-
 
 figure_2_8 <- 
   commercial_listings %>% 
+  filter(date >= "2017-06-01") %>%
   ggplot() +
   geom_line(aes(date, n, color = commercial), lwd = 1) +
-  annotate("segment", x = key_date_covid, xend = key_date_covid,
-           y = -Inf, yend = Inf, alpha = 0.3) +
-  annotate("segment", x = key_date_regulations, xend = key_date_regulations,
-           y = -Inf, yend = Inf, alpha = 0.3) +
-  scale_x_date(name = NULL, limits = c(as.Date("2016-01-01"), NA)) +
+  scale_x_date(name = NULL, limits = c(as.Date("2017-06-01"), NA)) +
   scale_y_continuous(name = NULL) +
   scale_colour_manual(name = "Listing type",
                       values = col_palette[c(5, 1)],
@@ -608,95 +382,6 @@ ggsave("output/figures/figure_2_8.pdf", plot = figure_2_8, width = 8,
        height = 5, units = "in", useDingbats = FALSE)
 
 extrafont::embed_fonts("output/figures/figure_2_8.pdf")
-
-# Figure 2.9 Actual and trend commercialization after regulations -----------------
-
-commercial_listings <- 
-  daily %>% 
-  filter(status != "B", date >= "2016-01-01") %>% 
-  mutate(commercial = if_else(FREH_3 < 0.5 & !multi, FALSE, TRUE)) %>% 
-  count(date, commercial)
-
-# Create and decompose reservations time series
-commercial_operations <- 
-  commercial_listings %>% 
-  filter(commercial) %>% 
-  tsibble::as_tsibble() %>% 
-  tsibble::index_by(yearmon = tsibble::yearmonth(date)) %>% 
-  summarize(n = sum(n)) %>% 
-  filter(yearmon <= tsibble::yearmonth("2020-02")) %>% 
-  model(x11 = feasts:::X11(n, type = "additive")) %>% 
-  components()
-
-# Get August 2017 - July 2018 seasonal
-aug_jul_seasonal <- 
-  commercial_operations %>%
-  slice(20:34) %>% 
-  pull(seasonal)
-
-# Get July trend
-jul_trend <- 
-  commercial_operations %>% 
-  slice(31) %>% 
-  pull(trend)
-
-# Apply March-Sep seasonal component to Feb trend
-trends <-
-  tibble(
-    date = as.Date(c("2018-08-23", "2018-09-16", "2018-10-16", "2018-11-16",
-                     "2018-12-16", "2019-01-16", "2019-02-16", "2019-03-16",
-                     "2019-04-16", "2019-05-16", "2019-06-16", "2019-07-16",
-                     "2019-08-16", "2019-09-16", "2019-10-16")),
-    trend = (jul_trend + aug_jul_seasonal) / c(31, 30, 31, 30, 31, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31))
-
-# Set August 31 value to average of August and September
-# trends[7,]$trend <- mean(trends[6:7,]$trend)
-
-commercial_operations <- 
-  commercial_listings %>% 
-  filter(commercial) %>% 
-  mutate(n = slide_dbl(n, mean, .before = 6)) %>% 
-  filter(date >= "2016-01-01") %>% 
-  left_join(trends) %>% 
-  select(-commercial) %>% 
-  mutate(trend = if_else(date == "2018-08-01", n, trend)) %>%
-  filter(date >= "2018-08-23", date <= "2019-10-16") %>%
-  mutate(trend = zoo::na.approx(trend))
-
-commercial_operations <- 
-  commercial_listings %>% 
-  filter(commercial) %>% 
-  mutate(n = slide_dbl(n, mean, .before = 6)) %>% 
-  filter(date >= "2016-01-01", date <= "2019-10-31") %>% 
-  select(-commercial) %>% 
-  bind_rows(commercial_operations) 
-
-# figure_2_9 <-
-  commercial_operations %>%
-  pivot_longer(-date) %>% 
-  filter(!is.na(value)) %>%
-  ggplot() +
-  geom_ribbon(aes(x = date, ymin = n, ymax = trend, group = 1),
-              data = filter(commercial_operations, !is.na(trend)), fill = col_palette[3], 
-              alpha = 0.3) +
-  geom_line(aes(date, value, color = name), lwd = 1) +
-  scale_x_date(name = NULL) +
-  scale_y_continuous(name = NULL) +
-  scale_color_manual(name = NULL, 
-                     labels = c("Actual commercialization", "Expected commercialization"), 
-                     values = col_palette[c(1, 5)]) +
-  theme_minimal() +
-  theme(legend.position = "bottom", 
-        panel.grid.minor.x = element_blank(),
-        text = element_text(face = "plain"), #, family = "Futura"
-        legend.title = element_text(face = "bold", #, family = "Futura"
-                                    size = 10),
-        legend.text = element_text( size = 10))#, family = "Futura"
-
-ggsave("output/figures/figure_2_9.pdf", plot = figure_2_9, width = 8, 
-       height = 5, units = "in", useDingbats = FALSE)
-
-extrafont::embed_fonts("output/figures/figure_2_9.pdf")
 
 
 # Clean up ----------------------------------------------------------------

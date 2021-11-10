@@ -95,7 +95,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
              sum(status == "R") >= 7) %>% 
       pull(property_ID) %>% 
       unique()
-
+    
     even_nb <- which(1:(nb_years*2) %% 2  == 0)[-length(which(1:(nb_years*2) %% 2  == 0))]
     
     if(i<5) {
@@ -127,7 +127,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
         select(property_ID, year_season) %>% 
         distinct()
     }
-      
+    
     
     lst_winter[[i]] <- list(props)
   }
@@ -184,7 +184,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
       select(property_ID, year_season) %>% 
       distinct()
     
-
+    
   }
   
   # bind the prior list of seasons
@@ -201,11 +201,11 @@ fun_seasonal_FREH <- function(start_date, end_date) {
   out <- 
     out %>% 
     arrange(date) %>% 
-    mutate(season = case_when(season == "full_time" ~ "Full-time",
+    mutate(season = case_when(season == "full_time" ~ "Year-round",
                               season == "summer" ~ "Summer",
                               season == "winter" ~ "Winter"),
            year_season = factor(year_season, levels = season_levels),
-           season = factor(season, levels = c("Summer", "Winter", "Full-time"))) %>%
+           season = factor(season, levels = c("Summer", "Winter", "Year-round"))) %>%
     filter(year_season != "Summer 2017") %>% 
     select(-date) %>% 
     distinct() 
@@ -215,7 +215,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
   full_time_properties <- do.call("rbind", lst_ft_props)
   
   
-  list(out, full_time_properties, lst_summer)
+  list(out, full_time_properties)
 }
 
 fun_seasonal_FREH_output <- fun_seasonal_FREH(summer_start, summer_end)
@@ -225,21 +225,27 @@ full_time_listings <- fun_seasonal_FREH_output[[2]]
 seasonal_FREH <- fun_seasonal_FREH_output[[1]]
 
 # Plot
-seasonal_FREH %>% 
+seasonal_plot <- 
+  seasonal_FREH %>% 
   ggplot()+
   geom_bar(aes(year_season, n, fill = season), stat= "identity")+
   theme(plot.title = element_text(size=10),
         legend.title = element_blank())+
   scale_fill_manual("legend", 
-                    values = c("Full-time" = col_palette[3],
+                    values = c("Year-round" = col_palette[3],
                                "Summer" = col_palette[1],
                                "Winter" = col_palette[2]))+
   scale_y_continuous(name = NULL, label = scales::comma) +
   theme_minimal()+
   xlab("")+
   ylab("")+
-  theme(legend.position = "bottom",
-        legend.title = element_blank())
+  theme(legend.position = "bottom", legend.title = element_blank(),
+        panel.grid.minor.x = element_blank())
+
+ggsave("output/figures/housing_loss.pdf", 
+       # plot = figure_5_1_fun("Futura", "Futura Condensed"), 
+       plot = seasonal_plot, 
+       width = 9, height = 4.2, units = "in", useDingbats = FALSE)
 
 
 # Save --------------------------------------------------------------------

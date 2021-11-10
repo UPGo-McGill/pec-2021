@@ -22,7 +22,7 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- FALSE
+build_figures <- TRUE
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
@@ -472,67 +472,47 @@ figure_3_3_fun()
 
 In years prior to the global pandemic, the percentage of reserved nights made in each month of the year followed a strong seasonality pattern, with August being the peak month at `r august_2019_per_R` of the annual total of reserved nights. Figure \@ref(fig:fig-3-3) shows that the pandemic disrupted this pattern. Indeed, in August 2021, the figure had dropped to `r august_2021_per_R`. We are observing a flatter line in 2021, with summer months having a relatively lower impact. The usual very strong seasonality pattern is different, weaker, flatter, in times of Covid. 
 
+
+
+
 ```{r, make_fig_3_4}
+
+ward_type_comp <- 
+  daily |> 
+  left_join(st_drop_geometry(select(EW, -dwellings)), by = "ward") |> 
+  filter(status == "R", !is.na(type)) |> 
+  count(type, date) |> 
+  group_by(date) |> 
+  mutate(pct = n / sum(n)) |> 
+  group_by(type) |> 
+  mutate(pct = slide_dbl(pct, mean, .before = 6, .complete = TRUE)) |> 
+  ungroup() |> 
+  filter(year(date) %in% c(2019, 2021), month(date) <= 8) |> 
+  mutate(year = year(date), .after = date)
 
 figure_3_4_fun <- function(regular = "", condensed = "") {
 
-before <- 
-  daily %>% 
-  left_join(st_drop_geometry(select(EW, -dwellings))) %>% 
-  filter(date >= "2019-01-01", date <= str_replace(max(daily$date), "^\\d{4}", "2019"),
-         status == "R", !is.na(type)) %>% 
-  group_by(type) %>% 
-  count(date) %>% 
-  group_by(date) %>% 
-  mutate(n = n/sum(n)) %>%
-  group_by(type) %>% 
-  mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE)) %>% 
-  ungroup() %>% 
-  ggplot()+
-  geom_line(aes(date, n, color = type), size = 1) +
-  scale_color_manual(values = col_palette[1:3])+
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1),
-                     limits = c(0,0.675)
-                     )+
-  theme_minimal()+
-  ylab(NULL)+
-  xlab(NULL)+
-  theme(legend.position = "")+
-  ggtitle("2019")
-
-
-after <- 
-  daily %>% 
-  left_join(st_drop_geometry(select(EW, -dwellings))) %>% 
-  filter(date >= "2021-01-01",
-         status == "R", !is.na(type)) %>% 
-  group_by(type) %>% 
-  count(date) %>% 
-  group_by(date) %>% 
-  mutate(n = n/sum(n)) %>%
-  group_by(type) %>% 
-  mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE)) %>% 
-  ungroup() %>% 
-  ggplot()+
-  geom_line(aes(date, n, color = type), size = 1)+
-  scale_color_manual(values = col_palette[1:3])+  
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1),
-                     limits = c(0,0.675)
-                     )+
-  theme_minimal()+
-  ylab(NULL)+
-  xlab(NULL)+
-  theme(legend.title = element_blank())+
-  ggtitle("2021")
-
-before + after
-
+ward_type_comp |> 
+  mutate(label = if_else(date == "2019-02-10", type, NA_character_)) |> 
+  ggplot() +
+  geom_line(aes(date, pct, colour = type), size = 1) +
+  geom_label(aes(date, pct, label = label, colour = type)) +
+  facet_wrap(vars(year), scales = "free_x") +
+  scale_x_date(name = NULL) +
+  scale_color_manual(values = col_palette[1:3]) +
+  scale_y_continuous(name = NULL, labels = scales::percent_format(accuracy = 1),
+                     limits = c(0, 0.675)) +
+  theme_minimal() +
+    theme(legend.position = "NONE", panel.grid.minor.x = element_blank(),
+          text = element_text(family = regular), 
+          strip.text = element_text(face = "bold"))
 }
 
 if (build_figures) {
   ggsave(here("output", "figures", "figure_3_4.pdf"), 
-         plot = figure_3_4_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         # plot = figure_3_4_fun("Futura", "Futura Condensed"), 
+         plot = figure_3_4_fun(), 
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_3_4.pdf"))
 }
