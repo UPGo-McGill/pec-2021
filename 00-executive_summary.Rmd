@@ -40,11 +40,11 @@
 
 <!-- **PRINCE EDWARD COUNTY REGISTRATION ANALYSIS** -->
 
-<!-- - TKTK -->
-<!-- - TKTK -->
-<!-- - TKTK -->
-<!-- - TKTK -->
-<!-- - TKTK -->
+<!-- - Out of the 963 license applications, 423 were approved, with  total of 351 valid licenses operating prior the the moratorium. -->
+<!-- - Picton is the ward that received the most license applications, with 71, followed by Hallowell (60) and Wellington (54). -->
+<!-- - During the STA registration period, there was about 1 new STR listing created per day. During the moratorium, the rate of new listings being created on STR platforms remained substantially the same, showing that the registration and moratorium did not directly impact the creation of STA listings in the county, but rather the overall pandemic conditions. -->
+<!-- - 331 housing units that were sold since 2016 also applied for a STA license, indicating a strong connection between recent house sales and STR operations. -->
+
 
 <!-- **PATHWAYS TO REINSTATING SHORT-TERM RENTAL ACCOMODATION REGULATIONS** -->
 
