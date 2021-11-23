@@ -22,7 +22,7 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- TRUE
+build_figures <- FALSE
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
@@ -143,6 +143,9 @@ total_n_license <-
 library(kableExtra)
 
 STA %>% 
+  filter(!is.na(expiry)) %>% 
+  filter(status== "Active" | status == "Expired") %>% 
+  filter(created <= end_reg) %>%
   st_join(EW, .) %>% 
   count(ward) %>% 
   st_drop_geometry() %>% 
@@ -226,16 +229,16 @@ Out of the `r n_valid_STA_bc` STAs operating with a license during the 10 months
 figure_5_1_fun <- function(regular = "", condensed = "") {
   
 created_dates <- 
-  property |> 
-  st_drop_geometry() |> 
-  filter(created >= "2019-01-01") |> 
+  property %>% 
+  st_drop_geometry() %>% 
+  filter(created >= "2019-01-01") %>% 
   mutate(period = case_when(
     created < start_reg ~ "pre-reg",
     created < start_mora ~ "reg",
     created < end_mora ~ "moratorium",
     created >= end_mora ~ "post-moratorium"
-  )) |> 
-  group_by(period) |> 
+  )) %>% 
+  group_by(period) %>% 
   summarize(first_date = min(created),
             last_date = max(created), 
             tot_n = n(),
@@ -249,7 +252,7 @@ property %>%
     created < start_mora ~ "reg",
     created < end_mora ~ "moratorium",
     created >= end_mora ~ "post-moratorium"
-  )) |> 
+  )) %>% 
   filter(created >= start_2019) %>% 
   ggplot() +
   annotate("rect", xmin = start_reg, xmax = end_reg, fill = col_palette[1],
@@ -453,11 +456,11 @@ total_sales <-
   set_names(c("year", "total"))
 
 survival_factor <- 
-  property |> 
-  st_drop_geometry() |> 
-  filter(scraped > created, str_starts(property_ID, "ab-")) |> 
-  group_by(year_created = year(created)) |> 
-  summarize(still_active = mean(scraped >= "2019-11-01")) |> 
+  property %>% 
+  st_drop_geometry() %>% 
+  filter(scraped > created, str_starts(property_ID, "ab-")) %>% 
+  group_by(year_created = year(created)) %>% 
+  summarize(still_active = mean(scraped >= "2019-11-01")) %>% 
   filter(year_created >= 2016)
 
 proportion_home_sales_STA <-
@@ -469,8 +472,8 @@ proportion_home_sales_STA <-
   count(year) %>% 
   left_join(total_sales, by = "year") %>% 
   mutate(perc = n/total,
-         perc_adjusted = perc/(total_licenses_all/ reg_property %>% nrow())) |> 
-  left_join(survival_factor, by = c("year" = "year_created")) |> 
+         perc_adjusted = perc/(total_licenses_all/ reg_property %>% nrow())) %>% 
+  left_join(survival_factor, by = c("year" = "year_created")) %>% 
   mutate(perc_adj_2 = perc_adjusted / still_active)
 
 ```
@@ -481,16 +484,16 @@ figure_5_2_fun <- function(regular = "", condensed = "") {
 
 proportion_home_sales_STA %>% 
   mutate(perc_adjusted = perc_adjusted - perc,
-         perc_adj_2 = perc_adj_2 - perc_adjusted - perc) |> 
-  select(year, perc, perc_adjusted, perc_adj_2) |> 
-  pivot_longer(c(perc:perc_adj_2)) |> 
+         perc_adj_2 = perc_adj_2 - perc_adjusted - perc) %>% 
+  select(year, perc, perc_adjusted, perc_adj_2) %>% 
+  pivot_longer(c(perc:perc_adj_2)) %>% 
   mutate(name = case_when(
     name == "perc" ~ "Direct matches",
     name == "perc_adjusted" ~ "Inferred from registration rate",
-    name == "perc_adj_2" ~ "Inferred from listing attrition")) |> 
+    name == "perc_adj_2" ~ "Inferred from listing attrition")) %>% 
   mutate(name = factor(name, levels = c("Direct matches", 
                                         "Inferred from registration rate",
-                                        "Inferred from listing attrition"))) |> 
+                                        "Inferred from listing attrition"))) %>% 
   ggplot() +
   geom_col(aes(x = year, y = value, fill = name), 
            position = position_stack(reverse = TRUE)) +
