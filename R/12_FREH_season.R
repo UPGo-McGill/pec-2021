@@ -1,4 +1,4 @@
-#### 13 FREH MODEL #############################################################
+#### 12 FREH SEASONAL MODEL ####################################################
 
 #' This script is moderately time-consuming to run; it should be rerun whenever
 #' STR data changes.
@@ -219,9 +219,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
 }
 
 fun_seasonal_FREH_output <- fun_seasonal_FREH(summer_start, summer_end)
-
 full_time_listings <- fun_seasonal_FREH_output[[2]]
-
 seasonal_FREH <- fun_seasonal_FREH_output[[1]]
 
 # Plot
