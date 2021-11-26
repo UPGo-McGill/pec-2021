@@ -70,8 +70,8 @@ host <- host %>%
 
 property <-
   property %>%
-  mutate(created = if_else(is.na(created), first_active, created),
-         scraped = if_else(is.na(scraped), last_active, scraped)) %>%
+  mutate(created = coalesce(created, first_active),
+         scraped = coalesce(scraped, last_active)) %>%
   filter(!is.na(created))
 
 
@@ -80,6 +80,19 @@ property <-
 exchange_rates <- convert_currency(start_date = min(daily$date),
                                    end_date = max(daily$date))
 
+# Overwrite 2017 onward with direct BOC numbers
+boc <- 
+  read_csv("data/FX_RATES_MONTHLY-sd-2017-01-01.csv", skip = 39) |> 
+  select(year_month = date, new_rate = FXMUSDCAD) |> 
+  mutate(year_month = substr(year_month, 1, 7))
+
+exchange_rates <- 
+  exchange_rates |> 
+  add_row(year_month = "2021-09") |> 
+  left_join(boc, by = "year_month") |> 
+  mutate(exchange_rate = coalesce(new_rate, exchange_rate)) |> 
+  select(-new_rate)
+  
 daily <-
   daily %>%
   mutate(year_month = substr(date, 1, 7)) %>%
@@ -91,6 +104,7 @@ daily <-
 # Process the property and daily files ------------------------------------
 
 # Run raffle to assign a DA to each listing
+set.seed(390812)
 property <-
   property %>%
   strr_raffle(DA, GeoUID, dwellings, seed = 1)

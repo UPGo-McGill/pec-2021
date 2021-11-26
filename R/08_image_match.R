@@ -45,15 +45,6 @@ ab_urls <-
 # Get AB IDs
 ab_ids <- property$property_ID
 
-# Remove already downloaded images
-ab_paths <-
-  list.files(paste0(dl_location, "/ab")) %>%
-  str_remove(".(jpg|jpeg|JPG|JPEG)") %>%
-  str_remove("-[:digit:]$")
-
-ab_urls <- ab_urls[!ab_ids %in% ab_paths]
-ab_ids <- ab_ids[!ab_ids %in% ab_paths]
-
 
 # Make download subfolders ------------------------------------------------
 

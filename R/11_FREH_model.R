@@ -1,4 +1,4 @@
-#### 13 FREH MODEL #############################################################
+#### 11 FREH MODEL #############################################################
 
 #' This script is moderately time-consuming to run; it should be rerun whenever
 #' STR data changes.

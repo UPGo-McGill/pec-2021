@@ -74,45 +74,46 @@ rm(ab_matches, pair_list)
 
 # Modify host_ID from groupings -------------------------------------------
 
-host_IDs <-
-  groupings %>%
-  map(~{
-    property %>%
-      filter(property_ID %in% .x) %>%
-      pull(host_ID) %>%
-      unique()
-  })
-
-host_IDs <- reduce(host_IDs)
-host_IDs <- map(host_IDs, sort)
-host_IDs <- host_IDs[lengths(host_IDs) > 0]
-
-host_change_table <-
-  map_dfr(host_IDs, ~tibble(host_ID = .x, new_host = .x[[1]]))
-
-property <-
-  property %>%
-  left_join(host_change_table) %>%
-  mutate(old_host = if_else(is.na(new_host), NA_character_, host_ID),
-         host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
-  select(-new_host)
-
-daily <-
-  daily %>%
-  left_join(host_change_table) %>%
-  mutate(old_host = if_else(is.na(new_host), NA_character_, host_ID),
-         host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
-  select(-new_host)
-
-daily_all <-
-  daily_all %>%
-  left_join(host_change_table) %>%
-  mutate(old_host = if_else(is.na(new_host), NA_character_, host_ID),
-         host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
-  select(-new_host)
-
-
-rm(host_change_table, host_IDs, reduce)
+# Skip this step
+# host_IDs <-
+#   groupings %>%
+#   map(~{
+#     property %>%
+#       filter(property_ID %in% .x) %>%
+#       pull(host_ID) %>%
+#       unique()
+#   })
+# 
+# host_IDs <- reduce(host_IDs)
+# host_IDs <- map(host_IDs, sort)
+# host_IDs <- host_IDs[lengths(host_IDs) > 0]
+# 
+# host_change_table <-
+#   map_dfr(host_IDs, ~tibble(host_ID = .x, new_host = .x[[1]]))
+# 
+# property <-
+#   property %>%
+#   left_join(host_change_table) %>%
+#   mutate(old_host = if_else(is.na(new_host), NA_character_, host_ID),
+#          host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
+#   select(-new_host)
+# 
+# daily <-
+#   daily %>%
+#   left_join(host_change_table) %>%
+#   mutate(old_host = if_else(is.na(new_host), NA_character_, host_ID),
+#          host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
+#   select(-new_host)
+# 
+# daily_all <-
+#   daily_all %>%
+#   left_join(host_change_table) %>%
+#   mutate(old_host = if_else(is.na(new_host), NA_character_, host_ID),
+#          host_ID = if_else(is.na(new_host), host_ID, new_host)) %>%
+#   select(-new_host)
+# 
+# 
+# rm(host_change_table, host_IDs, reduce)
 
 
 # Get matches -------------------------------------------------------------
@@ -127,7 +128,7 @@ property <-
   ungroup() %>%
   select(property_ID, active = date) %>%
   left_join(property, .) %>%
-  select(property_ID:scraped, active, housing:ward, old_host, geometry)
+  select(property_ID:scraped, active, housing:ward, geometry)
 
 group_matches <-
   groupings %>%
@@ -167,28 +168,36 @@ property_change_table <-
               filter(.x, active - created == max(active - created)) %>%
               slice(1) %>%
               pull(property_ID),
+            new_host = filter(.x, active - created == max(active - created)) %>%
+              slice(1) %>%
+              pull(host_ID),
             new_created = min(.x$created, na.rm = TRUE),
             new_scraped = max(.x$scraped, na.rm = TRUE),
             new_active = max(.x$active, na.rm = TRUE)))
 
 daily <-
-  daily %>%
-  left_join(property_change_table) %>%
+  daily |>
+  left_join(property_change_table, by = "property_ID") |> 
   mutate(old_PID = if_else(is.na(new_PID), NA_character_, property_ID),
-         property_ID = if_else(is.na(new_PID), property_ID, new_PID)) %>%
-  select(-new_PID, -new_created, -new_scraped, -new_active)
+         property_ID = coalesce(new_PID, property_ID),
+         old_host = if_else(is.na(new_host), NA_character_, host_ID),
+         host_ID = coalesce(new_host, host_ID))  |> 
+  select(-new_PID, -new_host, -new_created, -new_scraped, -new_active)
 
 daily_all <-
-  daily_all %>%
-  left_join(property_change_table) %>%
+  daily_all |>
+  left_join(property_change_table, by = "property_ID") |> 
   mutate(old_PID = if_else(is.na(new_PID), NA_character_, property_ID),
-         property_ID = if_else(is.na(new_PID), property_ID, new_PID)) %>%
-  select(-new_PID, -new_created, -new_scraped, -new_active)
+         property_ID = coalesce(new_PID, property_ID),
+         old_host = if_else(is.na(new_host), NA_character_, host_ID),
+         host_ID = coalesce(new_host, host_ID))  |> 
+  select(-new_PID, -new_host, -new_created, -new_scraped, -new_active)
 
 property_change_collapsed <-
   property_change_table %>%
-  group_by(new_PID, new_created, new_scraped, new_active) %>%
-  summarize(all_PIDs = list(property_ID))
+  group_by(new_PID, new_host, new_created, new_scraped, new_active) %>%
+  summarize(all_PIDs = list(property_ID)) |> 
+  ungroup()
 
 property_to_delete <-
   property_change_table %>%
@@ -198,14 +207,15 @@ property <-
   property %>%
   left_join(property_change_collapsed, by = c("property_ID" = "new_PID")) %>%
   filter(!property_ID %in% property_to_delete$property_ID) %>%
-  mutate(created = if_else(!is.na(new_created), new_created, created),
-         scraped = if_else(!is.na(new_scraped), new_scraped, scraped),
-         active = if_else(!is.na(new_active), new_active, active)) %>%
-  select(-new_created, -new_scraped, -new_active) %>%
+  mutate(host_ID = coalesce(new_host, host_ID), 
+         created = coalesce(new_created, created),
+         scraped = coalesce(new_scraped, scraped),
+         active = coalesce(new_active, active)) %>%
+  select(-new_host, -new_created, -new_scraped, -new_active) %>%
   relocate(geometry, .after = last_col())
 
 rm(group_matches, property_change_collapsed, property_change_table,
-   property_to_delete)
+   property_to_delete, reduce)
 
 
 # Save output -------------------------------------------------------------
