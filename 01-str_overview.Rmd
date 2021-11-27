@@ -1,4 +1,4 @@
-# Short-term rentals in Prince Edward County: Market overview
+# Short-term accommodations in Prince Edward County: Market overview
 
 <style type="text/css">
   body{
@@ -251,7 +251,7 @@ var_daily_rev_2019_2021 <-
   sum()}/365}) /
   {{revenue_2019$revenue_2019 %>% 
   sum()}/365}} %>% 
-  scales::percent()
+  scales::percent(0.1)
 
 # EH listings
 eh_listings <- 
@@ -335,7 +335,7 @@ rm(property, daily, daily_all, GH)
 
 ```
 
-**There are on a daily average `r avg_listings_active` active STR listings in Prince Edward County housing units in 2021, which collectively earn `r daily_rev` a day. While the number of active listings has decreased considerably (`r var_active_listings_2019_2021`), the revenue has increased significantly (`r var_daily_rev_2019_2021`). STR activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STR listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
+**There are on a daily average `r avg_listings_active` active STA listings in Prince Edward County housing units in 2021, which collectively earn `r daily_rev` a day. While the number of active listings has decreased considerably (`r var_active_listings_2019_2021`), the revenue has increased significantly (`r var_daily_rev_2019_2021`). STA activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STA listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STA listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
 
 <br>
 
@@ -348,6 +348,11 @@ qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 avg_listings_active_2019 <- 
   avg_listings_2019$avg[1] %>% 
   prettyNum(",")
+
+listings_change_pct <-
+  ((avg_listings$avg[1] - avg_listings_2019$avg[1]) / avg_listings_2019$avg[1]) |> 
+  abs() |> 
+  scales::percent(0.1)
 
 # Average number of hosts in 2021 (taking out blocked 365 days)
 avg_hosts <- 
@@ -422,9 +427,9 @@ rm(property, daily, GH)
 
 ```
 
-``` {r make_fig_2_1}
+``` {r make_fig_1_1}
 
-figure_2_1_fun <- function(regular = "", condensed = "") {
+figure_1_1_fun <- function(regular = "", condensed = "") {
   
   active_listings %>% 
     mutate(label = if_else(date == "2018-09-01", listing_type, NA_character_)) %>%
@@ -443,25 +448,27 @@ figure_2_1_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_1.pdf"), 
+  ggsave(here("output", "figures", "figure_1_1.pdf"), 
          # plot = figure_2_1_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_1_fun(), 
+         plot = figure_1_1_fun(), 
          width = 9, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_1_1.pdf"))
 }
 
 ```
 
-Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STR market in a location, particularly with respect to change over time. In 2021, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-2-1)) operated by an average of `r avg_hosts` hosts. These hosts earned an average of `r daily_rev` in 2021—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per daily active host. These numbers are only a portion of Prince Edward County's STR market from before the pandemic. In 2019, the STR market revenue amounted to a daily average of`r daily_rev_2019`, with an average of `r avg_listings_active_2019` active listings on a given day operated by `r avg_hosts_2019` hosts. In 2019, the average listing earned `r avg_rev_per_listing_2019` a night and the average host, `r avg_rev_per_host_2019` a night. While there are fewer listings and hosts in 2021, which collectively earn less revenue, they make more profit than before the pandemic on an individual level.
+Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STA market in a location, particularly with respect to change over time. In 2021, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-1-1)) in Prince Edward County operated by an average of `r avg_hosts` hosts. STA activity in Prince Edward County displays strong seasonality, with peaks in the summer and dips in the winter; this pattern will be discussed in more detail in the next chapter. STA hosts collectively earned an average of `r daily_rev` per day in 2021—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per daily active host.
 
-``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-1-1)', fig.align = "center"}
+``` {r fig-1-1, include = TRUE, fig.cap = '(ref:fig-1-1)', fig.align = "center"}
 
-figure_2_1_fun()
+figure_1_1_fun()
 
 ```
 
-(ref:fig-2-1) _Active daily STRs in Prince Edward County (7-day average)_
+(ref:fig-1-1) _Active daily STAs in Prince Edward County (7-day average)_
+
+Compared to before the pandemic, there are now fewer STA operators, but they are earning substantially more money. In 2019, the STA market revenue amounted to a daily average of `r daily_rev_2019`, with an average of `r avg_listings_active_2019` active listings on a given day operated by `r avg_hosts_2019` hosts. In 2019, the average listing earned `r avg_rev_per_listing_2019` a night and the average host `r avg_rev_per_host_2019` a night. While there are `r listings_change_pct` fewer active daily listings in 2021 when compared to 2019, these listings collectively earned `r var_daily_rev_2019_2021` more revenue.
 
 ``` {r para_2, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -539,7 +546,7 @@ rm(property, daily, daily_all, GH)
 
 ```
 
-There was also a daily average of `r avg_listings_blocked` listings which were visible on the Airbnb and Vrbo websites but were blocked by the host from receiving reservations (which is more than pre-Covid years, with 2019 having on average `r avg_listings_blocked_2019` blocked listings on a given day). The presence of these listings can erroneously suggest that a territory’s STR market is larger than it is. When these blocked but inactive listings are included, the average listing earned `r avg_revenue_all_listings` daily in 2021, and the average host earned `r avg_revenue_all_hosts` daily. Finally, there was a daily average of `r non_housing_listings` listings that were not located in private housing units (B&Bs, hotels, etc.), which have been excluded from the analysis in this report. All the material which follows pertain to short-term rentals located in Prince Edward County’s residential housing stock.
+There was also a daily average of `r avg_listings_blocked` listings which were visible on the Airbnb and Vrbo websites but were blocked by the host from receiving reservations (which is more than pre-Covid, with 2019 having on average `r avg_listings_blocked_2019` blocked listings on a given day). The presence of these listings can erroneously suggest that a territory’s STA market is larger than it is. When these blocked but inactive listings are included, the average listing earned `r avg_revenue_all_listings` daily in 2021, and the average host earned `r avg_revenue_all_hosts` daily. Finally, there was a daily average of `r non_housing_listings` listings that were not located in private housing units (B&Bs, hotels, etc.), which have been excluded from the analysis in this report. All the material which follows pertain to short-term accommodations located in Prince Edward County’s residential housing stock.
 
 ``` {r para_3, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -600,18 +607,15 @@ active_yoy_listings <-
 
 active_yoy_revenue <- 
   active_yoy_change$revenue %>% 
-  {. * -1} %>% 
   scales::percent(accuracy = 0.1)
 
 rm(property, daily, daily_all, GH)
 
 ```
 
-Active daily listings peaked in `r highest_activity_date` at `r highest_activity_amount`, and have since declined. Due to the Covid-19 pandemic, there were `r active_yoy_listings` fewer active listings on average per day in 2021 than in 2019, but `r active_yoy_revenue` more revenue on average per day. The rise in revenue is a result of a sharper decrease in supply of STR than in the demand, resulting in an important rise in prices and concentration of revenue in the hands of a smaller amount of listings and hosts. Prior to the pandemic, it seems like Prince Edward County's the number of dailt active listings had leveled off, with, for example, a slow growth between 2018 and 2019—active listings and revenue respectively increased by `r active_yoy_listings_2019` and `r active_yoy_revenue_2019` from 2018 to 2019. It is likely that this plateauing trend would have continued in 2020 and 2021 in the absence of a pandemic. In general, the number of STR listings available in Prince Edward County follows a strongly seasonal pattern, with the bulk of activity happening in what we call "summer months", the high-season between May and September included (Figure \@ref(fig:fig-2-1)). Detailed information about seasonality in Prince Edward County will be presented in the next chapter. 
-
 <br>
 
-## Location of STR listings and revenue
+## Location of STA listings and revenue
 
 ``` {r para_4}
 
@@ -716,9 +720,9 @@ water <- rbind(select(river, -everything()), select(ocean, -everything()))
 rm(ocean, river, city)
 ```
 
-``` {r make_fig_2_2}
+``` {r make_fig_1_2}
 
-figure_2_2_fun <- function(regular = "", condensed = "") {
+figure_1_2_fun <- function(regular = "", condensed = "") {
   
   left_map <- 
     active_EW %>% 
@@ -731,7 +735,7 @@ figure_2_2_fun <- function(regular = "", condensed = "") {
                       na.value = "grey80",
                       limits = c(0, 0.15), oob = scales::squish, 
                       labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "STRs/\ndwelling",
+    guides(fill = guide_colourbar(title = "STAs/\ndwelling",
                                   title.vjust = 1)) + 
     gg_bbox(active_EW) +
     theme_void() +
@@ -753,7 +757,7 @@ figure_2_2_fun <- function(regular = "", condensed = "") {
                       na.value = "grey80",
                       limits = c(0, 0.15), oob = scales::squish, 
                       labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "STRs/\ndwelling",
+    guides(fill = guide_colourbar(title = "STAs/\ndwelling",
                                   title.vjust = 1)) + 
     gg_bbox(active_EW) +
     theme_void() +
@@ -770,27 +774,27 @@ figure_2_2_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_2.pdf"), 
+  ggsave(here("output", "figures", "figure_1_2.pdf"), 
          # plot = figure_2_2_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_2_fun(), 
+         plot = figure_1_2_fun(), 
          width = 8, height = 3.5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_2.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_1_2.pdf"))
 }
 
 ```
 
-STR activity in Prince Edward County is highly decentralized (Figure \@ref(fig:fig-2-2)), but seems to be less important in the Northern part of the county. Notably, when divided by electoral wards, Picton accounts for `r picton_listing_pct` of all listings and for `r picton_rev_pct` of all host revenue. Picton is followed by Hallowell (`r hallowell_listing_pct` of active listings and the biggest share of total revenue at  `r hallowell_rev_pct`) and Wellington (`r wellington_listing_pct` of active listings and `r wellington_rev_pct` of revenue). When measured in per-capita terms, Bloomfield has by far the highest concentrations of STRs per dwellings with a third (`r bloomfield_per_cap`) of its dwellings operating as STRs, followed by Athol (`r athol_per_cap`) and Wellington (`r wellington_per_cap`). In all other wards, STRs account for between `r min_per_dwellings` and `r max_per_dwellings` of total dwellings.
+STA activity in Prince Edward County is spread throughout the municipality, but is disproportionately located in the south and along the waterfront (Figure \@ref(fig:fig-1-2)). When STA activity is aggregated by electoral wards, Picton accounts for `r picton_listing_pct` of all listings and for `r picton_rev_pct` of all host revenue (Table \@ref(tab:tab-1-1)). Picton is followed by Hallowell (`r hallowell_listing_pct` of active listings and the largest share of total revenue at `r hallowell_rev_pct`) and Wellington (`r wellington_listing_pct` of active listings and `r wellington_rev_pct` of revenue). In per-capita terms, Bloomfield has by far the highest concentrations of STAs per dwellings with a third (`r bloomfield_per_cap`) of its dwellings operating as STAs, followed by Athol (`r athol_per_cap`) and Wellington (`r wellington_per_cap`). In all other wards, STAs account for between `r min_per_dwellings` and `r max_per_dwellings` of total dwellings. (These numbers were all 30-50% higher before the pandemic.)
 
-``` {r fig-2-2, include = TRUE, fig.cap = '(ref:fig-1-2)', fig.align = "center"}
+``` {r fig-1-2, include = TRUE, fig.cap = '(ref:fig-1-2)', fig.align = "center"}
 
-figure_2_2_fun()
+figure_1_2_fun()
 
 ```
 
-(ref:fig-2-2) _Active STRs as a share of all dwelling units in Prince Edward County, by ward (L) and dissemination area (R)_
+(ref:fig-1-2) _Active STAs as a share of all dwelling units in Prince Edward County, by ward (L) and dissemination area (R)_
 
-``` {r tab-2-1, include = TRUE}
+``` {r tab-1-1, include = TRUE}
 
 library(kableExtra)
 
@@ -813,6 +817,7 @@ EW_breakdown %>%
           daily_rev = daily_rev,
           rev_growth_2019_2021 = paste0("-", active_yoy_revenue),
           .before = 1) %>% 
+  filter(!is.na(ward)) %>%
   set_names(c("Ward", 
               "Active listings",
               "Annual listing growth (2019-2021)",
@@ -829,8 +834,6 @@ EW_breakdown %>%
 <br>
 
 ## Listing types and sizes
-
-STRs listed on Airbnb can be one of four types: entire homes or apartments, private rooms, shared rooms, and hotel rooms. We have excluded the latter from our analysis, since we focus only on STRs located in housing units. Most policy attention has been focused on entire-home listings, both because these listings are most likely to generate harmful negative externalities, including housing loss and area nuisance, and because entire-home listings tend to be the most common. 
 
 ``` {r para_5, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -881,9 +884,9 @@ rm(property, daily, GH)
 
 ```
 
-Table \@ref(tab:tab-1-2) provides the distribution of the listings by listing type in 2021. The vast majority of STRs in Prince Edward County are entire homes, a category which includes single-family homes, townhouses, apartments and condominiums. More than half (`r three_bedrooms`) of these were considerably large units with three-or-more-bedroom housing units, and a quarter (`r two_bedrooms`) were two-bedrooms units. A fifth (`r one_bedrooms`) had one bedroom, and only `r studios` were studios. In general, three-or-more-bedroom units are over-represented on STR platforms in comparison with the County’s overall housing stock.
+STAs listed on Airbnb can be one of four types: entire homes or apartments, private rooms, shared rooms, and hotel rooms. We have excluded the latter from our analysis, since we focus only on STAs located in housing units. In 2021 entire-home listings accounted for `r eh_listings` of all daily active listings, and `r eh_revenue` of total host revenue (Table \@ref(tab:tab-1-2)). Private rooms accounted for nearly all of the remainder. Moreover, the dominance of entire-home listings in Prince Edward County’s STA market is increasing over time, as the quantity of private-room listings was on the decline even before the pandemic.
 
-``` {r tab-2-2, include = TRUE}
+``` {r tab-1-2, include = TRUE}
 
 library(kableExtra)
 
@@ -907,11 +910,299 @@ listing_type_breakdown[1:2,] %>%
 
 ```
 
-In 2021 entire-home listings accounted for `r eh_listings` of all daily active listings, and `r eh_revenue` of total host revenue. (Private rooms accounted for nearly all of the remainder.) Moreover, the dominance of entire-home listings in Prince Edward County’s STR market is increasing over time, as the private rooms' share of growth is lower than entire home's.
+Entire-home STAs can be single-family homes, townhouses, apartments, or condominium units. More than half (`r three_bedrooms`) of these were three-or-more-bedroom housing units, and a quarter (`r two_bedrooms`) were two-bedroom units. A fifth (`r one_bedrooms`) had one bedroom, and only `r studios` were studios. In general, three-or-more-bedroom units are over-represented on STA platforms in comparison with the County’s overall housing stock.
 
 <br>
 
-## STR growth rates
+## Revenue distribution among STA hosts
+
+``` {r para_9, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+qload(here("output", "str_processed.qsm"), nthreads = availableCores())
+
+# Host deciles table for figure
+host_deciles <-
+  daily %>%
+  filter(date >= start_2021, status == "R", !is.na(host_ID)) %>%
+  group_by(host_ID) %>%
+  summarize(rev = sum(price)) %>% 
+  summarize(all = sum(rev),
+            top_10 = sum(rev[rev > quantile(rev, c(0.90))] / all),
+            top_20 = sum(rev[rev > quantile(rev, c(0.80))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.90))] / all),
+            top_30 = sum(rev[rev > quantile(rev, c(0.70))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.80))] / all),
+            top_40 = sum(rev[rev > quantile(rev, c(0.60))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.70))] / all),
+            top_50 = sum(rev[rev > quantile(rev, c(0.50))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.60))] / all),
+            top_60 = sum(rev[rev > quantile(rev, c(0.40))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.50))] / all),
+            top_70 = sum(rev[rev > quantile(rev, c(0.30))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.40))] / all),
+            top_80 = sum(rev[rev > quantile(rev, c(0.20))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.30))] / all),
+            top_90 = sum(rev[rev > quantile(rev, c(0.10))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.20))] / all),
+            top_100 = sum(rev[rev > quantile(rev, c(0.00))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.10))] / all)) %>% 
+  select(-all) %>% 
+  pivot_longer(everything(), names_to = "percentile", values_to = "value") %>% 
+  mutate(percentile = factor(percentile, levels = paste0("top_", 1:10 * 10))) %>% 
+  mutate(perfect_distribution = 0.1,
+         decile = 1:10,
+         dummy_1 = perfect_distribution,
+         dummy_2 = value) %>%  
+  rename("0" = perfect_distribution, "1" = value, "0.25" = dummy_1, 
+         "0.75" = dummy_2) %>%
+  pivot_longer(c("0","0.25", "0.75", "1"), names_to = "position") %>% 
+  mutate(position = as.numeric(position),
+         display_val = scales::percent(value, .1)) %>% 
+  group_by(position) %>% 
+  mutate(absolute_val = slide_dbl(value, ~{.x[1] / 2 + sum(.x[-1])}, 
+                                  .after = 9)) %>% 
+  ungroup() %>% 
+  mutate(
+    display_val = paste0("earned ", display_val, "\nof revenue"),
+    display_percentile = case_when(
+      percentile == "top_10" ~ "Top 10% of hosts...",
+      percentile == "top_20" ~ "Next 10% of hosts...",
+      TRUE ~ NA_character_))
+
+top_host_listings <- 
+  property %>% 
+  filter(host_ID == host_rev[which.max(host_rev$rev),]$host_ID) %>% 
+  nrow()
+
+top_host_rev <- 
+  host_rev %>% 
+  filter(rev == max(rev)) %>% 
+  pull(rev) %>% 
+  scales::dollar(accuracy = 0.1, scale = 1 / 1000000, suffix = " million")
+
+median_host_rev <- 
+  median(host_rev$rev) %>%
+  scales::dollar(accuracy = 100)
+
+n_hosts_over_100 <- 
+  host_rev %>% 
+  filter(rev >= 100000) %>% 
+  nrow()
+
+host_rev_top_10 <- 
+  host_rev %>% 
+  summarize(top_10 = sum(rev[rev > quantile(rev, .9)]) / sum(rev)) %>% 
+  pull(top_10) %>% 
+  scales::percent(0.1)
+
+host_rev_top_5 <- 
+  host_rev %>% 
+  summarize(top_5 = sum(rev[rev > quantile(rev, .95)]) / sum(rev)) %>% 
+  pull(top_5) %>% 
+  scales::percent(0.1)
+
+host_rev_top_1 <- 
+  host_rev %>% 
+  summarize(top_1 = sum(rev[rev > quantile(rev, .99)]) / sum(rev)) %>% 
+  pull(top_1) %>% 
+  scales::percent(0.1)
+
+#### same for 2019
+
+host_deciles_2019 <-
+  daily %>%
+  filter(date >= start_2019, date <= str_replace(max(daily$date), "^\\d{4}", "2019"), 
+         status == "R", !is.na(host_ID)) %>%
+  group_by(host_ID) %>%
+  summarize(rev = sum(price)) %>% 
+  summarize(all = sum(rev),
+            top_10 = sum(rev[rev > quantile(rev, c(0.90))] / all),
+            top_20 = sum(rev[rev > quantile(rev, c(0.80))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.90))] / all),
+            top_30 = sum(rev[rev > quantile(rev, c(0.70))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.80))] / all),
+            top_40 = sum(rev[rev > quantile(rev, c(0.60))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.70))] / all),
+            top_50 = sum(rev[rev > quantile(rev, c(0.50))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.60))] / all),
+            top_60 = sum(rev[rev > quantile(rev, c(0.40))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.50))] / all),
+            top_70 = sum(rev[rev > quantile(rev, c(0.30))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.40))] / all),
+            top_80 = sum(rev[rev > quantile(rev, c(0.20))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.30))] / all),
+            top_90 = sum(rev[rev > quantile(rev, c(0.10))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.20))] / all),
+            top_100 = sum(rev[rev > quantile(rev, c(0.00))] / all) - 
+              sum(rev[rev > quantile(rev, c(0.10))] / all)) %>% 
+  select(-all) %>% 
+  pivot_longer(everything(), names_to = "percentile", values_to = "value") %>% 
+  mutate(percentile = factor(percentile, levels = paste0("top_", 1:10 * 10))) %>% 
+  mutate(perfect_distribution = 0.1,
+         decile = 1:10,
+         dummy_1 = perfect_distribution,
+         dummy_2 = value) %>%  
+  rename("0" = perfect_distribution, "1" = value, "0.25" = dummy_1, 
+         "0.75" = dummy_2) %>%
+  pivot_longer(c("0","0.25", "0.75", "1"), names_to = "position") %>% 
+  mutate(position = as.numeric(position),
+         display_val = scales::percent(value, .1)) %>% 
+  group_by(position) %>% 
+  mutate(absolute_val = slide_dbl(value, ~{.x[1] / 2 + sum(.x[-1])}, 
+                                  .after = 9)) %>% 
+  ungroup() %>% 
+  mutate(
+    display_val = paste0("earned ", display_val, "\nof revenue"),
+    display_percentile = case_when(
+      percentile == "top_10" ~ "Top 10% of hosts...",
+      percentile == "top_20" ~ "Next 10% of hosts...",
+      TRUE ~ NA_character_))
+
+top_host_listing_2019 <- 
+  property %>% 
+  filter(host_ID == host_rev[which.max(host_rev_2019$rev),]$host_ID) %>% 
+  nrow()
+
+top_host_rev_2019 <- 
+  host_rev_2019 %>% 
+  filter(rev == max(rev)) %>% 
+  pull(rev) %>% 
+  scales::dollar(accuracy = 0.1, scale = 1 / 1000000, suffix = " million")
+
+median_host_rev_2019 <- 
+  median(host_rev_2019$rev) %>%
+  scales::dollar(accuracy = 100)
+
+n_hosts_over_100_2019 <- 
+  host_rev_2019 %>% 
+  filter(rev >= 100000) %>% 
+  nrow()
+
+host_rev_top_10_2019 <- 
+  host_rev_2019 %>% 
+  summarize(top_10 = sum(rev[rev > quantile(rev, .9)]) / sum(rev)) %>% 
+  pull(top_10) %>% 
+  scales::percent(0.1)
+
+host_rev_top_5_2019 <- 
+  host_rev_2019 %>% 
+  summarize(top_5 = sum(rev[rev > quantile(rev, .95)]) / sum(rev)) %>% 
+  pull(top_5) %>% 
+  scales::percent(0.1)
+
+host_rev_top_1_2019 <- 
+  host_rev_2019 %>% 
+  summarize(top_1 = sum(rev[rev > quantile(rev, .99)]) / sum(rev)) %>% 
+  pull(top_1) %>% 
+  scales::percent(0.1)
+
+diff_host_100 <- 
+  (n_hosts_over_100_2019 - n_hosts_over_100) %>% 
+  {. * -1}
+
+# End month
+end_month <- 
+  max(daily$date) %>% 
+  substr(6, 7) %>% 
+  as.numeric() %>% 
+  {month.name[.]}
+
+rm(property, daily, daily_all, GH)
+
+```
+``` {r para_10, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+qload(here("output", "str_processed.qsm"), nthreads = availableCores())
+
+# ML table for figure
+ML <- 
+  daily %>% 
+  filter(status != "B") %>% 
+  group_by(date) %>% 
+  summarize(Listings = mean(multi),
+            Revenue = sum(price[status == "R" & multi], na.rm = TRUE) / 
+              sum(price[status == "R"], na.rm = TRUE)) %>% 
+  mutate(across(where(is.numeric), slide_dbl, mean, .before = 13)) %>% 
+  pivot_longer(c(Listings, Revenue), names_to = "Multilisting percentage",
+               values_to = "value")
+
+ML_per_listings_rev <- 
+ML %>% 
+  filter(date >= "2018-01-01") %>% 
+  group_by(`Multilisting percentage`) %>% 
+  summarize(n = mean(value)) %>% 
+  pull(n) %>% 
+  scales::percent(., accuracy = 0.1)
+
+rm(property, daily, daily_all, GH)
+
+```
+
+A crucial concept for understanding the structure of a STA market is the distinction between casual STAs (“home sharing”) and dedicated STAs (“commercial operations”). One way to capture this distinction is to examine how many STA listings each host operates. Some hosts operate multiple STA units, which strongly suggests that they are commercial operators rather than a casual home sharers. To take the simplest case, a host with two or more entire-home listings active on the same day cannot be operating both listings out of their principal residence. We consider entire-homes to be "multilistings" if they are operated by hosts who are simultaneously operating other entire-home listings. We define private-room multilistings as cases where a host has three or more private-room listings operating on the same day. Since `r eh_3_bedroom` of entire-home listings have three or fewer bedrooms, there will be limited cases where a host operating three private-room STA listings in a dwelling unit has not converted the entire unit into a dedicated STA.
+
+In 2021, `r ml_listings` of active listings in Prince Edward County were multilistings, earning `r ml_revenue` of total host revenue. Multilistings have been steady since 2018, at around 50% of both listings (`r ML_per_listings_rev[1]`) and revenue (`r ML_per_listings_rev[2]`), and the Covid-19 pandemic has not affected these proportions.
+
+``` {r make_fig_1_3}
+
+figure_1_3_fun <- function(regular = "", condensed = "") {
+  
+  revenue_colour <- colorRampPalette(col_palette[c(7, 6, 1, 4, 3, 2, 5)])(10)
+
+  host_deciles %>% 
+  ggplot(aes(position, value, group = decile, fill = decile)) +
+  geom_area(colour = "white", lwd = 1.2) +
+  geom_text(aes(x = 0.02, y = absolute_val, label = display_percentile), 
+            data = filter(host_deciles, position == 0, decile <= 2),
+            family = regular, 
+            hjust = 0) +
+  geom_text(aes(x = 0.98, y = absolute_val, label = display_val), 
+            data = filter(host_deciles, position == 1, decile <= 2),
+            family = regular, 
+            hjust = 1) +
+  scale_y_continuous(name = "Host decile", label = scales::label_percent(1),
+                     breaks = seq(0, 1, by = 0.1), limits = c(0, 1),
+                     sec.axis = sec_axis(~., 
+                                         name = "% of total revenue",
+                                         labels = derive(), 
+                                         breaks = derive())) +
+  scale_fill_gradientn(colours = revenue_colour) +
+  theme_void() +
+  theme(legend.position = "none",
+        text = element_text(family = regular),
+        axis.text.y = element_text(hjust = 1),
+        axis.title.y.left = element_text(
+          angle = 90, margin = margin(0, 10, 0, 0)),
+        axis.title.y.right = element_text(
+          angle = 270, margin = margin(0, 0, 0, 10)),
+        axis.title.x = element_blank(), 
+        axis.text.x = element_blank())
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_3.pdf"), 
+         # plot = figure_2_6_fun("Futura", "Futura Condensed"), 
+         plot = figure_1_3_fun(),
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_3.pdf"))
+}
+
+```
+
+Another way to capture the distinction between part-time and full-time STA operations is to examine the distribution of revenue among STA hosts. Is revenue widely distributed between many part-time hosts of single listings, or concentrated among a small number of commercial operators who control many full-time listings? Among all the STA hosts who earned revenue in Prince Edward County in 2021, the median revenue from January to `r end_month` was `r median_host_rev`. Throughout the county, there were `r n_hosts_over_100` hosts that earned more than $100,000 in 2021, which is `r diff_host_100` more hosts than during the same months of 2019. Figure \@ref(fig:fig-1-3) shows the percentage of the total `r daily_rev` in STA daily revenue which accrued to each decile of hosts. The figure shows that revenue is disproportionately concentrated among a small number of hosts; the top 10% earned `r host_rev_top_10`: the top 5% earned `r host_rev_top_5` of revenue, while the top 1% of hosts earned `r host_rev_top_1` of all revenue. The pandemic hasn't changed the revenue distribution among the STA hosts who are still operating, but in 2021 there were fewer hosts than in 2019, each earning more revenue on average than in 2019. In absolute terms, the financial incentive to operate STAs in PEC has therefore increased during the pandemic.
+
+``` {r fig-1-3, include = TRUE, fig.cap = '(ref:fig-1-3)', fig.align = "center"}
+
+figure_1_3_fun()
+
+```
+
+(ref:fig-1-3) _STA host revenue distribution in Prince Edward County_
+
+<br>
+
+## STA growth rates
 
 ``` {r make_fig_2_3}
 
@@ -944,7 +1235,7 @@ if (build_figures) {
 
 ```
 
-Until the end of 2019, there as been a decreasing growth in the number of daily active STR listings. Figure \@ref(fig:fig-2-3) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. The figure indicates that there was a yearly decreasing marginal growth until late 2019 and early 2020, by which time the number of daily active STRs may have reached a plateau. The pandemic then caused a decline in the number of daily active STRs. Revenues, on the other hand, had seen degrowth in the winter season of 2018-2019, but apart from that have overall experienced constant growth. While revenues in summer 2020 had been mostly constant with a year prior, close to the ~0% growth line, We observe a strong growth during the summer of 2021, indicating an increase in tourist activity.
+Until the end of 2019, there as been a decreasing growth in the number of daily active STA listings. Figure \@ref(fig:fig-2-3) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. The figure indicates that there was a yearly decreasing marginal growth until late 2019 and early 2020, by which time the number of daily active STAs may have reached a plateau. The pandemic then caused a decline in the number of daily active STAs. Revenues, on the other hand, had seen degrowth in the winter season of 2018-2019, but apart from that have overall experienced constant growth. While revenues in summer 2020 had been mostly constant with a year prior, close to the ~0% growth line, We observe a strong growth during the summer of 2021, indicating an increase in tourist activity.
 
 ``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
 
@@ -1227,7 +1518,7 @@ if (build_figures) {
 
 ```
 
-Figure \@ref(fig:fig-2-4) provides a closer look at daily reservations since 2019, comparing the actual trajectory of reservations during the pandemic with what the trajectory of reservations would have been expected to be, based on previous growth in Prince Edward County's STR market but in the absence of the pandemic. (To do this, we use seasonal decomposition to identify the regular seasonal fluctuations in STR activity and separate them from the underlying patterns of growth or decline.) In total, from March through August 2021, we estimate that there have been r res_total_pandemic_dif fewer STR nights reserved than would normally have been expected to occur. The r res_total_pandemic total nights reserved in this time period is only r res_total_pandemic_pct of the r res_total_pandemic_trend nights total that would represent the previous growth trend.
+Figure \@ref(fig:fig-2-4) provides a closer look at daily reservations since 2019, comparing the actual trajectory of reservations during the pandemic with what the trajectory of reservations would have been expected to be, based on previous growth in Prince Edward County's STA market but in the absence of the pandemic. (To do this, we use seasonal decomposition to identify the regular seasonal fluctuations in STA activity and separate them from the underlying patterns of growth or decline.) In total, from March through August 2021, we estimate that there have been r res_total_pandemic_dif fewer STA nights reserved than would normally have been expected to occur. The r res_total_pandemic total nights reserved in this time period is only r res_total_pandemic_pct of the r res_total_pandemic_trend nights total that would represent the previous growth trend.
 
 ``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
 
@@ -1314,7 +1605,7 @@ if (build_figures) {
 
 ```
 
-<!-- STR host daily revenue decreased by `r active_yoy_revenue` in 2021 compared to 2019. To offer some perspective, from 2018 to 2019, STR revenue increased by `r active_yoy_revenue_2019`. Throughout the May-December period of 2021, moreover, nightly prices have been an average of r nightly_price_diff lower than expected. Spread across the r res_total_pandemic nights reserved during this period, this means that STR operators collectively earned r total_price_dif less than they would have on their bookings in the absence of the pandemic. When the lower prices on reservations which did occur is combined with the reservations which did not occur, our estimate is that Prince Edward County’s STR hosts lost a total of r total_revenue_lost million in revenue between March and December 2021 because of the Covid-19 pandemic. -->
+<!-- STA host daily revenue decreased by `r active_yoy_revenue` in 2021 compared to 2019. To offer some perspective, from 2018 to 2019, STA revenue increased by `r active_yoy_revenue_2019`. Throughout the May-December period of 2021, moreover, nightly prices have been an average of r nightly_price_diff lower than expected. Spread across the r res_total_pandemic nights reserved during this period, this means that STA operators collectively earned r total_price_dif less than they would have on their bookings in the absence of the pandemic. When the lower prices on reservations which did occur is combined with the reservations which did not occur, our estimate is that Prince Edward County’s STA hosts lost a total of r total_revenue_lost million in revenue between March and December 2021 because of the Covid-19 pandemic. -->
 
 ``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
 
@@ -1327,340 +1618,7 @@ figure_2_5_fun()
 
 <br>
 
-## Revenue distribution among STR hosts
 
-A crucial concept for understanding the structure of a STR market is the distinction between casual STRs (“home sharing”) and dedicated STRs (“commercial operations”). One way to capture this distinction is to examine the distribution of revenue among STR hosts. Is revenue widely distributed between many part-time hosts of single listings, or concentrated among a small number of commercial operators who control many full-time listings?
-
-``` {r para_9, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
-
-# Host deciles table for figure
-host_deciles <-
-  daily %>%
-  filter(date >= start_2021, status == "R", !is.na(host_ID)) %>%
-  group_by(host_ID) %>%
-  summarize(rev = sum(price)) %>% 
-  summarize(all = sum(rev),
-            top_10 = sum(rev[rev > quantile(rev, c(0.90))] / all),
-            top_20 = sum(rev[rev > quantile(rev, c(0.80))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.90))] / all),
-            top_30 = sum(rev[rev > quantile(rev, c(0.70))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.80))] / all),
-            top_40 = sum(rev[rev > quantile(rev, c(0.60))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.70))] / all),
-            top_50 = sum(rev[rev > quantile(rev, c(0.50))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.60))] / all),
-            top_60 = sum(rev[rev > quantile(rev, c(0.40))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.50))] / all),
-            top_70 = sum(rev[rev > quantile(rev, c(0.30))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.40))] / all),
-            top_80 = sum(rev[rev > quantile(rev, c(0.20))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.30))] / all),
-            top_90 = sum(rev[rev > quantile(rev, c(0.10))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.20))] / all),
-            top_100 = sum(rev[rev > quantile(rev, c(0.00))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.10))] / all)) %>% 
-  select(-all) %>% 
-  pivot_longer(everything(), names_to = "percentile", values_to = "value") %>% 
-  mutate(percentile = factor(percentile, levels = paste0("top_", 1:10 * 10))) %>% 
-  mutate(perfect_distribution = 0.1,
-         decile = 1:10,
-         dummy_1 = perfect_distribution,
-         dummy_2 = value) %>%  
-  rename("0" = perfect_distribution, "1" = value, "0.25" = dummy_1, 
-         "0.75" = dummy_2) %>%
-  pivot_longer(c("0","0.25", "0.75", "1"), names_to = "position") %>% 
-  mutate(position = as.numeric(position),
-         display_val = scales::percent(value, .1)) %>% 
-  group_by(position) %>% 
-  mutate(absolute_val = slide_dbl(value, ~{.x[1] / 2 + sum(.x[-1])}, 
-                                  .after = 9)) %>% 
-  ungroup() %>% 
-  mutate(
-    display_val = paste0("earned ", display_val, "\nof revenue"),
-    display_percentile = case_when(
-      percentile == "top_10" ~ "Top 10% of hosts...",
-      percentile == "top_20" ~ "Next 10% of hosts...",
-      TRUE ~ NA_character_))
-
-top_host_listings <- 
-  property %>% 
-  filter(host_ID == host_rev[which.max(host_rev$rev),]$host_ID) %>% 
-  nrow()
-
-top_host_rev <- 
-  host_rev %>% 
-  filter(rev == max(rev)) %>% 
-  pull(rev) %>% 
-  scales::dollar(accuracy = 0.1, scale = 1 / 1000000, suffix = " million")
-
-median_host_rev <- 
-  median(host_rev$rev) %>%
-  scales::dollar(accuracy = 100)
-
-n_hosts_over_100 <- 
-  host_rev %>% 
-  filter(rev >= 100000) %>% 
-  nrow()
-
-host_rev_top_10 <- 
-  host_rev %>% 
-  summarize(top_10 = sum(rev[rev > quantile(rev, .9)]) / sum(rev)) %>% 
-  pull(top_10) %>% 
-  scales::percent(0.1)
-
-host_rev_top_5 <- 
-  host_rev %>% 
-  summarize(top_5 = sum(rev[rev > quantile(rev, .95)]) / sum(rev)) %>% 
-  pull(top_5) %>% 
-  scales::percent(0.1)
-
-host_rev_top_1 <- 
-  host_rev %>% 
-  summarize(top_1 = sum(rev[rev > quantile(rev, .99)]) / sum(rev)) %>% 
-  pull(top_1) %>% 
-  scales::percent(0.1)
-
-#### same for 2019
-
-host_deciles_2019 <-
-  daily %>%
-  filter(date >= start_2019, date <= str_replace(max(daily$date), "^\\d{4}", "2019"), 
-         status == "R", !is.na(host_ID)) %>%
-  group_by(host_ID) %>%
-  summarize(rev = sum(price)) %>% 
-  summarize(all = sum(rev),
-            top_10 = sum(rev[rev > quantile(rev, c(0.90))] / all),
-            top_20 = sum(rev[rev > quantile(rev, c(0.80))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.90))] / all),
-            top_30 = sum(rev[rev > quantile(rev, c(0.70))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.80))] / all),
-            top_40 = sum(rev[rev > quantile(rev, c(0.60))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.70))] / all),
-            top_50 = sum(rev[rev > quantile(rev, c(0.50))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.60))] / all),
-            top_60 = sum(rev[rev > quantile(rev, c(0.40))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.50))] / all),
-            top_70 = sum(rev[rev > quantile(rev, c(0.30))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.40))] / all),
-            top_80 = sum(rev[rev > quantile(rev, c(0.20))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.30))] / all),
-            top_90 = sum(rev[rev > quantile(rev, c(0.10))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.20))] / all),
-            top_100 = sum(rev[rev > quantile(rev, c(0.00))] / all) - 
-              sum(rev[rev > quantile(rev, c(0.10))] / all)) %>% 
-  select(-all) %>% 
-  pivot_longer(everything(), names_to = "percentile", values_to = "value") %>% 
-  mutate(percentile = factor(percentile, levels = paste0("top_", 1:10 * 10))) %>% 
-  mutate(perfect_distribution = 0.1,
-         decile = 1:10,
-         dummy_1 = perfect_distribution,
-         dummy_2 = value) %>%  
-  rename("0" = perfect_distribution, "1" = value, "0.25" = dummy_1, 
-         "0.75" = dummy_2) %>%
-  pivot_longer(c("0","0.25", "0.75", "1"), names_to = "position") %>% 
-  mutate(position = as.numeric(position),
-         display_val = scales::percent(value, .1)) %>% 
-  group_by(position) %>% 
-  mutate(absolute_val = slide_dbl(value, ~{.x[1] / 2 + sum(.x[-1])}, 
-                                  .after = 9)) %>% 
-  ungroup() %>% 
-  mutate(
-    display_val = paste0("earned ", display_val, "\nof revenue"),
-    display_percentile = case_when(
-      percentile == "top_10" ~ "Top 10% of hosts...",
-      percentile == "top_20" ~ "Next 10% of hosts...",
-      TRUE ~ NA_character_))
-
-top_host_listing_2019 <- 
-  property %>% 
-  filter(host_ID == host_rev[which.max(host_rev_2019$rev),]$host_ID) %>% 
-  nrow()
-
-top_host_rev_2019 <- 
-  host_rev_2019 %>% 
-  filter(rev == max(rev)) %>% 
-  pull(rev) %>% 
-  scales::dollar(accuracy = 0.1, scale = 1 / 1000000, suffix = " million")
-
-median_host_rev_2019 <- 
-  median(host_rev_2019$rev) %>%
-  scales::dollar(accuracy = 100)
-
-n_hosts_over_100_2019 <- 
-  host_rev_2019 %>% 
-  filter(rev >= 100000) %>% 
-  nrow()
-
-host_rev_top_10_2019 <- 
-  host_rev_2019 %>% 
-  summarize(top_10 = sum(rev[rev > quantile(rev, .9)]) / sum(rev)) %>% 
-  pull(top_10) %>% 
-  scales::percent(0.1)
-
-host_rev_top_5_2019 <- 
-  host_rev_2019 %>% 
-  summarize(top_5 = sum(rev[rev > quantile(rev, .95)]) / sum(rev)) %>% 
-  pull(top_5) %>% 
-  scales::percent(0.1)
-
-host_rev_top_1_2019 <- 
-  host_rev_2019 %>% 
-  summarize(top_1 = sum(rev[rev > quantile(rev, .99)]) / sum(rev)) %>% 
-  pull(top_1) %>% 
-  scales::percent(0.1)
-
-diff_host_100 <- 
-  (n_hosts_over_100_2019 - n_hosts_over_100) %>% 
-  {. * -1}
-
-# End month
-end_month <- 
-  max(daily$date) %>% 
-  substr(6, 7) %>% 
-  as.numeric() %>% 
-  {month.name[.]}
-
-rm(property, daily, daily_all, GH)
-
-```
-
-``` {r make_fig_2_6}
-
-figure_2_6_fun <- function(regular = "", condensed = "") {
-  
-  revenue_colour <- colorRampPalette(col_palette[c(7, 6, 1, 4, 3, 2, 5)])(10)
-
-  host_deciles %>% 
-  ggplot(aes(position, value, group = decile, fill = decile)) +
-  geom_area(colour = "white", lwd = 1.2) +
-  geom_text(aes(x = 0.02, y = absolute_val, label = display_percentile), 
-            data = filter(host_deciles, position == 0, decile <= 2),
-            family = regular, 
-            hjust = 0) +
-  geom_text(aes(x = 0.98, y = absolute_val, label = display_val), 
-            data = filter(host_deciles, position == 1, decile <= 2),
-            family = regular, 
-            hjust = 1) +
-  scale_y_continuous(name = "Host decile", label = scales::label_percent(1),
-                     breaks = seq(0, 1, by = 0.1), limits = c(0, 1),
-                     sec.axis = sec_axis(~., 
-                                         name = "% of total revenue",
-                                         labels = derive(), 
-                                         breaks = derive())) +
-  scale_fill_gradientn(colours = revenue_colour) +
-  theme_void() +
-  theme(legend.position = "none",
-        text = element_text(family = regular),
-        axis.text.y = element_text(hjust = 1),
-        axis.title.y.left = element_text(
-          angle = 90, margin = margin(0, 10, 0, 0)),
-        axis.title.y.right = element_text(
-          angle = 270, margin = margin(0, 0, 0, 10)),
-        axis.title.x = element_blank(), 
-        axis.text.x = element_blank())
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_6.pdf"), 
-         # plot = figure_2_6_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_6_fun(),
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_6.pdf"))
-}
-
-```
-
-Among all the STR hosts who earned revenue in Prince Edward County in 2021, the median revenue from January to `r end_month` was `r median_host_rev`. Throughout the county, there were `r n_hosts_over_100` hosts that earned more than $100,000 in 2021, which is `r diff_host_100` more hosts than during the same months of 2019. Figure \@ref(fig:fig-1-6) shows the percentage of the total `r daily_rev` in STR daily revenue which accrued to each decile of hosts. The figure shows that revenue is disproportionately concentrated among a small number of hosts; the top 10% earned `r host_rev_top_10`: the top 5% earned `r host_rev_top_5` of revenue, while the top 1% of hosts earned `r host_rev_top_1` of all revenue. The pandemic hasn't impacted the revenue distribution among STR hosts, but we know that there are less hosts each making more revenue than in 2019. The financial incentive to operate STRs in PEC has therefore increased. To put this revenue distribution in context, Montreal’s top 10% of STR hosts earned 68.8% of all revenue in 2019. On the other hand, Vancouver's top 10% hosts only earned 43.2% of all revenue in 2019. **TKTK Are big cities the good comparison here? Probably to show how different PEC is from other STR destination! But what's of interested for the county? Such a comparison, or one that shows it's similar to other seasonal destination? Maybe both?**
-
-``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
-
-figure_2_6_fun()
-
-```
-
-(ref:fig-2-6) _STR host revenue distribution in Prince Edward County_
-
-<br>
-
-## The commercialization of Prince Edward County’s STR market
-
-Some hosts operate multiple STR units, which strongly suggests that they are commercial operators rather than a casual home sharers. To take the simplest case, a host with two or more entire-home listings on the same day cannot be operating both listings out of their principal residence. We consider entire-homes to be "multilistings" if they are operated by hosts who are simultaneously operating other entire-home listings. We define private-room multilistings as cases where a host has three or more private-room listings operating on the same day. Since `r eh_3_bedroom` of entire-home listings have three or fewer bedrooms, there will be limited cases where a host operating three private-room STR listings in a dwelling unit has not converted the entire unit into a dedicated STR. 
-
-``` {r para_10, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
-
-# ML table for figure
-ML <- 
-  daily %>% 
-  filter(status != "B") %>% 
-  group_by(date) %>% 
-  summarize(Listings = mean(multi),
-            Revenue = sum(price[status == "R" & multi], na.rm = TRUE) / 
-              sum(price[status == "R"], na.rm = TRUE)) %>% 
-  mutate(across(where(is.numeric), slide_dbl, mean, .before = 13)) %>% 
-  pivot_longer(c(Listings, Revenue), names_to = "Multilisting percentage",
-               values_to = "value")
-
-ML_per_listings_rev <- 
-ML %>% 
-  filter(date >= "2018-01-01") %>% 
-  group_by(`Multilisting percentage`) %>% 
-  summarize(n = mean(value)) %>% 
-  pull(n) %>% 
-  scales::percent(., accuracy = 0.1)
-
-rm(property, daily, daily_all, GH)
-
-```
-
-``` {r make_fig_2_7_old}
-# 
-# figure_2_7_fun <- function(regular = "", condensed = "") {
-#   
-#   ML %>% 
-#     filter(date >= "2017-06-01") %>% 
-#     ggplot() +
-#     geom_line(aes(date, value, colour = `Multilisting percentage`), lwd = 1) +
-#     scale_x_date(name = NULL) +
-#     scale_y_continuous(name = NULL, 
-#                        label = scales::percent_format(accuracy = 1)) +
-#     scale_colour_manual(values = col_palette[c(5, 1)]) +
-#     theme_minimal() +
-#     theme(legend.position = "bottom",
-#           panel.grid.minor.x = element_blank(),
-#           text = element_text(family = regular, face = "plain"),
-#           legend.title = element_text(family = regular, face = "bold"),
-#           legend.text = element_text(family = regular))
-# 
-# }
-# 
-# if (build_figures) {
-#   ggsave(here("output", "figures", "figure_2_7.pdf"), 
-#         # plot = figure_2_7_fun("Futura", "Futura Condensed"),
-#         plot = figure_2_7_fun(),
-#          width = 8, height = 5, units = "in", useDingbats = FALSE)
-#   
-#   extrafont::embed_fonts(here("output", "figures", "figure_2_7.pdf"))
-# }
-# 
-```
-
-<!-- In 2021, `r ml_listings` of active listings in Prince Edward County were multilistings, earning `r ml_revenue` of total host revenue. Multilistings had been steady since 2018, at ~50% on average, both in terms of listings (`r ML_per_listings_rev[1]`) and revenue percentage (`r ML_per_listings_rev[2]`). If the Covid-19 pandemic impacted their proportion, it was marginal and only on the revenue side (Figure \@ref(fig:fig-1-7)). Multilistings were and are earning close to 1 out of every 2 dollars on STR platforms in Prince Edward County.  -->
-
-``` {r fig-2-7-old, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
-
-# figure_2_7_fun()
-
-```
-
-<!-- (ref:fig-2-7) _The percentage of active listings and revenue accounted for by multilistings in Prince Edward County (14-day average)_ -->
-
-These figures should be taken as highly conservative estimates. Many commercial operators will use different Airbnb or Vrbo accounts to manage their listings. Moreover, many STR commercial operators only operate a single listing, but operate it on a full-time basis. A house owner with a secondary suite, or the owner of an investment apartment who operates a STR in it, are clearly commercial operators running listings which are not their principal residences, but they would not be counted by this method.
 
 <br>
 

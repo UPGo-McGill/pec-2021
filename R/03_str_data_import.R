@@ -80,19 +80,6 @@ property <-
 exchange_rates <- convert_currency(start_date = min(daily$date),
                                    end_date = max(daily$date))
 
-# Overwrite 2017 onward with direct BOC numbers
-boc <- 
-  read_csv("data/FX_RATES_MONTHLY-sd-2017-01-01.csv", skip = 39) |> 
-  select(year_month = date, new_rate = FXMUSDCAD) |> 
-  mutate(year_month = substr(year_month, 1, 7))
-
-exchange_rates <- 
-  exchange_rates |> 
-  add_row(year_month = "2021-09") |> 
-  left_join(boc, by = "year_month") |> 
-  mutate(exchange_rate = coalesce(new_rate, exchange_rate)) |> 
-  select(-new_rate)
-  
 daily <-
   daily %>%
   mutate(year_month = substr(date, 1, 7)) %>%
@@ -141,5 +128,6 @@ daily <-
 
 # Save output -------------------------------------------------------------
 
-qsavem(property, daily, host, exchange_rates, file = "output/str_raw.qsm", 
+qsave(exchange_rates, file = "output/exchange_rates.qs")
+qsavem(property, daily, host, file = "output/str_raw.qsm", 
        nthreads = availableCores())
