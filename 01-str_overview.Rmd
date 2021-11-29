@@ -1686,6 +1686,7 @@ figure_1_7_fun()
 ward_type_comp <- 
   daily |> 
   left_join(st_drop_geometry(select(EW, -dwellings)), by = "ward") |> 
+  mutate(type = ifelse(type == "Village", "Town", type)) |>
   filter(status == "R", !is.na(type)) |> 
   count(type, date) |> 
   group_by(date) |> 
@@ -1705,7 +1706,7 @@ ward_type_comp |>
   geom_label(aes(date, pct, label = label, colour = type)) +
   facet_wrap(vars(year), scales = "free_x") +
   scale_x_date(name = NULL) +
-  scale_color_manual(values = col_palette[1:3]) +
+  scale_color_manual(values = col_palette[1:2]) +
   scale_y_continuous(name = NULL, labels = scales::percent_format(accuracy = 1),
                      limits = c(0, 0.675)) +
   theme_minimal() +
@@ -1725,7 +1726,7 @@ if (build_figures) {
 
 ```
 
-Covid-19 has flattened the seasonality of STA activity in Prince Edward County, and it has also flattened geographic variation in that activity. Figure \@ref(fig:fig-1-8) shows the percentage of total reservations happening in town, township or village. In 2019, the townships had a relatively low share of STA reservations in the off-season—between 55% and 60%—which then rose substantially during the summer high season, to roughly 65%. The towns and villages displayed the opposite pattern: relatively more activity in the off season and less in the high season. In 2021, these curves are all flat. This pattern is consistent with the constrained supply of STAs identified above; the usual influx of summer STAs in the townships failed to arrive in 2021.
+Covid-19 has flattened the seasonality of STA activity in Prince Edward County, and it has also flattened geographic variation in that activity. Figure \@ref(fig:fig-1-8) shows the percentage of total reservations happening in towns (includes Picton, Bloomfield and Wellington) or townships. In 2019, the townships had a relatively low share of STA reservations in the off-season—between 55% and 60%—which then rose substantially during the summer high season, to roughly 65%. The towns and villages displayed the opposite pattern: relatively more activity in the off season and less in the high season. In 2021, these curves are all flat. This pattern is consistent with the constrained supply of STAs identified above; the usual influx of summer STAs in the townships failed to arrive in 2021.
 
 ``` {r fig-1-8, include = TRUE, fig.cap = '(ref:fig-1-8)', fig.align = "center"}
 
