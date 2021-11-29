@@ -1585,7 +1585,7 @@ if (build_figures) {
 
 ```
 
-While reservation volumes have been down during the pandemic, the opposite is true of nightly STA prices. Prior to March 2020, nightly prices had been remarkably stable in Prince Edward County, fluctuating around $270 with summer peaks slightly above $300 and winter troughs below $250 (Figure \@ref(fig:fig-1-6). Since March 2020 the seasonal fluctuation has remained, but the underlying growth trend has turned sharply positive. Nightly prices reached a peak of `r max_price` in early September 2021, nearly double what the pre-pandemic trend would have predicted. Overall, from January to September 2021, nightly prices have been `r var_rise_price` higher than during these same months of 2019.
+While reservation volumes have been down during the pandemic, the opposite is true of nightly STA prices. Prior to March 2020, nightly prices had been remarkably stable in Prince Edward County, fluctuating around $270 with summer peaks slightly above $300 and winter troughs below $250 (Figure \@ref(fig:fig-1-6)). Since March 2020 the seasonal fluctuation has remained, but the underlying growth trend has turned sharply positive. Nightly prices reached a peak of `r max_price` in early September 2021, nearly double what the pre-pandemic trend would have predicted. Overall, from January to September 2021, nightly prices have been `r var_rise_price` higher than during these same months of 2019.
 
 ``` {r fig-1-6, include = TRUE, fig.cap = '(ref:fig-1-6)', fig.align = "center"}
 
