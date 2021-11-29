@@ -24,13 +24,12 @@ mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 # Set this to TRUE to output PDF figures
 build_figures <- TRUE
 
+qload(here("output", "/geometry.qsm"))
+qload(here("output", "/str_processed.qsm"))
 
 ```
 
 ```{r new_objects, cache=TRUE, cache.lazy=FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
-qload(here("output", "geometry.qsm"), nthreads = availableCores())
 
 daily <- 
   daily %>% 
@@ -187,14 +186,9 @@ host_rev_2019 <-
   group_by(host_ID) %>%
   summarize(rev = sum(price))
 
-rm(property, daily, daily_all, GH, DA, city)
-
-
 ```
 
 ```{r exec_summ, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # Average active and blocked daily listings in 2021
 avg_listings <- 
@@ -331,8 +325,6 @@ ml_revenue_2019 <-
   pull(multi_rev) %>% 
   scales::percent(0.1)
 
-rm(property, daily, daily_all, GH)
-
 ```
 
 **There are on a daily average `r avg_listings_active` active STA listings in Prince Edward County housing units in 2021, which collectively earn `r daily_rev` a day. While the number of active listings has decreased considerably (`r var_active_listings_2019_2021`), the revenue has increased significantly (`r var_daily_rev_2019_2021`). STA activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STA listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STA listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
@@ -342,8 +334,6 @@ rm(property, daily, daily_all, GH)
 ## Active daily listings and annual revenue
 
 ```{r para_1, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 avg_listings_active_2019 <- 
   avg_listings_2019$avg[1] %>% 
@@ -423,8 +413,6 @@ avg_rev_per_host_2019 <-
   prettyNum(",") %>% 
   paste0("$", .)
 
-rm(property, daily, GH)
-
 ```
 
 ``` {r make_fig_1_1}
@@ -458,7 +446,73 @@ if (build_figures) {
 
 ```
 
-Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STA market in a location, particularly with respect to change over time. In 2021, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-1-1)) in Prince Edward County operated by an average of `r avg_hosts` hosts. STA activity in Prince Edward County displays strong seasonality, with peaks in the summer and dips in the winter; this pattern will be discussed in more detail in the next chapter. STA hosts collectively earned an average of `r daily_rev` per day in 2021—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per daily active host.
+```{r seasonality}
+
+pre_disruptions_reservations <- 
+  daily %>%
+  filter(status == "R",
+         date >= "2017-06-01") %>% 
+  count(date) %>% 
+  mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE))
+
+max_2017 <- 
+  pre_disruptions_reservations %>% 
+  filter(date < "2018-01-01") %>% 
+  arrange(-n) %>% slice(1)
+
+max_2019 <- 
+  pre_disruptions_reservations %>% 
+  arrange(-n) %>% slice(1)
+  
+monthly_percentage_reservations <- 
+  daily %>%
+  filter(status == "R",
+         date >= "2018-01-01", date < "2020-01-01") %>% 
+  count(date) %>% 
+  mutate(month_year = zoo::as.yearmon(date,"%Y-%m-%d"),
+         num_month = month(date),
+         num_month = case_when(str_detect(num_month, pattern = "\\d{2}") ~ as.character(num_month),
+                               TRUE ~ as.character(str_glue("0{num_month}")))) %>% 
+  mutate(month = str_glue("{num_month} ({format(month_year, '%b')})")) %>% 
+  group_by(month_year, month) %>% 
+  summarize(n = sum(n)) %>% 
+  group_by(month) %>% 
+  summarize(n = mean(n)) %>% 
+  mutate(per = n/sum(n))
+
+summer_months <- 
+monthly_percentage_reservations %>% 
+  slice(5:9) %>% 
+  summarize(scales::percent(sum(per))) %>% 
+  pull()
+
+yoy_2019 <- 
+daily %>%
+    filter(status == "R",
+           date >= "2018-01-01", date < "2020-01-01") %>% 
+    count(date) %>% 
+    filter(str_detect(month(date), pattern = "5|6|7|8")) %>%
+    group_by(year_2019 = date >= start_2019) %>% 
+    summarize(n = sum(n)) %>% 
+    summarize((n[2]-n[1])/n[1]) %>% pull() %>% 
+    scales::percent()
+
+yoy_2021 <- 
+daily %>%
+  filter(status == "R", date >= start_2019, 
+         !c(date >= str_replace(max(daily$date), "^\\d{4}", "2019") & date <= end_2020)) %>% 
+  count(date) %>% 
+  filter(str_detect(month(date), pattern = "5|6|7|8")) %>%
+  group_by(year_2021 = date >= start_2021) %>% 
+  summarize(n = sum(n)) %>% 
+  summarize((n[2]-n[1])/n[1]) %>% pull() %>% 
+  {. * -1} %>% 
+  scales::percent()
+
+
+```
+
+Active daily listings are listings which were displayed on Airbnb or Vrbo on a given day, and were either reserved or available for a reservation. It is the most reliable means of determining the overall size of the STA market in a location, particularly with respect to change over time. In 2021, there was an average of `r avg_listings_active` active daily listings (Figure \@ref(fig:fig-1-1)) in Prince Edward County operated by an average of `r avg_hosts` hosts. STA activity in Prince Edward County is highly seasonal, with strong activity from May to September (and an annual peak in August), weaker activity from October through April (with an annual trough in February, and a small peak over the holidays). Overall, the summer months (from May to September) account for `r summer_months` of the total number of reservations in a year. STA hosts collectively earned an average of `r daily_rev` per day in 2021—an average of `r avg_rev_per_listing` per daily active listing or `r avg_rev_per_host` per daily active host.
 
 ``` {r fig-1-1, include = TRUE, fig.cap = '(ref:fig-1-1)', fig.align = "center"}
 
@@ -471,8 +525,6 @@ figure_1_1_fun()
 Compared to before the pandemic, there are now fewer STA operators, but they are earning substantially more money. In 2019, the STA market revenue amounted to a daily average of `r daily_rev_2019`, with an average of `r avg_listings_active_2019` active listings on a given day operated by `r avg_hosts_2019` hosts. In 2019, the average listing earned `r avg_rev_per_listing_2019` a night and the average host `r avg_rev_per_host_2019` a night. While there are `r listings_change_pct` fewer active daily listings in 2021 when compared to 2019, these listings collectively earned `r var_daily_rev_2019_2021` more revenue.
 
 ``` {r para_2, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # Average blocked daily listings in 2021
 avg_listings_blocked <- 
@@ -542,15 +594,11 @@ non_housing_listings_2019 <-
   pull(non_housing) %>% 
   prettyNum(",")
 
-rm(property, daily, daily_all, GH)
-
 ```
 
 There was also a daily average of `r avg_listings_blocked` listings which were visible on the Airbnb and Vrbo websites but were blocked by the host from receiving reservations (which is more than pre-Covid, with 2019 having on average `r avg_listings_blocked_2019` blocked listings on a given day). The presence of these listings can erroneously suggest that a territory’s STA market is larger than it is. When these blocked but inactive listings are included, the average listing earned `r avg_revenue_all_listings` daily in 2021, and the average host earned `r avg_revenue_all_hosts` daily. Finally, there was a daily average of `r non_housing_listings` listings that were not located in private housing units (B&Bs, hotels, etc.), which have been excluded from the analysis in this report. All the material which follows pertain to short-term accommodations located in Prince Edward County’s residential housing stock.
 
 ``` {r para_3, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # Date and amount of highest activity
 highest_activity <- 
@@ -608,8 +656,6 @@ active_yoy_listings <-
 active_yoy_revenue <- 
   active_yoy_change$revenue %>% 
   scales::percent(accuracy = 0.1)
-
-rm(property, daily, daily_all, GH)
 
 ```
 
@@ -837,8 +883,6 @@ EW_breakdown %>%
 
 ``` {r para_5, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
-
 bedrooms <- 
   property %>% 
   st_drop_geometry() %>% 
@@ -880,11 +924,9 @@ eh_3_bedroom <-
   pull(bed_3) %>% 
   scales::percent(0.1)
 
-rm(property, daily, GH)
-
 ```
 
-STAs listed on Airbnb can be one of four types: entire homes or apartments, private rooms, shared rooms, and hotel rooms. We have excluded the latter from our analysis, since we focus only on STAs located in housing units. In 2021 entire-home listings accounted for `r eh_listings` of all daily active listings, and `r eh_revenue` of total host revenue (Table \@ref(tab:tab-1-2)). Private rooms accounted for nearly all of the remainder. Moreover, the dominance of entire-home listings in Prince Edward County’s STA market is increasing over time, as the quantity of private-room listings was on the decline even before the pandemic.
+STAs listed on Airbnb can be one of four types: entire homes or apartments, private rooms, shared rooms, and hotel rooms. We have excluded the latter from our analysis, since we focus only on STAs located in housing units. In 2021 entire-home listings accounted for `r eh_listings` of all daily active listings, and `r eh_revenue` of total host revenue (Table \@ref(tab:tab-1-2)). Private rooms accounted for nearly all of the remainder. Moreover, the dominance of entire-home listings in Prince Edward County’s STA market has been    increasing over time, as the quantity of private-room listings was on the decline even before the pandemic.
 
 ``` {r tab-1-2, include = TRUE}
 
@@ -917,8 +959,6 @@ Entire-home STAs can be single-family homes, townhouses, apartments, or condomin
 ## Revenue distribution among STA hosts
 
 ``` {r para_9, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # Host deciles table for figure
 host_deciles <-
@@ -1107,12 +1147,8 @@ end_month <-
   as.numeric() %>% 
   {month.name[.]}
 
-rm(property, daily, daily_all, GH)
-
 ```
 ``` {r para_10, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # ML table for figure
 ML <- 
@@ -1133,8 +1169,6 @@ ML %>%
   summarize(n = mean(value)) %>% 
   pull(n) %>% 
   scales::percent(., accuracy = 0.1)
-
-rm(property, daily, daily_all, GH)
 
 ```
 
@@ -1204,9 +1238,9 @@ figure_1_3_fun()
 
 ## STA growth rates
 
-``` {r make_fig_2_3}
+``` {r make_fig_1_4}
 
-figure_2_3_fun <- function(regular = "", condensed = "") {
+figure_1_4_fun <- function(regular = "", condensed = "") {
   
   daily_variation %>% 
     mutate(label = if_else(date == "2019-10-01", var, NA_character_)) %>%
@@ -1225,29 +1259,27 @@ figure_2_3_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_3.pdf"), 
+  ggsave(here("output", "figures", "figure_1_4.pdf"), 
          # plot = figure_2_3_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_3_fun(), 
+         plot = figure_1_4_fun(), 
          width = 9, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_1_4.pdf"))
 }
 
 ```
 
-Until the end of 2019, there as been a decreasing growth in the number of daily active STA listings. Figure \@ref(fig:fig-2-3) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. The figure indicates that there was a yearly decreasing marginal growth until late 2019 and early 2020, by which time the number of daily active STAs may have reached a plateau. The pandemic then caused a decline in the number of daily active STAs. Revenues, on the other hand, had seen degrowth in the winter season of 2018-2019, but apart from that have overall experienced constant growth. While revenues in summer 2020 had been mostly constant with a year prior, close to the ~0% growth line, We observe a strong growth during the summer of 2021, indicating an increase in tourist activity.
+Figure \@ref(fig:fig-1-4) shows the change in active listings and revenue relative to one year earlier, which is a convenient way to remove seasonal variation to identify underlying growth trends. Until the end of 2019, the growth rate in the number of active daily STA listings had been steadily slowing. Each date generally had more active listings than the same date of the previous year, but that difference was shrinking. By the beginning of 2020 (before the pandemic), active listing numbers had begun to decline somewhat, before dropping sharply with the onset of Covid-19. Listing numbers continued to drop through 2020 and the beginning of 2021, but by the summer of 2021 they had once again begun to grow, albeit from a lower, pandemic baseline. Revenue growth has followed a different pattern. It was positive through much of 2019, and remained neutral or positive throughout the first year of the pandemic. In the summer of 2021, despite active listing numbers only beginning to recover, revenue was up significantly over 2020.
 
-``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
+``` {r fig-1-4, include = TRUE, fig.cap = '(ref:fig-1-4)', fig.align = "center"}
 
-figure_2_3_fun()
+figure_1_4_fun()
 
 ```
 
-(ref:fig-2-3) _Change in daily active listings and host revenue compared to one year earlier (14-day average)_
+(ref:fig-1-4) _Change in daily active listings and host revenue compared to one year earlier (14-day average)_
 
 ``` {r para_6, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 #' YOY listing growth, 2019
 listing_growth_2019 <- 
@@ -1270,16 +1302,14 @@ listing_growth_2021 <-
   pull(change) %>% 
   scales::percent(0.1)
 
-
-rm(property, daily, daily_all, GH)
-
 ```
 
-Overall, the year-over-year change in average daily active listings from 2018 to 2019 was `r listing_growth_2019`, a small number that showcases that the market was saturated, that it had reached a plateau. Between 2019 and 2021, because of the Covid-19 pandemic, the change in active daily listings is `r listing_growth_2021`.
+Overall, the year-over-year change in average daily active listings from 2018 to 2019 was only `r listing_growth_2019`—the clear sign of a market reaching saturation, at least in supply terms if not pricing terms. Between 2019 and 2021, because of the Covid-19 pandemic, the change in active daily listings has been `r listing_growth_2021`.
+
+
+## Diverging STA supply and demand during the Covid-19 pandemic
 
 ``` {r para_7, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # YOY reservation change, 2019-2021
 reservation_change_2021 <- 
@@ -1333,48 +1363,12 @@ active_yoy_revenue_2021 <-
   {. * -1} %>% 
   scales::percent(0.1)
 
-
-rm(property, daily, daily_all, GH)
-
-```
-
-```{r active_listings, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
-
-active_by_status <- 
-  daily %>% 
-  filter(status %in% c("R", "A")) %>% 
-  count(date, status)
-
-reserved_nights_increase_2019 <- 
-  daily %>% 
-  filter(status == "R", date >= start_2019 - years(1), date <= end_2019) %>% 
-  count(year_2019 = date >= start_2019) %>% 
-  summarize(growth = (n[2] - n[1]) / n[1]) %>% 
-  pull(growth) %>% 
-  scales::percent(0.1)
-
-reserved_nights_decrease_2021 <- 
-  daily %>% 
-  filter(status == "R", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>% 
-  group_by(year_2021 = date >= start_2021) %>% 
-  summarize(n = n() / yday(max(date))) %>% 
-  summarize(growth = (n[2] - n[1]) / n[1]) %>% 
-  pull(growth) %>% 
-  scales::percent(0.1)
-
-rm(property, daily, daily_all, GH)
-
 ```
 
 ```{r reservation_trend, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 library(tsibble)
 library(feasts)
 library(fable)
-
-qload(here("output", "str_processed.qsm"), nthreads = availableCores())
 
 # Get daily reservations and prices
 reservations_and_prices <- 
@@ -1448,14 +1442,14 @@ res_total_pandemic_dif <-
   filter(date >= "2020-03-01") |> 
   summarize(res_dif = sum(res_trend - res)) |> 
   pull(res_dif) |> 
-  scales::comma(1)
+  scales::comma(100)
 
 res_total_pandemic <-
   reservations_and_prices |> 
   filter(date >= "2020-03-01") |> 
   summarize(res_tot = sum(res)) |> 
   pull(res_tot) |> 
-  scales::comma(1)
+  scales::comma(100)
 
 res_total_pandemic_pct <-
   {(parse_number(res_total_pandemic) - parse_number(res_total_pandemic_dif)) / 
@@ -1467,15 +1461,36 @@ res_total_pandemic_trend <-
   filter(date >= "2020-03-01") |> 
   summarize(res_tot = sum(res_trend)) |> 
   pull(res_tot) |> 
-  scales::comma(1)
+  scales::comma(100)
 
-rm(property, daily, daily_all, GH)
+price_difs <- 
+  reservations_and_prices |> 
+  mutate(price_dif = price - price_trend,
+         price_dif_pct = (price - price_trend) / price_trend) |> 
+  summarize(max_price = max(price, na.rm = TRUE),
+            max_dif = max(price_dif, na.rm = TRUE),
+            max_dif_pct = max(price_dif_pct, na.rm = TRUE),
+            max_price_date = date[which.max(price)],
+            max_dif_date = date[which.max(price_dif)],
+            max_dif_pct_date = date[which.max(price_dif_pct)])
+
+max_price <- scales::dollar(price_difs$max_price, 1)
+
+var_rise_price <-
+  daily |> 
+  filter(year(date) %in% c(2019, 2021),
+         month(date) <= month(max(daily$date))) |> 
+  group_by(year_2021 = year(date) == 2021) |> 
+  summarize(avg_price = mean(price)) |> 
+  summarize((avg_price[2] - avg_price[1]) / avg_price[1]) |> 
+  pull() |> 
+  scales::percent(0.1)
 
 ```
 
-``` {r make_fig_2_4}
+``` {r make_fig_1_5}
 
-figure_2_4_fun <- function(regular = "", condensed = "") {
+figure_1_5_fun <- function(regular = "", condensed = "") {
 
   reservations_and_prices %>% 
   mutate(res = slider::slide_dbl(res, mean, .before = 6, .complete = TRUE)) %>% 
@@ -1508,63 +1523,28 @@ figure_2_4_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_4.pdf"),
+  ggsave(here("output", "figures", "figure_1_5.pdf"),
          # plot = figure_2_4_fun("Futura", "Futura Condensed"),
-         plot = figure_2_4_fun(),
+         plot = figure_1_5_fun(),
          width = 9, height = 5, units = "in", useDingbats = FALSE)
 
-  extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_1_5.pdf"))
 }
 
 ```
 
-Figure \@ref(fig:fig-2-4) provides a closer look at daily reservations since 2019, comparing the actual trajectory of reservations during the pandemic with what the trajectory of reservations would have been expected to be, based on previous growth in Prince Edward County's STA market but in the absence of the pandemic. (To do this, we use seasonal decomposition to identify the regular seasonal fluctuations in STA activity and separate them from the underlying patterns of growth or decline.) In total, from March through August 2021, we estimate that there have been r res_total_pandemic_dif fewer STA nights reserved than would normally have been expected to occur. The r res_total_pandemic total nights reserved in this time period is only r res_total_pandemic_pct of the r res_total_pandemic_trend nights total that would represent the previous growth trend.
+Figure \@ref(fig:fig-1-5) provides a closer look at daily reservations since 2019, comparing the actual trajectory of reservations during the pandemic with what the trajectory of reservations would have been expected to be, based on previous growth in Prince Edward County's STA market but in the absence of the pandemic. (To do this, we use seasonal decomposition to identify the regular seasonal fluctuations in STA activity and separate them from the underlying patterns of growth or decline.) The pattern is clear: outside of the summer peak, reservations during the pandemic have been roughly in line with the pre-pandemic trend, but the summer peak has been lower since 2020. Nightly reservations would have been expected to reach nearly 800 at the height of the summer, but barely crossed 600—a greater than 20% decline. In total, from March 2020 through September 2021, we estimate that there have been `r res_total_pandemic_dif` fewer STA nights reserved than would normally have been expected to occur. The `r res_total_pandemic` total nights reserved in this time period is `r res_total_pandemic_pct` of the `r res_total_pandemic_trend` nights total that would represent the previous growth trend.
 
-``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
+``` {r fig-1-5, include = TRUE, fig.cap = '(ref:fig-1-5)', fig.align = "center"}
 
-figure_2_4_fun()
-
-```
-
-(ref:fig-2-4) _Actual and expected reservations during the Covid-19 pandemic (7-day average)_
-
-```{r prices, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-#  nightly_price_dif <-
-#    average_prices %>%
-#    filter(date >= "2021-03-01") %>%
-#    summarize(dif = 1 - sum(price) / sum(trend)) %>%
-#    pull(dif) %>%
-#    scales::percent(0.1)
-# 
-#  total_price_dif <-
-#    average_prices %>%
-#    rename(price_trend = trend) %>%
-#    filter(date >= "2021-03-01") %>%
-#    left_join(reservations) %>%
-#    mutate(rev_dif = n * (price_trend - price)) %>%
-#    tally(rev_dif) %>%
-#    pull(n) %>%
-#    scales::dollar(0.1, 1 / 1000000, suffix = " million")
-# 
-#  total_revenue_lost <-
-#    average_prices %>%
-#    rename(price_trend = trend) %>%
-#    filter(date >= "2021-03-01") %>%
-#    left_join(reservations) %>%
-#    mutate(total_rev_dif = n * (price_trend - price) +
-#             (trend - n) * price_trend) %>%
-#    tally(total_rev_dif) %>%
-#    pull(n) %>%
-#    scales::dollar(0.1, 1 / 1000000, suffix = " million")
-
-rm(property, daily, GH)
+figure_1_5_fun()
 
 ```
+(ref:fig-1-5) _Actual and expected reservations during the Covid-19 pandemic (7-day average)_
 
-``` {r make_fig_2_5}
+``` {r make_fig_1_6}
 
-figure_2_5_fun <- function(regular = "", condensed = "") {
+figure_1_6_fun <- function(regular = "", condensed = "") {
 
   reservations_and_prices %>% 
   mutate(price = slider::slide_dbl(price, mean, .before = 6, .complete = TRUE)) %>% 
@@ -1595,34 +1575,169 @@ figure_2_5_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_5.pdf"),
+  ggsave(here("output", "figures", "figure_1_6.pdf"),
          # plot = figure_2_4_fun("Futura", "Futura Condensed"),
-         plot = figure_2_5_fun(),
+         plot = figure_1_6_fun(),
          width = 9, height = 5, units = "in", useDingbats = FALSE)
 
-  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_1_6.pdf"))
 }
 
 ```
 
-<!-- STA host daily revenue decreased by `r active_yoy_revenue` in 2021 compared to 2019. To offer some perspective, from 2018 to 2019, STA revenue increased by `r active_yoy_revenue_2019`. Throughout the May-December period of 2021, moreover, nightly prices have been an average of r nightly_price_diff lower than expected. Spread across the r res_total_pandemic nights reserved during this period, this means that STA operators collectively earned r total_price_dif less than they would have on their bookings in the absence of the pandemic. When the lower prices on reservations which did occur is combined with the reservations which did not occur, our estimate is that Prince Edward County’s STA hosts lost a total of r total_revenue_lost million in revenue between March and December 2021 because of the Covid-19 pandemic. -->
+While reservation volumes have been down during the pandemic, the opposite is true of nightly STA prices. Prior to March 2020, nightly prices had been remarkably stable in Prince Edward County, fluctuating around $270 with summer peaks slightly above $300 and winter troughs below $250 (Figure \@ref(fig:fig-1-6). Since March 2020 the seasonal fluctuation has remained, but the underlying growth trend has turned sharply positive. Nightly prices reached a peak of `r max_price` in early September 2021, nearly double what the pre-pandemic trend would have predicted. Overall, from January to September 2021, nightly prices have been `r var_rise_price` higher than during these same months of 2019.
 
-``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
+``` {r fig-1-6, include = TRUE, fig.cap = '(ref:fig-1-6)', fig.align = "center"}
 
-figure_2_5_fun()
+figure_1_6_fun()
+
+```
+(ref:fig-1-6) _Actual and expected nightly prices during the Covid-19 pandemic (7-day average)_
+
+The divergent patterns in STA reservations and nightly prices present a puzzle. The rapid increase in prices is a clear sign that demand for Prince Edward County STAs has outstripped supply. Normally, the result would be new supply arriving on the market to match that demand, which in turn would moderate the price increases and lead to a new supply/demand equilibrium. That has not happened, however: supply in the last two summer seasons has in fact been substantially lower than the pre-pandemic level, to say nothing of the much higher level of supply which would have been expected in the face of dramatic price increases. These facts strongly suggest that some additional factor has limited the potential supply of STAs in Prince Edward County—a possibility that we will explore in a subsequent chapter.
+
+
+## Flattening seasonal and geographic STA variation during the pandemic
+
+```{r para_6_2}
+
+per_res_month <- 
+daily %>%
+  filter(status == "R", date >= start_2019, 
+         !c(date >= str_replace(max(daily$date), "^\\d{4}", "2019") & date <= end_2020)) %>%
+  count(date) %>% 
+  mutate(year = year(date),
+         month = month(date)) %>%
+  # filter(!month %in% c(1,2)) %>% 
+  group_by(year, month) %>% 
+  summarize(n = sum(n)) %>% 
+  group_by(year) %>% 
+  mutate(yearly_per = n/sum(n)) 
+
+peaks_yearly_per <- 
+per_res_month %>% 
+  arrange(-yearly_per) %>% 
+  group_by(year) %>% 
+  slice(1) %>% 
+  mutate(yearly_per = scales::percent(yearly_per))
+
+august_2019_per_R <- 
+  peaks_yearly_per %>% 
+  filter(year == 2019) %>% 
+  pull(yearly_per)
+
+august_2021_per_R <- 
+  peaks_yearly_per %>% 
+  filter(year == 2021) %>% 
+  pull(yearly_per)
 
 ```
 
-(ref:fig-2-5) _Actual and expected nightly prices during the Covid-19 pandemic (7-day average)_
+``` {r make_fig_1_7}
 
+figure_1_7_fun <- function(regular = "", condensed = "") {
+  
+  daily |> 
+    filter(status == "R", year(date) %in% c(2019, 2021), 
+           month(date) <= month(max(daily$date))) |> 
+    group_by(year_2021 = year(date) == 2021) |> 
+    count(date) |> 
+    mutate(n = n / sum(n), 
+           n = slide_dbl(n, mean, .before = 6, .complete = TRUE)) |> 
+    ungroup() |> 
+    mutate(date = as.Date(str_replace(date, "^\\d{4}", "2019")), 
+           year = if_else(year_2021, "2021", "2019")) |> 
+    mutate(label = if_else(date == "2019-04-10", year, NA_character_)) |> 
+    ggplot(aes(date, n, color = year)) +
+    geom_line(size = 1) +
+    geom_label(aes(label = label), size = 3) +
+    scale_color_manual(values = col_palette[1:2]) +
+    scale_y_continuous(name = NULL, limits = c(0, 0.01),
+                       labels = scales::percent_format(accuracy = 0.1)) +
+    theme_minimal() +
+    xlab(NULL) +
+    theme(legend.position = "none", panel.grid.minor.x = element_blank(),
+          text = element_text(family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_7.pdf"), 
+         plot = figure_1_7_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_7.pdf"))
+}
+
+
+```
+
+While the largest changes to Prince Edward County's STA market since the Covid-19 pandemic began are the declining reservations and skyrocketing prices, there are two other (related) patterns of note. The first is that the seasonality of the County's STA activity has been flattened. As previously noted, STA reservations have been substantially below trend during the summer months of 2020 and 2021. But off-season reservations have not been nearly as strongly affected, remaining very near to pre-pandemic trends. The result is that, in 2020 and 2021, the summer has accounted for a much smaller share of total annual reservations than previous years (Figure \@ref(fig:fig-1-7)). (In 2019, August—the peak month—accounted for `r august_2019_per_R` of total reserved nights from January to September, while in 2021 the corresponding figure had dropped to `r august_2021_per_R`.)
+
+``` {r fig-1-7, include = TRUE, fig.cap = '(ref:fig-1-7)', fig.align = "center"}
+
+figure_1_7_fun()
+
+```
+(ref:fig-1-7) _Percentage of total annual reservations occurring each day, January to September (7-day average)_
+
+```{r, make_fig_1_8}
+
+ward_type_comp <- 
+  daily |> 
+  left_join(st_drop_geometry(select(EW, -dwellings)), by = "ward") |> 
+  filter(status == "R", !is.na(type)) |> 
+  count(type, date) |> 
+  group_by(date) |> 
+  mutate(pct = n / sum(n)) |> 
+  group_by(type) |> 
+  mutate(pct = slide_dbl(pct, mean, .before = 6, .complete = TRUE)) |> 
+  ungroup() |> 
+  filter(year(date) %in% c(2019, 2021), month(date) <= 9) |> 
+  mutate(year = year(date), .after = date)
+
+figure_1_8_fun <- function(regular = "", condensed = "") {
+
+ward_type_comp |> 
+  mutate(label = if_else(date == "2019-02-10", type, NA_character_)) |> 
+  ggplot() +
+  geom_line(aes(date, pct, colour = type), size = 1) +
+  geom_label(aes(date, pct, label = label, colour = type)) +
+  facet_wrap(vars(year), scales = "free_x") +
+  scale_x_date(name = NULL) +
+  scale_color_manual(values = col_palette[1:3]) +
+  scale_y_continuous(name = NULL, labels = scales::percent_format(accuracy = 1),
+                     limits = c(0, 0.675)) +
+  theme_minimal() +
+    theme(legend.position = "NONE", panel.grid.minor.x = element_blank(),
+          text = element_text(family = regular), 
+          strip.text = element_text(face = "bold"))
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_1_8.pdf"), 
+         # plot = figure_3_4_fun("Futura", "Futura Condensed"), 
+         plot = figure_1_8_fun(), 
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_1_8.pdf"))
+}
+
+```
+
+Covid-19 has flattened the seasonality of STA activity in Prince Edward County, and it has also flattened geographic variation in that activity. Figure \@ref(fig:fig-1-8) shows the percentage of total reservations happening in town, township or village. In 2019, the townships had a relatively low share of STA reservations in the off-season—between 55% and 60%—which then rose substantially during the summer high season, to roughly 65%. The towns and villages displayed the opposite pattern: relatively more activity in the off season and less in the high season. In 2021, these curves are all flat. This pattern is consistent with the constrained supply of STAs identified above; the usual influx of summer STAs in the townships failed to arrive in 2021.
+
+``` {r fig-1-8, include = TRUE, fig.cap = '(ref:fig-1-8)', fig.align = "center"}
+
+figure_1_8_fun()
+
+```
+(ref:fig-1-8) _Share of daily total reservation, by type of ward (7-day average)_
 
 <br>
 
 
-
-<br>
-
-## Prince Edward County in comparison with other major tourist cities
+## Prince Edward County in comparison with other non-urban tourist destinations
 
 ``` {r comparison, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "national_comparison.qs"))}
 
@@ -1650,9 +1765,9 @@ rm(daily_comp)
 
 ```
 
-``` {r make_fig_2_7}
+``` {r make_fig_1_9}
 
-figure_2_7_fun <- function(regular = "", condensed = "") {
+figure_1_9_fun <- function(regular = "", condensed = "") {
   
 comp_table |> 
   group_by(location, category) |> 
@@ -1676,25 +1791,27 @@ comp_table |>
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_7.pdf"), 
+  ggsave(here("output", "figures", "figure_1_9.pdf"), 
          # plot = figure_2_7_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_7_fun(),
+         plot = figure_1_9_fun(),
          width = 9, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_7.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_1_9.pdf"))
 }
 
 ```
 
-``` {r fig-2-7, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
+The preceding analysis demonstrates that Prince Edward County's STA market has undergone several significant transformations since the onset of the Covid-19 pandemic—above all a modest decline in summer-season reservations compared to previous trends but a dramatic increase in nightly prices. Prince Edward County is not the only major non-urban tourist destination in the country, however; to what extent have other areas seen similar developments? To answer this question, we compare the County with seven other top non-urban tourist destinations in Canada: the Blue Mountains (ON), Charlottetown (PE), Cape Breton Island (NS), Gaspésie (QC), Mont-Tremblant (QC), Tofino (BC), and Whistler (BC). Some of these destinations have strongly seasonal STA markets similar to Prince Edward County while others receive visitors throughout the year, but all have plausibly been subjected to similar dynamics with respect to tourism during the pandemic. Namely, these are all destinations nearby to major metropolitan areas, and thus may be receiving elevated tourist demand from nearby city dwellers who cancelled more distant travel plans and looked for alternative destinations closer to home.
 
-figure_2_7_fun()
+Figure \@ref(fig:fig-1-9) shows active listings, reservations, and nightly prices in Prince Edward County in comparison with the other seven markets. (All data series are indexed to their values on August 1, 2019.) All three panels of the figure reveal a high level of diversity in STA market trajectories during the pandemic, but several patterns are clear. First, Prince Edward County has had among the lowest relative number of active STA listings and STA reservations of any of the areas. Most of the major non-urban tourist destinations in the country saw listings and reservations mostly recovered to summer 2019 levels by the end of summer 2021, and Prince Edward County stands out for the size of its ongoing gap in this regard. Second, Prince Edward County has seen by far the largest spike in nightly prices—almost every other comparable market had prices equal to or lower than August 2019 levels for most of the pandemic, and no other market has seen the kind of sustained upward trajectory which the County has undergone.
+
+``` {r fig-1-9, include = TRUE, fig.cap = '(ref:fig-1-9)', fig.align = "center"}
+
+figure_1_9_fun()
 
 ```
+(ref:fig-1-9) _STA activity in Prince Edward County and other leading non-urban tourist destinations (2019-08-01 = 100)_
 
-
-
-
-TKTK
+The only plausible conclusion of these facts is that Prince Edward County's STA market has been subjected to a different set of forces from those at work in comparable markets elsewhere in the country. In the next chapter we begin to explore the extent to which changes in the County's broader housing market could be responsible.
 
 \newpage

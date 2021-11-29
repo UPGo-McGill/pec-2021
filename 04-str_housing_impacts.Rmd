@@ -685,4 +685,75 @@ figure_4_4_fun()
 
 (ref:fig-4-4) _The percentage of housing units converted to dedicated STRs in PEC, by ward (L) and dissemination area (R)_
 
+
+
+
+
+## Market supply's seasonal characteristics meets COVID-19
+
+
+TKTKT MOVE THIS TO THE HOUSING IMPACTS CHAPTER
+
+```{r para_3}
+
+
+monthly_fulltime_str <-  function(start_date, end_date, cut = 25) {
+daily %>% 
+  filter(date >= start_date, date <= end_date, status != "B") %>% 
+  group_by(month = lubridate::month(date, label =T, abbr = F)) %>% 
+  count(property_ID) %>% 
+  filter(n>=cut) %>%
+  count(month, name = "fulltime_properties") %>% 
+  mutate(month = str_to_sentence(month))
+}
+
+precovid <- monthly_fulltime_str("2019-01-01", "2020-01-01") %>% 
+  rename(precovid_fulltime = fulltime_properties)
+
+first_year_covid <- monthly_fulltime_str(max(daily$date)-months(12)+1, max(daily$date)+1) %>% 
+  rename(covid_fulltime = fulltime_properties)
+
+variation_df <- 
+  left_join(precovid, first_year_covid) %>% 
+  mutate(variation = (covid_fulltime - precovid_fulltime) / precovid_fulltime)
+
+var_less_most_busy <- 
+  scales::percent((max(precovid$precovid_fulltime) -
+                     min(precovid$precovid_fulltime))/
+                    min(precovid$precovid_fulltime))
+
+correlation <- cor(variation_df$variation, variation_df$covid_fulltime) %>% 
+  round(digits = 2)
+
+```
+
+``` {r tab-3-1, include = TRUE}
+
+library(kableExtra)
+
+variation_df %>% 
+  mutate(variation = scales::percent(variation)) %>% 
+  rename(Month = month,
+         "2019" = precovid_fulltime,
+         "Last 12 months" = covid_fulltime,
+         "Variation (%)" = variation) %>% 
+  kbl(caption = "Full-time STR on monthly basis",
+      align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down") %>%
+  column_spec(2,
+              background = spec_color(variation_df$precovid_fulltime[1:12], alpha = 0.4, end = 0.7)) %>% 
+    column_spec(3,
+              background = spec_color(variation_df$covid_fulltime[1:12], alpha = 0.4, end = 0.7))
+
+```
+
+Table \@ref(tab:tab-3-1) shows the average number of properties that were, on a monthly basis, dedicated to the STR market. To be considered as dedicated STR on a monthly basis, a property needs to have at least 25 days of activity (either available or reserved) during the month. In 2019, the number of dedicated STR on a monthly basis ranged between `r min(precovid$precovid_fulltime)` and `r max(precovid$precovid_fulltime)`. The table demonstrates a strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months of 2019. 
+
+The pandemic led to a major decrease in the number of dedicated monthly STR in Prince Edward County. In the last 12 months of data, from September 2020 through August 2021, we have seen constant decrease in the number of STR operating on a monthly full-time basis compared to 2019 levels. This can mean one of two things: either there were fewer bookings, or hosts blocked their calendars or deleted their listings. The latter explanation is more valid when considering the facts on the demand side of the market.
+
+<!-- We found a very strong positive correlation (r = `r correlation`) between the number of full-time STR (monthly) during the first year after the outbreak, and the variation column. Indeed, the busiest month of that year were also those with the smallest decrease in the number of full-time STR on the territory. For example, the monthly peak of full-time STR after the outbreak was in September, and this month has seen a `r scales::percent(variation_df$variation[09], accuracy = 0.02)` decrease compared to the previous year. However, in the less busy month after the pandemic outbreak, February 2021, there was a decrease of `r scales::percent(variation_df$variation[02], accuracy = 0.02)` compared to the previous year. -->
+
+
+
+
 \newpage
