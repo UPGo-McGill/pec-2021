@@ -389,22 +389,7 @@ figure_2_2_fun()
 ```
 (ref:fig-2-2) _Year-over-year changes in monthly real estate sales and average sale prices_
 
-
-
-
-
-
 ```{r para_4, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-list_ask_price <- 
-  home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(year_month = format(sale_date, "%Y-%m")) %>% 
-  mutate(year_month = paste0(year_month, "-01")) %>% 
-  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
-  mutate(diff_price = sale_price - list_price) %>% 
-  group_by(year_month) %>% 
-  summarize(diff_price = mean(diff_price, na.rm=TRUE))
 
 DOM <- 
   home_sales %>% 
@@ -413,14 +398,14 @@ DOM <-
   mutate(year_month = paste0(year_month, "-01")) %>% 
   mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
   group_by(year_month) %>% 
-  summarize(avg_DOM = mean(DOM, na.rm=TRUE))
+  summarize(avg_DOM = mean(DOM, na.rm = TRUE))
 
 DOM_2019 <- 
   home_sales %>% 
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   group_by(year) %>% 
-  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm = TRUE), digit = 0)) %>% 
   filter(year == 2019) %>% 
   pull(avg_DOM)
 
@@ -429,7 +414,7 @@ DOM_2020 <-
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   group_by(year) %>% 
-  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm = TRUE), digit = 0)) %>% 
   filter(year == 2020) %>% 
   pull(avg_DOM)
 
@@ -438,21 +423,20 @@ DOM_2021 <-
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   group_by(year) %>% 
-  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm = TRUE), digit = 0)) %>% 
   filter(year == 2021) %>% 
   pull(avg_DOM)
 
-diff_2020 <- 
+diff_2019 <- 
   home_sales %>% 
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   mutate(diff_price = sale_price - list_price) %>% 
   group_by(year) %>% 
-  summarize(diff_price = round(mean(diff_price, na.rm=TRUE), digit=-1)) %>% 
-  filter(year == 2020) %>% 
+  summarize(diff_price = mean(diff_price, na.rm = TRUE)) %>% 
+  filter(year == 2019) %>% 
   pull(diff_price) %>% 
-  prettyNum(",") %>% 
-  paste0("$", .)
+  scales::percent(0.1)
 
 diff_2021 <- 
   home_sales %>% 
@@ -460,14 +444,54 @@ diff_2021 <-
   mutate(year = year(sale_date)) %>% 
   mutate(diff_price = sale_price - list_price) %>% 
   group_by(year) %>% 
-  summarize(diff_price = round(mean(diff_price, na.rm=TRUE), digit=-1)) %>% 
+  summarize(diff_price = mean(diff_price, na.rm = TRUE)) %>% 
   filter(year == 2021) %>% 
   pull(diff_price) %>% 
-  prettyNum(",") %>% 
-  paste0("$", .)
-
+  scales::percent(0.1)
 
 ```
+
+``` {r make_fig_2_3}
+
+figure_2_3_fun <- function(regular = "", condensed = "") {
+  
+home_sales %>% 
+  st_drop_geometry() %>% 
+  group_by(sale_date) %>% 
+  summarize(avg_DOM = mean(DOM, na.rm=TRUE)) |> 
+  mutate(avg_DOM = slide_dbl(avg_DOM, mean, .before = 6)) |> 
+  ggplot(aes(sale_date, avg_DOM)) +
+  geom_line(color = col_palette[2], alpha = 0.5) +
+  stat_smooth(color = col_palette[2], method = "loess", se = FALSE, span = 0.8) +
+  scale_y_continuous(name = NULL, label = scales::comma, limits = c(0, 150)) +
+  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
+               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
+  theme_minimal() +
+  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
+        text = element_text(family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_3.pdf"), 
+         # plot = figure_2_5_fun("Futura", "Futura Condensed"), 
+         plot = figure_2_3_fun(), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+}
+
+```
+
+Several other indicators support the picture of a housing market in the midst of a demand shock, including the number of days on the market, the difference between asking price and sale price, and the number of resales. Figure \@ref(fig:fig-2-3) shows the number of days on market for home sales in Prince Edward County, and reveals a rapidly falling average during the pandemic. The average sale in 2019 had been on the market for `r DOM_2019` days, but that number fell to `r DOM_2020` in 2020, and to just `r DOM_2021` days in 2021. During the same time period, the difference between original asking price and final sale price shifted substantially, rising from `r diff_2019` in 2019 (indicating that the average property sold for less than its asking price) to `r diff_2021` in 2021—the first time this indicator has been positive since our dataset began in 2016.
+
+``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
+
+figure_2_3_fun()
+
+```
+(ref:fig-2-3) _Average number of days on market for successful home sales (7-day average)_
+
 
 
 
@@ -554,11 +578,6 @@ fourth <-
 
 
 
-
-There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figures \@ref(fig:fig-2-5) and \@ref(fig:fig-2-6) show both of those indicators. The average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`.
-
-
-
 Out of the 3,017 sales which occurred in Prince Edward, a total of 213 residential properties were sold more than one time during 2016 and 2021 (Table \@ref(tab:tab-4-2)). This quick turnover is an indicator of the state of the homeownership market: whereas houses are usually bought for long term living situations, it is not uncommon in hot property markets to see properties being sold multiple times in a short timespan. To explore this situation in Prince Edward County, we have looked at the addresses that came up more than once in the sales database, and grouped this number per year. The number of properties sold for a second time was similar in 2017 and 2018, respectively with `r second_2017` and `r second_2018`. The number increased by more than 50% between 2018 and 2019 to reach `r second_2019`. 2020 is the year with the most recorded second sales, reaching `r second_2020`, more than twice that of the year before. This phenomenon was less pronounced in 2021, with only `r second_2021` second time sales, but with the most properties being sold for a third time, reaching `r third_2021`. The most times a single property was sold in this time period is four times, although observed only once. While the limited date range of this dataset poses issues as to the comparability in between years (i.e. there are more years between 2021 and 2016 to record a second sale, compared to 2017 and 2016, for example), it provides another indicator of the state of the housing market in Prince Edward County. Combined with an overall increasing number of sales and average sale prices, positive differences between the list price and the sale price and shrinking time on the market, we can observe that Prince Edward County has been faced with a booming homeownership market since 2016, which is also the year of the last available census data. 
 
 
@@ -588,9 +607,9 @@ p_thirty_owner_athol <-
 
 
 
-``` {r make_fig_2_3}
+``` {r make_fig_2_4}
 
-figure_2_3_fun <- function(regular = "", condensed = "") {
+figure_2_4_fun <- function(regular = "", condensed = "") {
 
   left_map <-
     DA_housing %>%
@@ -640,95 +659,24 @@ figure_2_3_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_3.pdf"),
+  ggsave(here("output", "figures", "figure_2_4.pdf"),
          # plot = figure_2_3_fun("Futura", "Futura Condensed"),
-         plot = figure_2_3_fun(),
+         plot = figure_2_4_fun(),
          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
 
-  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
 }
 
 ```
 
  Based on the affordability measure above, 17.3% of homeowners are considered housing stressed. This percentage varies between ward, with Bloomfield having `r p_thirty_owner_bloomfield` of owners households spending more than 30% of their incomes on housing and Athol having the least housing-stressed households, with `r p_thirty_owner_athol`. Figure  \@ref(fig:fig-2-2) shows the geographic distribution of owner households in situation of housing stress by dissemination area (left) and by ward (right). The ward map displays a distinction between the level of housing stress between Western and Eastern wards.
 
+``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
 
-``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
-
-figure_2_3_fun()
-
-```
-
-(ref:fig-2-3) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
-
-``` {r make_fig_2_5}
-
-figure_2_5_fun <- function(regular = "", condensed = "") {
-  
-  DOM %>% 
-  ggplot() +
-  geom_line(aes(year_month, avg_DOM), color = col_palette[2], lwd=1)+
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_5.pdf"), 
-         plot = figure_2_5_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
-}
+figure_2_4_fun()
 
 ```
-
-``` {r make_fig_2_6}
-
-figure_2_6_fun <- function(regular = "", condensed = "") {
-  
-right_fig <- 
-  list_ask_price %>% 
-  ggplot() +
-  geom_line(aes(year_month, diff_price), color = col_palette[3], lwd=1)+
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  scale_y_continuous(name = NULL, label = scales::dollar) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_6.pdf"), 
-         plot = figure_2_6_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_6.pdf"))
-}
-
-```
-
-
-``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
-
-figure_2_5_fun()
-
-```
-(ref:fig-2-5) _Monthly averages of days on the market_
-
-``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
-
-figure_2_6_fun()
-
-```
-(ref:fig-2-6) _Monthly difference between asking and sale prices_
+(ref:fig-2-4) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
 
 ``` {r tab-4-2, include = TRUE}
 
@@ -1356,31 +1304,43 @@ Prince Edward County’s (PEC) housing market has been under considerable stress
 
 One of the major considerations when gauging the impacts of short-term rentals (STRs) on a specific location, therefore, is the extent to which STRs are removing long-term housing from the market. This process can occur either directly, where tenants of a unit are evicted or not replaced at the end of a lease and the unit is converted to a STR, or indirectly by absorbing new construction or investment properties which otherwise would have gone onto the long-term market. In a highly seasonal market like PEC, we can expect a number of housing units dedicated to the STR market only in the summer months, and then rented monthly in the longer-term market, or occupied by its owner, during the low season. To obtain the exact number of units that have been occupied as STRs, landlords or units would need to be individually surveyed, which is infeasible because STR hosts are mostly anonymous on major STR platforms such as Airbnb and VRBO. Instead, we use the daily activity of listings, alongside structural characteristics such as listing type and location, to estimate which listings are operating as dedicated STRs and are therefore not available as conventional long-term housing.
 
-_Frequently Rented Entire-Home (FREH) listings:_ The number of frequently-rented units is one way to estimate STR-induced housing loss. If a STR is either reserved or available for reservations the vast majority of the time, it is reasonable to assume that it is not serving as an individual’s principal residence at the same time. Along these lines, in this report, we define frequently rented entire-home (FREH) listings as entire-home listings which were active (either reserved or available) on Airbnb or VRBO the vast majority of the last 180 days (at least 162 nights).
+``` {r make_fig_2_10}
 
-_Ghost hostels:_ In addition to FREH listings, it is possible that entire housing units have been subdivided into multiple private-room listings, each of which appearing to be a spare bedroom or the like, while actually collectively representing an apartment removed from the long-term housing market. We call these clusters of private-room listings “ghost hostels”, building on the advocacy group Fairbnb.ca’s term “ghost hotels”—multiple FREH listings located in a single building, collectively serving as de facto hotels instead of long-term housing (Wieditz 2017). We detect ghost hostels by finding clusters of three or more private-room listings operated by a single host, whose reported locations are close enough to each other that they are likely to have originated in the same actual housing unit. (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m.)
+figure_2_10_fun <- function(regular = "", condensed = "") {
+  
+  seasonal_FREH %>% 
+    ggplot() +
+    geom_bar(aes(year_season, n, fill = season), stat= "identity")+
+    theme(plot.title = element_text(size=10),
+          legend.title = element_blank())+
+  scale_fill_manual("legend", 
+                    values = c("Year-round" = col_palette[3],
+                               "Summer" = col_palette[1],
+                               "Winter" = col_palette[2]))+
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  theme_minimal()+
+  xlab("")+
+  ylab("")+
+  theme(legend.title = element_blank(),
+        legend.position = "bottom", 
+        panel.grid.minor.x = element_blank(),
+        text = element_text(face = "plain", family = regular),
+        legend.text = element_text( size = 10, family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_10.pdf"), 
+         plot = figure_2_10_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_10.pdf"))
+}
+
+```
+
 
 ```{r para_1_2}
-
-# FREH in 2021
-FREH_2021 <- 
-  FREH %>% 
-  filter(date >= start_2021) %>% 
-  summarize(mean(FREH_6)) %>% 
-  pull() %>% 
-  round(digit = -1) %>% 
-  prettyNum(",")
-
-# GH in 2021
-GH_2021 <- 
-  GH %>% 
-  st_drop_geometry() %>% 
-  filter(date >= start_2021) %>% 
-  group_by(date) %>% 
-  summarize(h_u = sum(housing_units)) %>%
-  pull(h_u) %>% mean() %>% 
-  round(digit = -1) %>% 
-  prettyNum(",")
 
 # Change in listings 2020
 active_yoy_change <- 
@@ -1426,84 +1386,6 @@ summer_2021_on_dwellings <-
 {summer_FREH_avg_2021 / sum(EW$dwellings)} %>% 
   scales::percent(0.1)
   
-
-```
-
-``` {r make_fig_2_9}
-
-figure_2_9_fun <- function(regular = "", condensed = "") {
-  
-housing_loss %>% 
-  group_by(`Listing type`) %>% 
-  mutate(`Housing units` = slide_dbl(`Housing units`, mean, .before = 6, .complete = TRUE)) %>% 
-  filter(!is.na(`Housing units`)) %>% 
-  ggplot(aes(date, `Housing units`, fill = `Listing type`)) +
-  geom_col(lwd = 0) +
-  scale_fill_manual(values = col_palette[c(2, 4)]) +
-  # VRBO enters in June, 180 days to calcul accurately the overall number of FREH
-  scale_x_date(name = NULL, limits = c(as.Date("2017-06-01") + days(180), NA)) +
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "bottom", 
-        panel.grid.minor.x = element_blank(),
-        text = element_text(face = "plain", family = regular),
-        legend.title = element_text(face = "bold", family = regular, 
-                                    size = 10),
-        legend.text = element_text( size = 10, family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_9.pdf"), 
-         plot = figure_2_9_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_9.pdf"))
-}
-
-```
-
-On average in 2021, there were `r FREH_2021` FREH listings in PEC, and `r GH_2021` more housing units which were operating as ghost hostels. In total, therefore, short-term rentals are taking `r housing_loss_2021` housing units off of PEC’s long-term market (Figure \@ref(fig:fig-2-9)). Notably, while the number of active daily listings declined by `r active_yoy_listings` between 2019 and 2021, the number of housing units which STRs took off of PEC’s housing market decreased at a much sharper rate. There were `r housing_loss_change` fewer dedicated STRs in 2021 compared to 2019, from `r housing_loss_2019` to `r housing_loss_2021`. This high decline in commercially-operated STRs reflects that the pandemic has disproportionately affected commercial operators in the County.
-
-``` {r fig-2-9, include = TRUE, fig.cap = '(ref:fig-2-9)', fig.align = "center"}
-
-figure_2_9_fun()
-
-```
-(ref:fig-2-9) _Housing units converted to dedicated STRs in the Prince Edward County_
-
-``` {r make_fig_2_10}
-
-figure_2_10_fun <- function(regular = "", condensed = "") {
-  
-  seasonal_FREH %>% 
-    ggplot() +
-    geom_bar(aes(year_season, n, fill = season), stat= "identity")+
-    theme(plot.title = element_text(size=10),
-          legend.title = element_blank())+
-  scale_fill_manual("legend", 
-                    values = c("Year-round" = col_palette[3],
-                               "Summer" = col_palette[1],
-                               "Winter" = col_palette[2]))+
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  theme_minimal()+
-  xlab("")+
-  ylab("")+
-  theme(legend.title = element_blank(),
-        legend.position = "bottom", 
-        panel.grid.minor.x = element_blank(),
-        text = element_text(face = "plain", family = regular),
-        legend.text = element_text( size = 10, family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_10.pdf"), 
-         plot = figure_2_10_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_10.pdf"))
-}
 
 ```
 
@@ -1586,44 +1468,8 @@ EW_housing_table %>%
 
 ```
 
-``` {r make_fig_2_11}
-
-figure_2_11_fun <- function(regular = "", condensed = "") {
-  
-  housing_loss_share %>% 
-    ggplot(aes(date, housing_loss_pct, colour = `Listing type`)) +
-    geom_line(lwd = 1) +
-    scale_x_date(name=NULL) +
-    scale_y_continuous(name = NULL, labels = scales::percent) +
-    scale_colour_manual(values = col_palette[c(5, 1)]) +
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor.x = element_blank())
-  
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_11.pdf"), 
-         plot = figure_2_11_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_11.pdf"))
-}
-
-```
-
-On average, for the pre-Covid years, half of entire-home listings (`r eh_housing_loss_pre_covid`) and of the private-room listings (`r pr_housing_loss_pre_covid`) were taking housing off the long-term market. On average, in 2021, only a fourth of entire-home listings (`r eh_housing_loss`) but back to haf of private-room listings (`r pr_housing_loss`) were being operated in a full-time or close-to-full-time fashion (Figure \@ref(fig:fig-4-3)). The yearly up-and-down pattern on Figure \@ref(fig:fig-2-11) is that, in winter, a lower percentage of FREH listings are removed from the platform than for less commercial listings. In addition, there are more active listings in the summer, shrinking the percentage of entire home/apt STR that contributes to long-term housing-loss even if their number in absolute was stable before the pandemic.
 
 Table \@ref(tab:tab-4-1) summarizes STR-induced housing loss patterns by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
-
-
-``` {r fig-2-11, include = TRUE, fig.cap = '(ref:fig-2-11)', fig.align = "center"}
-
-figure_2_11_fun()
-
-```
-
-(ref:fig-2-11) _The percentage of active STR listings contributing to long-term housing loss each day in PEC (14-day average)_
 
 ``` {r tab-4-1-2, include = TRUE}
 
