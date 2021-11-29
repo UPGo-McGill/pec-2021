@@ -29,7 +29,6 @@ seasonal_FREH <- qread("output/seasonal_FREH.qs")
 build_figures <- TRUE
 
 ```
-
 ```{r housing_objects, cache=TRUE, cache.lazy=FALSE}
 
 home_sales <- qread(here("output", "home_sales.qs"), nthreads = availableCores())
@@ -108,7 +107,6 @@ EW_housing <-
   st_transform(32618)
 
 ```
-
 ```{r on_water, cache = TRUE, cache.lazy = FALSE}
 
 ocean <-
@@ -135,209 +133,12 @@ water <- rbind(select(river, -everything()), select(ocean, -everything()))
 
 <br>
 
-## The housing context in Prince Edward County
+## Housing issues in Prince Edward County
 
-Prince Edward County's housing market has been under severe stress in the last several years. Housing demand—driven by some combination of in-movers, STAs, and second-home sales—has far outstripped housing supply. The Covid-19 pandemic has exacerbated these demand-side issues by bringing in an influx of new buyers looking for a second home, in part due to the increased possibilities for remote work. As a result, housing prices and rents have both risen far faster than local incomes. This chapter provides an overview of housing conditions for both homeowners and renters in Prince Edward County, and then analyzes the role of STAs in the County's housing affordability challenges.
-
-## Being a homeowner in Prince Edward County
-
-``` {r make_fig_2_1}
-
-figure_2_1_fun <- function(regular = "", condensed = "") {
-  
-  scale_factor <-
-  home_sales |> 
-  st_drop_geometry() |> 
-  filter(year(sale_date) == 2020) |> 
-  summarize(scale = sum(month(sale_date) >= 7) / sum(month(sale_date) <= 6)) |> 
-  pull(scale) |> 
-  {\(x) x + 1}()
-
-  data_for_graph <- 
-  home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(sale_date = year(sale_date)) %>% 
-  filter(!is.na(sale_date)) %>% 
-  group_by(sale_date) %>% 
-  summarize(n = n(), avg = mean(sale_price, na.rm = TRUE)) |> 
-  mutate(n = if_else(sale_date == 2021, round(n * scale_factor), as.numeric(n)),
-         shift = sale_date + n ^ 0.45 / 50)
-  
-  ggplot(data_for_graph) +
-  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date <= 2019),
-              se = FALSE, colour = col_palette[2], method = "lm", 
-              formula = y ~ log(x - 2015)) +
-  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date >= 2019),
-              se = FALSE, colour = col_palette[7], method = "lm") +
-  geom_point(aes(sale_date, avg, size = n), colour = col_palette[5]) +
-  geom_text(aes(shift, avg, label = n)) +
-  scale_x_continuous(name = NULL, limits = c(2016, 2021.5), breaks = 2016:2021) +
-  scale_y_continuous(name = NULL, limits = c(300000, 800000), 
-                     labels = scales::dollar) +
-  scale_size(limits = c(0, 1200), range = c(0, 20)) +
-  theme_minimal() +
-  theme(legend.position = "none", panel.grid.minor.x = element_blank())
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_1.pdf"), 
-         # plot = figure_1_1_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_1_fun("Futura", "Futura Condensed"), 
-         width = 9, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
-}
+The common definition of affordable housing is that for which the costs do not exceed 30% of the household's disposable income. The Canadian Mortgage and Housing Corporation calls this metric the "shelter cost-income ratio" (2020). Additionally, a healthy rental market is considered one in which the vacancy rate is of 3% of above (ACTO 2021). By either of these metrics, Prince Edward County's housing market has been under severe stress in the last several years. Housing demand—driven by some combination of in-movers, STAs, and second-home sales—has far outstripped housing supply. The Covid-19 pandemic has exacerbated these demand-side issues by bringing in an influx of new buyers looking for a second home, in part due to the increased possibilities for remote work. As a result, housing prices and rents have both risen far faster than local incomes. This chapter provides an overview of housing conditions for both homeowners and renters in Prince Edward County, and then analyzes the role of STAs in the County's housing affordability challenges.
 
 
-```
-
-```{r para_1, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-p_thirty_owner_bloomfield <- 
-  EW_housing %>% 
-  st_drop_geometry %>% 
-  arrange(desc(p_thirty_owner)) %>% 
-  slice(1) %>% 
-  pull(p_thirty_owner) %>%   
-  scales::percent(accuracy = 0.1)
-
-p_thirty_owner_athol <- 
-  EW_housing %>% 
-  st_drop_geometry %>% 
-  arrange(p_thirty_owner) %>% 
-  slice(1) %>% 
-  pull(p_thirty_owner) %>%   
-  scales::percent(accuracy = 0.1)
-
-```
-
-
-The following section provides an assessment of the housing situation in the county for both homeowners and renters, with a specific focus on affordability and availability. The common definition of housing that is affordable for which the costs do not exceed 30% of the household's disposable income, or what the Canadian Mortgage and Housing Corporation defines as the shelter cost-income ratio (2020). Additionally, a healthy rental market is considered one in which the vacancy rate is of 3% of above (ACTO 2021). 
-
-
-
-
-
-
-``` {r make_fig_2_2}
-
-figure_2_2_fun <- function(regular = "", condensed = "") {
-
-  left_map <-
-    DA_housing %>%
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "white") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
-                         na.value = "grey80",
-                         limits = c(0.05, 0.25), oob = scales::squish,
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
-                                  title.vjust = 1)) +
-    gg_bbox(DA_housing) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold",
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5),
-          panel.border = element_rect(colour = "white", size = 2))
-
-  right_map <-
-    EW_housing %>%
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
-                         na.value = "grey80",
-                         limits = c(0.1, 0.2), oob = scales::squish,
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
-                                  title.vjust = 1)) +
-    gg_bbox(DA_housing) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold",
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5),
-          panel.border = element_rect(colour = "white", size = 2))
-
-  left_map + right_map + plot_layout(guide = "collect") &
-    theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_2.pdf"),
-         plot = figure_2_2_fun("Futura", "Futura Condensed"),
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-
-  extrafont::embed_fonts(here("output", "figures", "figure_2_2.pdf"))
-}
-
-```
-
-From 2008 to 2018, the median home price in the county has almost doubled, going from $205K to $395K, an increase equivalent to seven times that of the increase in median household incomes (The County Foundation 2018). The influx of new homes in Prince Edward County is limited, with only 4.2% of housing units having been built between 2011-2016. By contrast, 61.0% of all homes in Prince Edward County were built prior to 1980. Based on the affordability measure above, 17.3% of homeowners are considered housing stressed. This percentage varies between ward, with Bloomfield having `r p_thirty_owner_bloomfield` of owners households spending more than 30% of their incomes on housing and Athol having the least housing-stressed households, with `r p_thirty_owner_athol`. Figure  \@ref(fig:fig-2-2) shows the geographic distribution of owner households in situation of housing stress by dissemination area (left) and by ward (right). The ward map displays a distinction between the level of housing stress between Western and Eastern wards.
-
-``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-2-1)', fig.align = "center"}
-
-figure_2_1_fun()
-
-```
-
-``` {r fig-2-2, include = TRUE, fig.cap = '(ref:fig-2-2)', fig.align = "center"}
-
-figure_2_2_fun()
-
-```
-
-(ref:fig-2-2) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
-
-``` {r make_fig_2_3}
-
-figure_2_3_fun <- function(regular = "", condensed = "") {
-
-home_sales %>%
-  st_drop_geometry() %>%
-  mutate(year_month = format(sale_date, "%Y-%m")) %>%
-  mutate(year_month = paste0(year_month, "-01")) %>%
-  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>%
-  group_by(year_month) %>%
-  summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>%
-  ggplot() +
-  geom_col(aes(year_month, n), fill = col_palette[5], lwd=0)+
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_3.pdf"),
-         plot = figure_2_3_fun("Futura", "Futura Condensed"),
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-
-  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
-}
-
-```
-
-With a relatively stable number of housing units available, the county is experiencing additional pressure in the past few years, which cannot be measured through 2016 census data. Two external market forces, namely short-term rentals and secondary home purchases by households from urban areas, have caused property prices to increases. According to Charles Dowdall, the largest year-over-year increases in housing sale prices occurred in the June 2020-June 2021 period, with an increase of 79.9%. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the county from 2016, totaling 3,017 sales. Figure \@ref(fig:fig-2-3) below summarizes the number of residential real estate sales in the county, starting on 6 January 2016.
-
-``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
-
-figure_2_3_fun()
-
-```
-
-(ref:fig-2-3) _Monthly number of property sales in Prince Edward County_
+## Housing sales and prices
 
 ```{r para_3, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -351,18 +152,6 @@ peak_housing_sale <-
    summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
    arrange(desc(n)) %>% 
    slice(1) %>% 
-   pull(n)
-
-second_peak_housing_sale <- 
-  home_sales %>% 
-   st_drop_geometry() %>% 
-   mutate(year_month = format(sale_date, "%Y-%m")) %>% 
-   mutate(year_month = paste0(year_month, "-01")) %>% 
-   mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
-   group_by(year_month) %>% 
-   summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
-   arrange(desc(n)) %>% 
-   slice(2) %>% 
    pull(n)
 
 dec_2020_sale_price <- 
@@ -468,16 +257,6 @@ avg_sale_2020 <-
   pull(avg) %>%
   scales::dollar(accuracy = 10)
 
-n_sale_2021 <- 
-  home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(sale_date = year(sale_date)) %>% 
-  filter(!is.na(sale_date)) %>% 
-  group_by(sale_date) %>% 
-  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
-  filter(sale_date == 2021) %>% 
-  pull(n)
-
 avg_sale_2021 <- 
   home_sales %>% 
   st_drop_geometry() %>% 
@@ -489,66 +268,131 @@ avg_sale_2021 <-
   pull(avg) %>%
   scales::dollar(accuracy = 10)
 
+scale_factor <-
+  home_sales |> 
+  st_drop_geometry() |> 
+  filter(year(sale_date) == 2020) |> 
+  summarize(scale = sum(month(sale_date) >= 7) / sum(month(sale_date) <= 6)) |> 
+  pull(scale) |> 
+  {\(x) x + 1}()
 
-```
-
-``` {r tab-4-1, include = TRUE}
-
-library(kableExtra)
-
-home_sales %>% 
+data_for_graph <- 
+  home_sales %>% 
   st_drop_geometry() %>% 
   mutate(sale_date = year(sale_date)) %>% 
   filter(!is.na(sale_date)) %>% 
   group_by(sale_date) %>% 
-  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
-  mutate(avg = scales::dollar(avg)) %>% 
-  set_names(c("Year", "Number of property sales", "Average sale price")) %>% 
-  kbl(caption = "Yearly sales portrait in Prince Edward County",
-      align = "lrrrrr") %>% 
-  kable_styling(latex_options="scale_down")
-  
+  summarize(n = n(), avg = mean(sale_price, na.rm = TRUE)) |> 
+  mutate(n = if_else(sale_date == 2021, round(n * scale_factor), as.numeric(n)),
+         shift = sale_date + n ^ 0.45 / 50)
+
+n_sale_2021 <- 
+  data_for_graph |> 
+  filter(sale_date == 2021) |> 
+  pull(n) |> 
+  scales::comma()
+
+
 ```
 
-``` {r make_fig_2_4}
+Even prior to the last several years, housing prices were increasing rapidly in Prince Edward County. By one estimate, the median home price in the county almost doubled between 2008 to 2018, going from $205,000 to $395,000. That is an increase seven times greater than the increase in median household incomes in the same time period (The County Foundation 2018). In the last five years, however, two external market forces—namely STAs and secondary home purchases by households from urban areas—have added a new source of housing demand. In the face of relatively stable housing supply (as of the 2016 census, only 4.2% of housing units had been built in the previous five years), this new demand has contributed to record-setting housing price increases. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the County from January 2016 through September 2021, totaling 3,017 sales.
 
-figure_2_4_fun <- function(regular = "", condensed = "") {
+``` {r make_fig_2_1}
+
+figure_2_1_fun <- function(regular = "", condensed = "") {
+  
+  data_for_graph <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = mean(sale_price, na.rm = TRUE)) |> 
+  mutate(n = if_else(sale_date == 2021, round(n * scale_factor), as.numeric(n)),
+         shift = sale_date + n ^ 0.45 / 50)
+  
+  ggplot(data_for_graph) +
+  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date <= 2019),
+              se = FALSE, colour = col_palette[2], method = "lm", 
+              formula = y ~ log(x - 2015)) +
+  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date >= 2019),
+              se = FALSE, colour = col_palette[7], method = "lm") +
+  geom_point(aes(sale_date, avg, size = n), colour = col_palette[5]) +
+  geom_text(aes(shift, avg, label = n)) +
+  scale_x_continuous(name = NULL, limits = c(2016, 2021.5), breaks = 2016:2021) +
+  scale_y_continuous(name = NULL, limits = c(300000, 800000), 
+                     labels = scales::dollar) +
+  scale_size(limits = c(0, 1200), range = c(0, 20)) +
+  theme_minimal() +
+  theme(legend.position = "none", panel.grid.minor.x = element_blank())
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_1.pdf"), 
+         # plot = figure_1_1_fun("Futura", "Futura Condensed"), 
+         plot = figure_2_1_fun("Futura", "Futura Condensed"), 
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
+}
+
+```
+
+Figure \@ref(fig:fig-2-1) summarizes the volume and average prices of home sales since 2016. There are two important trends in this data. The first is that, although house prices were rising steadily through 2019, price growth was starting to level off. (This is visible in the declining slope of the light blue trend line.) By contrast, since the start of the pandemic, sale prices have been on a far steeper trajectory (the purple trend line)—nearly doubling in just two years. The average price was price of `r avg_sale_2016` in 2016, but rose to `r avg_sale_2019` in 2019, `r avg_sale_2020` in 2020, and `r avg_sale_2021` in 2021 (so far). The peak average monthly sale price reached `r dec_2020_sale_price` in December 2020, which is a staggering `r yoy_sale_2021` higher than the the same month the year before. 
+
+``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-2-1)', fig.align = "center"}
+
+figure_2_1_fun()
+
+```
+(ref:fig-2-1) _Housing sales prices and volume, 2016-2021_
+
+
+``` {r make_fig_2_2}
+
+figure_2_2_fun <- function(regular = "", condensed = "") {
 
 home_sales_variation %>%
+  mutate(label = if_else(year_month == "2018-01-01", var, NA_character_)) %>%
   ggplot(aes(year_month, value, colour = var)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
   geom_line(lwd = 1, na.rm = TRUE) +
+  geom_label(aes(label = label), size = 3, family = condensed) +
   scale_x_date(name = NULL) +
   scale_y_continuous(name = NULL, limits = c(-1, NA),
                      labels = scales::percent) +
   scale_color_manual(name = NULL, values = col_palette[c(1, 3)]) +
   theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
+  theme(legend.position = "none", panel.grid.minor.x = element_blank(),
         text = element_text(family = regular))
 
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_4.pdf"),
-         plot = figure_2_4_fun("Futura", "Futura Condensed"),
+  ggsave(here("output", "figures", "figure_2_2.pdf"),
+         # plot = figure_2_4_fun("Futura", "Futura Condensed"),
+         plot = figure_2_2_fun(),
          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
 
-  extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_2.pdf"))
 }
 
 ```
 
-The housing market in Prince Edward County has experienced both a growth in the number of property sales and an increase in the average sale prices of the properties. In 2016, there were `r n_sale_2016` property sales in the County, with an average sale price of  `r avg_sale_2016`. The number of sales decreased between 2017 and 2019 to reach `r n_sale_2019` sales. The highest recorded number of sales occurred in 2020, with  `r n_sale_2020`. Additionally, the average sale price of properties has constantly been increasing since 2016, to reach `r avg_sale_2019` in 2019, `r avg_sale_2020` in 2020 and `r avg_sale_2021` in 2021. Table \@ref(tab:tab-4-1) below summarizes the number and avergae sale prices per year.
+The second trend is the increasing sales volume during the pandemic. In 2016, there were `r n_sale_2016` property sales in the County, but this number declined over the next several years to reach `r n_sale_2019` in 2019. Sales volume began to surge in the month following the pandemic, reaching a monthly peak of `r peak_housing_sale` sales in July 2020. In total, 2020 saw a increase to `r n_sale_2020` sales, while 2021 is on track for `r n_sale_2021` sales by year's end—nearly three times higher than 2019. Figure \@ref(fig:fig-2-2) summarizes the year-over-year changes in monthly number of sales and sale price. 
 
-There is a high increase in the number of residential sales starting in the second half of 2020, with the peak of real estate sales being in July 2020, with a total of `r peak_housing_sale` property sales, followed by `r second_peak_housing_sale` in September of 2020. This peak in property sales has also been accompanied by large increases in average sale prices, with a peak average sale price in December 2020 of `r dec_2020_sale_price`. This number is a staggering year-over-year increase of `r yoy_sale_2021` compared to the same month the year before. Figure \@ref(fig:fig-2-4) summarizes the year-over-year changes in the number of sales and sale price per month. 
+``` {r fig-2-2, include = TRUE, fig.cap = '(ref:fig-2-2)', fig.align = "center"}
 
-``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
-
-figure_2_4_fun()
+figure_2_2_fun()
 
 ```
+(ref:fig-2-2) _Year-over-year changes in monthly real estate sales and average sale prices_
 
-(ref:fig-2-4) _Year-over-year changes in monthly real estate sales and average sale prices_
+
+
+
+
 
 ```{r para_4, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -625,77 +469,7 @@ diff_2021 <-
 
 ```
 
-``` {r make_fig_2_5}
 
-figure_2_5_fun <- function(regular = "", condensed = "") {
-  
-  DOM %>% 
-  ggplot() +
-  geom_line(aes(year_month, avg_DOM), color = col_palette[2], lwd=1)+
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_5.pdf"), 
-         plot = figure_2_5_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
-}
-
-```
-
-``` {r make_fig_2_6}
-
-figure_2_6_fun <- function(regular = "", condensed = "") {
-  
-right_fig <- 
-  list_ask_price %>% 
-  ggplot() +
-  geom_line(aes(year_month, diff_price), color = col_palette[3], lwd=1)+
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  scale_y_continuous(name = NULL, label = scales::dollar) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_6.pdf"), 
-         plot = figure_2_6_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_6.pdf"))
-}
-
-```
-
-There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figures \@ref(fig:fig-2-5) and \@ref(fig:fig-2-6) show both of those indicators. The average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`.
-
-``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
-
-figure_2_5_fun()
-
-```
-
-(ref:fig-2-5) _Monthly averages of days on the market_
-
-``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
-
-figure_2_6_fun()
-
-```
-
-(ref:fig-2-6) _Monthly difference between asking and sale prices_
 
 ```{r para_5, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -774,6 +548,188 @@ fourth <-
 
 ```
 
+
+
+
+
+
+
+
+There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figures \@ref(fig:fig-2-5) and \@ref(fig:fig-2-6) show both of those indicators. The average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`.
+
+
+
+Out of the 3,017 sales which occurred in Prince Edward, a total of 213 residential properties were sold more than one time during 2016 and 2021 (Table \@ref(tab:tab-4-2)). This quick turnover is an indicator of the state of the homeownership market: whereas houses are usually bought for long term living situations, it is not uncommon in hot property markets to see properties being sold multiple times in a short timespan. To explore this situation in Prince Edward County, we have looked at the addresses that came up more than once in the sales database, and grouped this number per year. The number of properties sold for a second time was similar in 2017 and 2018, respectively with `r second_2017` and `r second_2018`. The number increased by more than 50% between 2018 and 2019 to reach `r second_2019`. 2020 is the year with the most recorded second sales, reaching `r second_2020`, more than twice that of the year before. This phenomenon was less pronounced in 2021, with only `r second_2021` second time sales, but with the most properties being sold for a third time, reaching `r third_2021`. The most times a single property was sold in this time period is four times, although observed only once. While the limited date range of this dataset poses issues as to the comparability in between years (i.e. there are more years between 2021 and 2016 to record a second sale, compared to 2017 and 2016, for example), it provides another indicator of the state of the housing market in Prince Edward County. Combined with an overall increasing number of sales and average sale prices, positive differences between the list price and the sale price and shrinking time on the market, we can observe that Prince Edward County has been faced with a booming homeownership market since 2016, which is also the year of the last available census data. 
+
+
+
+## Homeownership affordability
+
+```{r para_1, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+
+p_thirty_owner_bloomfield <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(desc(p_thirty_owner)) %>% 
+  slice(1) %>% 
+  pull(p_thirty_owner) %>%   
+  scales::percent(accuracy = 0.1)
+
+p_thirty_owner_athol <- 
+  EW_housing %>% 
+  st_drop_geometry %>% 
+  arrange(p_thirty_owner) %>% 
+  slice(1) %>% 
+  pull(p_thirty_owner) %>%   
+  scales::percent(accuracy = 0.1)
+
+```
+
+
+
+
+``` {r make_fig_2_3}
+
+figure_2_3_fun <- function(regular = "", condensed = "") {
+
+  left_map <-
+    DA_housing %>%
+    ggplot() +
+    geom_sf(data = province, colour = "transparent", fill = "grey93") +
+    geom_sf(aes(fill = p_thirty_owner), colour = "white") +
+    geom_sf(data = water, fill = "white", colour = "transparent") +
+    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
+                         na.value = "grey80",
+                         limits = c(0.05, 0.25), oob = scales::squish,
+                         labels = scales::percent)  +
+    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+                                  title.vjust = 1)) +
+    gg_bbox(DA_housing) +
+    theme_void() +
+    theme(text = element_text(family = regular, face = "plain"),
+          legend.title = element_text(family = regular, face = "bold",
+                                      size = 7),
+          legend.title.align = 0.9,
+          legend.text = element_text(family = regular, size = 5),
+          panel.border = element_rect(colour = "white", size = 2))
+
+  right_map <-
+    EW_housing %>%
+    ggplot() +
+    geom_sf(data = province, colour = "transparent", fill = "grey93") +
+    geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
+    geom_sf(data = water, fill = "white", colour = "transparent") +
+    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
+                         na.value = "grey80",
+                         limits = c(0.1, 0.2), oob = scales::squish,
+                         labels = scales::percent)  +
+    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+                                  title.vjust = 1)) +
+    gg_bbox(DA_housing) +
+    theme_void() +
+    theme(text = element_text(family = regular, face = "plain"),
+          legend.title = element_text(family = regular, face = "bold",
+                                      size = 7),
+          legend.title.align = 0.9,
+          legend.text = element_text(family = regular, size = 5),
+          panel.border = element_rect(colour = "white", size = 2))
+
+  left_map + right_map + plot_layout(guide = "collect") &
+    theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_3.pdf"),
+         # plot = figure_2_3_fun("Futura", "Futura Condensed"),
+         plot = figure_2_3_fun(),
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+
+  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+}
+
+```
+
+ Based on the affordability measure above, 17.3% of homeowners are considered housing stressed. This percentage varies between ward, with Bloomfield having `r p_thirty_owner_bloomfield` of owners households spending more than 30% of their incomes on housing and Athol having the least housing-stressed households, with `r p_thirty_owner_athol`. Figure  \@ref(fig:fig-2-2) shows the geographic distribution of owner households in situation of housing stress by dissemination area (left) and by ward (right). The ward map displays a distinction between the level of housing stress between Western and Eastern wards.
+
+
+``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
+
+figure_2_3_fun()
+
+```
+
+(ref:fig-2-3) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
+
+``` {r make_fig_2_5}
+
+figure_2_5_fun <- function(regular = "", condensed = "") {
+  
+  DOM %>% 
+  ggplot() +
+  geom_line(aes(year_month, avg_DOM), color = col_palette[2], lwd=1)+
+  scale_y_continuous(name = NULL, label = scales::comma) +
+  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
+               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
+  theme_minimal() +
+  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
+        text = element_text(family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_5.pdf"), 
+         plot = figure_2_5_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
+}
+
+```
+
+``` {r make_fig_2_6}
+
+figure_2_6_fun <- function(regular = "", condensed = "") {
+  
+right_fig <- 
+  list_ask_price %>% 
+  ggplot() +
+  geom_line(aes(year_month, diff_price), color = col_palette[3], lwd=1)+
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  scale_y_continuous(name = NULL, label = scales::dollar) +
+  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
+               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
+  theme_minimal() +
+  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
+        text = element_text(family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_6.pdf"), 
+         plot = figure_2_6_fun("Futura", "Futura Condensed"), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_6.pdf"))
+}
+
+```
+
+
+``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
+
+figure_2_5_fun()
+
+```
+(ref:fig-2-5) _Monthly averages of days on the market_
+
+``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
+
+figure_2_6_fun()
+
+```
+(ref:fig-2-6) _Monthly difference between asking and sale prices_
+
 ``` {r tab-4-2, include = TRUE}
 
 library(kableExtra)
@@ -791,7 +747,6 @@ left_join(second, third) %>%
   
 ```
 
-Out of the 3,017 sales which occurred in Prince Edward, a total of 213 residential properties were sold more than one time during 2016 and 2021 (Table \@ref(tab:tab-4-2)). This quick turnover is an indicator of the state of the homeownership market: whereas houses are usually bought for long term living situations, it is not uncommon in hot property markets to see properties being sold multiple times in a short timespan. To explore this situation in Prince Edward County, we have looked at the addresses that came up more than once in the sales database, and grouped this number per year. The number of properties sold for a second time was similar in 2017 and 2018, respectively with `r second_2017` and `r second_2018`. The number increased by more than 50% between 2018 and 2019 to reach `r second_2019`. 2020 is the year with the most recorded second sales, reaching `r second_2020`, more than twice that of the year before. This phenomenon was less pronounced in 2021, with only `r second_2021` second time sales, but with the most properties being sold for a third time, reaching `r third_2021`. The most times a single property was sold in this time period is four times, although observed only once. While the limited date range of this dataset poses issues as to the comparability in between years (i.e. there are more years between 2021 and 2016 to record a second sale, compared to 2017 and 2016, for example), it provides another indicator of the state of the housing market in Prince Edward County. Combined with an overall increasing number of sales and average sale prices, positive differences between the list price and the sale price and shrinking time on the market, we can observe that Prince Edward County has been faced with a booming homeownership market since 2016, which is also the year of the last available census data. 
 
 # Homeownership affordability in Prince Edward County
 
