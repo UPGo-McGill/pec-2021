@@ -1732,7 +1732,7 @@ Covid-19 has flattened the seasonality of STA activity in Prince Edward County, 
 figure_1_8_fun()
 
 ```
-(ref:fig-1-8) _Share of daily total reservation, by type of ward (7-day average)_
+(ref:fig-1-8) _Share of daily total reservations, by type of ward (7-day average)_
 
 <br>
 
