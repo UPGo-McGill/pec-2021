@@ -1,13 +1,13 @@
 # Introduction {-}
 
-In September 2021, the Urban Politics and Governance research group (UPGo) at McGill University was commissioned by Prince Edward County to conduct market research and analysis on short-term rentals (STRs) in the county, the impact of short-term rental accommodations (STAs) on the County's housing sector and the various pathways to reinstating the County's STA registration system post pandemic. To do so, this report will shed light on the following topics: 
+In September 2021, the Urban Politics and Governance research group (UPGo) at McGill University was commissioned by Prince Edward County to conduct market research and analysis on short-term accommodations (STAs) in the county, the impact of STAs on the County's housing sector and the various pathways to reinstating the County's STA registration system post pandemic. To do so, this report will shed light on the following topics: 
 
+- A general market overview of short-term accommodations (STAs) in Prince Edward County, including the volume, revenue, type, size and distribution of units, the presence of dedicated commercial operations, and the impact of COVID-19 on short-term rentals.
+- An analysis of seasonality in Prince Edward County, with specifics on reservations, revenues, geography and Covid-induced changes in the STA market.
 - A summary analysis of the housing sector in Prince Edward County, including average rents and property prices, availability of housing, affordability, geographic distinctions and current challenges.
-- A general market overview of short-term rentals (STRs) in Prince Edward County, including the volume, revenue, type, size and distribution of units, the presence of dedicated commercial operations, and the impact of COVID-19 on short-term rentals.
-- An analysis of seasonality in Prince Edward County, with specifics on reservations and revenues, and also the impact of seasonality on towns and villages in the County.
-- The impact of STRs on Prince Edward County’s housing market, in particular the number of housing units taken off the long-term market during both the high and low seasons.
+- The impact of STAs on Prince Edward County’s housing market, in particular the number of housing units taken off the long-term market during both the high and low seasons.
 - The impact of the County’s new STA registration system on the operations of short-term rentals in Prince Edward County.
-- The various pathways available to reinstate the STA registration systems following the covid-related hiatus.
+- The various pathways available to reinstate the STA registration systems following the Covid-related hiatus.
 
 Data and methodology are discussed in the Appendix, and all the code used to generate the analysis in the report is available online at https://github.com/UPGo-McGill/pec-2021.
 
