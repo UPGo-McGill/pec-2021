@@ -12,7 +12,7 @@
 <!-- - Most (92.9%) STA listings were entire homes, responsible for 98.0% of total revenues. -->
 <!-- - Revenue is distributed unevenly among hosts, with the top 10% of hosts earning 49.2% of revenues and the top 1% earning 20.8% of all revenues. -->
 <!-- - Multilistings account for almost half (49.6%) of STA listings in the county, earning 50.6% of total host revenue. -->
-<!-- - The Covid-19 pandemic has caused active daily listings to drop by 20%, while nightly prices were almost twice (48.4%) as high in 2021 compared to 2019. -->
+<!-- - The Covid-19 pandemic has caused reservations to drop by 20%, while nightly prices were almost twice (48.4%) as high in 2021 compared to 2019. -->
 <!-- - The pandemic has also flattened the seasonality pattern in the county, with non-summer months receiving more reservations on average than the years before. -->
 
 <!-- **HOUSING IN PRINCE EDWARD COUNTY: SUMMARY ANALYSIS** -->
