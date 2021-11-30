@@ -295,13 +295,13 @@ n_sale_2021 <-
 
 ```
 
-Even prior to the last several years, housing prices were increasing rapidly in Prince Edward County. By one estimate, the median home price in the county almost doubled between 2008 to 2018, going from $205,000 to $395,000. That is an increase seven times greater than the increase in median household incomes in the same time period (The County Foundation 2018). In the last five years, however, two external market forces—namely STAs and secondary home purchases by households from urban areas—have added a new source of housing demand. In the face of relatively stable housing supply (as of the 2016 census, only 4.2% of housing units had been built in the previous five years), this new demand has contributed to record-setting housing price increases. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the County from January 2016 through September 2021, totaling 3,017 sales.
-
+Even prior to the last several years, housing prices were increasing rapidly in Prince Edward County. By one estimate, the median home price in the county almost doubled between 2008 to 2018, going from $205,000 to $395,000. That is an increase seven times greater than the increase in median household incomes in the same time period (The County Foundation 2018). In the last five years, however, two external market forces—namely STAs and secondary home purchases by households from urban areas—have added a new source of housing demand. In the face of relatively stable housing supply (as of the 2016 census, only 4.2% of housing units had been built in the previous five years), this new demand has contributed to record-setting housing price increases. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the County from January 2016 through September 2021, totaling `r scales::comma(nrow(home_sales))` sales.
 
 ``` {r make_fig_2_1}
 
 figure_2_1_fun <- function(regular = "", condensed = "") {
   
+sales_for_map <- 
   home_sales %>% 
   filter(sale_date >= "2021-01-01") %>% 
   st_drop_geometry() %>% 
@@ -310,23 +310,28 @@ figure_2_1_fun <- function(regular = "", condensed = "") {
   st_as_sf() %>% 
   group_by(ward) %>% 
   summarize(avg_sale_price_2021 = mean(sale_price, na.rm = TRUE))
-  ggplot() +
+
+sales_labels <-
+  sales_for_map |> 
+  st_centroid(of_largest_polygon = TRUE) |> 
+  mutate(x = st_coordinates(geometry)[, 1],
+         y = st_coordinates(geometry)[, 2],
+         label = scales::dollar(avg_sale_price_2021, 100)) |> 
+  st_drop_geometry()
+
+sales_for_map |> 
+ggplot() +
   geom_sf(data = province, colour = "transparent", fill = "grey93") +
   geom_sf(aes(fill = avg_sale_price_2021), colour = "white") +
   geom_sf(data = water, fill = "white", colour = "transparent") +
-  scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
-                       na.value = "grey80",
-                       limits = c(400000, 1000000), oob = scales::squish, 
-                       labels = scales::dollar)  +
-  guides(fill = guide_colourbar(title = "Average sale\nprice",
-                                title.vjust = 1)) + 
+  ggrepel::geom_label_repel(aes(x, y, label = label), data = sales_labels,
+                            size = 2, nudge_y = c(0, 0, -5000, 2000, 0, 0, 5000,
+                                                  0, 0, 0)) +
+  scale_fill_stepsn(colors = col_palette[c(3, 4, 6)], na.value = "grey80",)  +
   gg_bbox(EW) +
   theme_void() +
   theme(text = element_text(family = regular, face = "plain"),
-        legend.title = element_text(family = regular, face = "bold",
-                                    size = 7),
-        legend.title.align = 0.9,
-        legend.text = element_text(family = regular, size = 5),
+        legend.position = "none",
         panel.border = element_rect(colour = "white", size = 2))
 
 }
@@ -341,9 +346,7 @@ if (build_figures) {
 
 ```
 
-
-
-
+Figure \@ref(fig:fig-2-1) shows the average selling price by electoral ward for each home sold in 2021. Prices are highest in the eastern and central parts of the County, but, with the exception of Athol, the average price in each ward is above $650,000. (That figure climbs above $1 million in South Marysburgh).
 
 ``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-2-1)', fig.align = "center"}
 
@@ -351,9 +354,6 @@ figure_2_1_fun()
 
 ```
 (ref:fig-2-1) _Average home sale prices by ward in 2021_
-
-
-
 
 ``` {r make_fig_2_2}
 
@@ -405,7 +405,6 @@ figure_2_2_fun()
 ```
 (ref:fig-2-2) _Housing sales prices and volume, 2016-2021_
 
-
 ``` {r make_fig_2_3}
 
 figure_2_3_fun <- function(regular = "", condensed = "") {
@@ -445,7 +444,7 @@ figure_2_3_fun()
 ```
 (ref:fig-2-3) _Year-over-year changes in monthly real estate sales and average sale prices_
 
-```{r para_4, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+```{r days_on_market, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 DOM <- 
   home_sales %>% 
@@ -492,7 +491,7 @@ diff_2019 <-
   summarize(diff_price = mean(diff_price, na.rm = TRUE)) %>% 
   filter(year == 2019) %>% 
   pull(diff_price) %>% 
-  scales::percent(0.1)
+  scales::dollar(100)
 
 diff_2021 <- 
   home_sales %>% 
@@ -503,7 +502,7 @@ diff_2021 <-
   summarize(diff_price = mean(diff_price, na.rm = TRUE)) %>% 
   filter(year == 2021) %>% 
   pull(diff_price) %>% 
-  scales::percent(0.1)
+  scales::dollar(100)
 
 ```
 
@@ -583,15 +582,14 @@ total_sales_2018_on <-
 
 ```
 
-Out of the `r total_sales_2018_on` sales which occurred in Prince Edward County from 2018 to 2021, a total of `r sum(multiple_sales$resales)` residential properties had already been sold at least once in the previous two years (Table \@ref(tab:tab-2-1)). 
-
-(In fact, one property in Prince Edward County has been sold four separate times between 2016 and 2021.)
+Out of the `r total_sales_2018_on` sales which occurred in Prince Edward County from 2018 to 2021, a total of `r sum(multiple_sales$resales)` residential properties had already been sold at least once in the previous two years (Table \@ref(tab:tab-2-1)). Quick sales such as these may indicate "house flipping", and is a clear symptom of a housing market where speculative investments are playing a role. (In fact, one property in Prince Edward County has been sold four separate times between 2016 and 2021.) The table demonstrates that quick sales have risen rapidly since 2018, both in absolute numbers and as a proportion of all sales. In 2021 so far, `r `scales::percent(max(multiple_sales$resale_pct)), 0.1)` of all home sales are properties which had been sold in the previous two years.
 
 ``` {r tab-2-1, include = TRUE}
 
 library(kableExtra)
 
 multiple_sales |> 
+  mutate(resale_pct = scales::percent(resale_pct, 0.1)) |> 
   set_names(c("Year of sale", "Multi-sale properties", 
               "Multi-sale properties as % of all properties sold")) |> 
   kbl(caption = "Properties sold multiple times between 2016 and 2021",
@@ -602,14 +600,9 @@ multiple_sales |>
 ```
 
 
-
-This quick turnover is an indicator of the state of the homeownership market: whereas houses are usually bought for long term living situations, it is not uncommon in hot property markets to see properties being sold multiple times in a short timespan. To explore this situation in Prince Edward County, we have looked at the addresses that came up more than once in the sales database, and grouped this number per year.
-
-
-
 ## Homeownership affordability
 
-```{r para_1, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+```{r owner_afford, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 p_thirty_owner_bloomfield <- 
   EW_housing %>% 
@@ -629,9 +622,6 @@ p_thirty_owner_athol <-
 
 ```
 
-
-
-
 ``` {r make_fig_2_5}
 
 figure_2_5_fun <- function(regular = "", condensed = "") {
@@ -640,13 +630,13 @@ figure_2_5_fun <- function(regular = "", condensed = "") {
     DA_housing %>%
     ggplot() +
     geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "white") +
+    geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
     geom_sf(data = water, fill = "white", colour = "transparent") +
     scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
                          na.value = "grey80",
                          limits = c(0.05, 0.25), oob = scales::squish,
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+                         labels = scales::percent_format(accuracy = 1))  +
+    guides(fill = guide_colourbar(title = "Homeowner\nhousing stress",
                                   title.vjust = 1)) +
     gg_bbox(DA_housing) +
     theme_void() +
@@ -661,13 +651,13 @@ figure_2_5_fun <- function(regular = "", condensed = "") {
     EW_housing %>%
     ggplot() +
     geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
+    geom_sf(aes(fill = p_thirty_owner), colour = "white") +
     geom_sf(data = water, fill = "white", colour = "transparent") +
     scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
                          na.value = "grey80",
-                         limits = c(0.1, 0.2), oob = scales::squish,
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
+                         limits = c(0.05, 0.25), oob = scales::squish,
+                         labels = scales::percent_format(accuracy = 1))  +
+    guides(fill = guide_colourbar(title = "Homeowner\nhousing stress",
                                   title.vjust = 1)) +
     gg_bbox(DA_housing) +
     theme_void() +
@@ -693,20 +683,17 @@ if (build_figures) {
 
 ```
 
-
- Based on the affordability measure above, 17.3% of homeowners are considered housing stressed. This percentage varies between ward, with Bloomfield having `r p_thirty_owner_bloomfield` of owners households spending more than 30% of their incomes on housing and Athol having the least housing-stressed households, with `r p_thirty_owner_athol`. Figure  \@ref(fig:fig-2-2) shows the geographic distribution of owner households in situation of housing stress by dissemination area (left) and by ward (right). The ward map displays a distinction between the level of housing stress between Western and Eastern wards.
+The housing sales trends described above tell only half the story of homeownership affordability in Prince Edward County. The other half is the ability of County residents to afford elevated housing prices. The most recent reliable data on Canadian incomes comes from the 2016 Census, which means that it will not have captured changes in income in the last five years. With that caveat, it remains the case that homeownership affordability has deteriorated substantially in the County. Based on the standard affordability rule that the shelter cost-income ratio should not exceed 30%, 17.3% of County homeowners are considered housing stressed. This percentage varies between ward, with Bloomfield exhibiting the most homeowner stress, with  `r p_thirty_owner_bloomfield` of owner-occupied households spending more than 30% of their incomes on housing, and Athol exhibiting the least housing-stressed households, with `r p_thirty_owner_athol`. Figure \@ref(fig:fig-2-5) shows the geographic distribution of owner households experiencing housing stress by dissemination area (left) and by ward (right).
 
 ``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
 
 figure_2_5_fun()
 
 ```
-(ref:fig-2-5) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
+(ref:fig-2-5) _Homeowner housing stress by dissemination area (L) and ward (R)_
 
 
-# Homeownership affordability in Prince Edward County
-
-```{r para_6, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+```{r owner_calcs, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 sale_price_by_ward <- 
   home_sales %>% 
@@ -730,22 +717,6 @@ sale_price_2020_2017 <-
   st_drop_geometry() %>% 
   left_join(., sale_price_by_ward, by = "ward") %>% 
   st_as_sf()
-
-north_avg_price <- 
-  sale_price_by_ward %>% 
-  st_drop_geometry() %>%
-  arrange(desc(avg_sale_price_2021)) %>% 
-  slice(1) %>% 
-  pull(avg_sale_price_2021) %>% 
-  scales::dollar(10)
-
-athol_avg_price <- 
-  sale_price_by_ward %>% 
-  st_drop_geometry() %>%
-  arrange(avg_sale_price_2021) %>% 
-  slice(1) %>% 
-  pull(avg_sale_price_2021) %>% 
-  scales::dollar(10)
 
 #https://www.wallstreetmojo.com/mortgage-formula/
 
@@ -800,10 +771,13 @@ diff_picton_1718 <-
 
 ```
 
+Based on the average sale prices for the past years, it was possible to estimate the average household income it would take to become a homeowner in Prince Edward County in an affordable manner. We completed the exercise using average sale prices for the 2017-2018 and 2020-2021 periods to highlight the recent market changes in the county. The calculations were based on a 25-year mortgage at a 1.75% interest rate and a 20% mortgage down payment (although 20% down payment can be considered a rare feat, with most people having small down payments and needing to insure their mortgages). Monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) were calculated to provide a yearly homeownership total costs, from which an affordable homeownership threshold was determined. The affordable homeownership threshold represents the minimum household income required to have housing costs remain at 30% of income or below. These thresholds for both 2017-2018 and 2020-2021 were then compared to the 2016 census after-tax household income, by ward (2016 being the most recent data available). The differences between the affordable thresholds and the actual household incomes are displayed in Table \@ref(tab:tab-2-2). We can see that, for both time periods, the average after-tax household income in each ward is not sufficient to make homeownership affordable in the County (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period, there are five wards for which households would require more than $50,000 to make current homeownership market conditions affordable for them, whereas the highest difference in 2017-2018 was Picton with `r diff_picton_1718`.
 
-Due to the relatively outdated nature of the last available census, it can be difficult to utilize this data to dress a portrait of the housing affordability in the County. However, we can still estimate based on the average sale prices by ward the income it would take to be able to afford being a homeowner in Prince Edward County without being in a situation of housing stress (which is set at the 30% threshold mentioned above). As we have seen in the first part of the chapter, homeowners in housing stress represent 17.3% of all homeowners, with varying averages by ward. The average sale price varies by ward, with North Marysburgh `r north_avg_price` having the highest average, and Athol the lowest `r athol_avg_price` for the years 2020 and 2021 only (Figure \@ref(fig:fig-2-7)).
 
-``` {r tab-4-3, include = TRUE}
+
+
+
+``` {r tab-2-2, include = TRUE}
 
 library(kableExtra)
 
@@ -826,7 +800,6 @@ affordable_homeownership_1718 %>%
   
 ```
 
-Based on the average sale prices for the past years, it was possible to estimate the average household income it would take to become a homeowner in Prince Edward County in an affordable manner. We completed the exercise using average sale prices for the 2017-2018 and 2020-2021 periods to highlight the recent market changes in the county. The calculations were based on a 25-year mortgage at a 1.75% interest rate and a 20% mortgage down payment (although 20% down payment can be considered a rare feat, with most people having small down payments and needing to insure their mortgages). Monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) were calculated to provide a yearly homeownership total costs, from which an affordable homeownership threshold was determined. The affordable homeownership threshold represents the minimum household income required to have housing costs remain at 30% of income or below. These thresholds for both 2017-2018 and 2020-2021 were then compared to the 2016 census after-tax household income, by ward (2016 being the most recent data available). The differences between the affordable thresholds and the actual household incomes are displayed in Table \@ref(tab:tab-4-3). We can see that, for both time periods, the average after-tax household income in each ward is not sufficient to make homeownership affordable in the County (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period, there are five wards for which households would require more than $50,000 to make current homeownership market conditions affordable for them, whereas the highest difference in 2017-2018 was Picton with `r diff_picton_1718`.
 
 # Being a renter in Prince Edward County
 
