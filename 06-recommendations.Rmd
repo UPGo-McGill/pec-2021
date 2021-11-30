@@ -41,7 +41,7 @@ options(tinytex.verbose = TRUE)
 
 ```
 
-**TKTK**
+**Regulating short-term accommodations**
 
 <br>
 
@@ -65,7 +65,7 @@ With the all-encompassing redistribution scenario, the 35,000 reserved nights (e
 
 ## 2 - Redistribute, towns only
 
-If the redistribution model were to occur only in towns, the 14,500 reserved nights ($5.5 million) directed to commercial STAs during the summer of 2021 could support 700 home sharers active for two to four weeks in the summer, for an average revenue of $8,000 per household. With the grandfathering of 61 valid second-home licenses in towns, the number of reserved nights being redistributed to households would be 8,600 ($2.4 million in revenue) to support 400 home sharers, each earning $6,000.
+If the redistribution model were to occur only in towns, the 14,500 reserved nights ($5.5 million) directed to commercial STAs during the summer of 2021 could support 700 home sharers active for two to four weeks in the summer, for an average revenue of $8,000 per household. With the grandfathering of 61 valid second-home licenses in towns, the number of reserved nights being redistributed to households would be 8,600 ($2.4 million in revenue) to support 400 home sharers, each earning $6,000. It is important to note that, in both situations where STA regulations were applied in towns only, the likely effect will be to displace most STA to the townships since the barriers to operate would be lower than in towns. 
 
 ## 3 - Restrict, towns + townships
 
@@ -74,12 +74,6 @@ Depending on which level of STA activity the county would like to sustain, a cer
 ## 4 - Restrict, towns only
 
 If the restriction was to occur in towns only, there would need to be 300 STA licenses to allow 2019 levels, and 200 licenses to maintain 2021 levels.
-
-They want it to be a business license. They want to be able to put conditions on STR, which is different if it’s just zoning. Context of regulation: vast demand from outside of town. Try to shift STR to owner-occupied. Vast incentive for locals to leave the summer and rent STR for the summer. Get the vast demand in places where they operate sporadically. Very strict no secondary home STR. These business permits are only open for residents. If your legal residence isn’t that home, then you’re not allowed. Creating incentives for local to rent their place in summer. __Maybe different geographically: towns (principal residents) vs countryside (run wild).__
-
-## Regulation option 3
-Only able to get a business licence for principal residents all over. Grand fathering for people that already have a license for their second residence. 
-
 
 ## Short-term incentive program
 
@@ -403,5 +397,9 @@ surplus_rent %>%
 While average rents are similar across the county, monthly STA revenue differs from a location to another. The only ward with substantially higher rents than average is Wellington. Figure \@ref(fig:fig-6-1) shows the average amount of monthly subsidy that would be necessary to turn a STA back onto the LTR market. On average, this short-term incentive program would cost the county `r subisdy_wellington` per unit in Wellington, and `r subisdy_outside_wellington` in the rest of the county. Such a subsidy would entail a great financial commitment for the county, and most likely not the most cost effective option to regulating the STA market. The main reason as to why the rent supplement option would not be viable in Prince Edward County is because the revenues earned by STA listing are much higher than average rents, creating large gaps to cover. In sum, a rent supplement option would not be sustainable nor preferable in the county.
 
 ## Concluding remarks on STA regulation
+
+Other regulatory pathways were analyzed for the reinstatement of STA regulations in Prince Edward County. Regulating STA through land-use is a popular option in municipalities that have clear land use designations within their territory, such as commercial and residential zones. Full-time STAs are then allowed only in commercial zones, given their commercially-oriented nature. Such regulations are however more appropriate for urban setting with significant distinct zones, which is not necessarily the case in all Prince Edward County wards.
+
+In all, STA regulation enables the monitoring and control of STA activity in the county. However, as seen in this report, the secondary home market also plays a big role in the current housing situation in Prince Edward County. The volume and sale prices of homes in the past two years combined with the declining percentage of sales associated to new STA listings show that the pressure on the market can increasingly be attributed to second homes. Since the simplest substitute for a commercial STA is a second home, both the Redistribute and the Restrict regulatory options will likely increase second home supply. STA regulations is thus only one piece of the puzzle when it comes to housing availability and affordability in the county. In terms of managing secondary homes, there is unfortunately no magic bullet besides building more housing in typologies which are well-suited to local residents but less well-suited to second homes.
 
 \newpage
