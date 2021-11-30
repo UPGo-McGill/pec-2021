@@ -73,7 +73,7 @@ Depending on which level of STA activity the county would like to sustain, a cer
 
 ## 4 - Restrict, towns only
 
-If the restriction was to occur in towns only, there would need to be 
+If the restriction was to occur in towns only, there would need to be 300 STA licenses to allow 2019 levels, and 200 licenses to maintain 2021 levels.
 
 They want it to be a business license. They want to be able to put conditions on STR, which is different if it’s just zoning. Context of regulation: vast demand from outside of town. Try to shift STR to owner-occupied. Vast incentive for locals to leave the summer and rent STR for the summer. Get the vast demand in places where they operate sporadically. Very strict no secondary home STR. These business permits are only open for residents. If your legal residence isn’t that home, then you’re not allowed. Creating incentives for local to rent their place in summer. __Maybe different geographically: towns (principal residents) vs countryside (run wild).__
 
@@ -149,7 +149,7 @@ weighted.mean(rent_to_weight_mean$monthly_rent,
 
 ```
 
-Prior to changing regulations, PEC might be interested in a short-term incentive program to bring short-term rentals back to the longer-term market. A financial incentive can be given to STR hosts to change the market on which their housing units operate. We looked at how much a commercial STR made monthly in the last twelve months, compared to rent data in September 2021. As 3+ bedrooms units are over-represented on the STR, we looked at the weighted average of monthly STR revenue and rent. Commercial listings made a weighted average of `r avg_monthly_rev_LTM` a month, while the weighted average monthly rent was of `r avg_monthly_rent` in September. It represents a difference of `r var_rev_rent`.
+Another option that has been considered by municipalities in Canada (such as Toronto -  see Wachsmuth et al. 2021) and worldwide (deJong 2021) is a financial incentive in the form of a rent supplement given to STA operators to entice them to keep their STAs on the long-term rental market. This type of short-term rental management strategy was put forward since the pandemic, considering the number of tourist accommodations that had to return to long-term renting amidst the tourism collapse starting March 2020. We considered what rent supplements could mean as an option for Prince Edward County. A financial incentive could be given to STR hosts to bring STAs back onto the long-term rental market. This financial incentivee would need to be the equivalent of the difference between the average monthly STA revenue and the average Prince Edward County rent in order to be an appealing option for the hosts. To do so, we calculated monthly STA revenue average and average rents using September 2021 data. The averages were based on a weighted average proportional to the number of bedrooms found in both STAs and rental unis in the county. Commercial listings earned an average of `r avg_monthly_rev_LTM` a month, while the average monthly rent was of `r avg_monthly_rent` in September. It represents a difference of `r var_rev_rent` globally, with heightened differences in select wards (Figure \@ref(fig:fig-6-1)).
 
 ```{r on_water, cache = TRUE, cache.lazy = FALSE}
 
@@ -376,7 +376,7 @@ figure_6_1_fun()
 
 ```
 
-(ref:fig-6-1) _Average amount of monthly subsidy necessary to turn a STR to the LTR market_
+(ref:fig-6-1) _Average monthly subsidy required for transitioning a STA onto the long-term rental market_
 
 ``` {r short_term_incentive_2}
 
@@ -400,7 +400,8 @@ surplus_rent %>%
 
 ```
 
-While rents are similar across the county, monthly revenue in STR differ from a location to another. In fact, the great difference only occurs in Wellington.
-Figure \@ref(fig:fig-6-1) shows the average amount of monthly subsidy that would be necessary to turn a STR to the LTR market. On average, this short-term incentive program would cost the county `r subisdy_wellington` per unit in Wellington, and `r subisdy_outside_wellington` in the rest of the county. It does not make it much of a viable solution.
+While average rents are similar across the county, monthly STA revenue differs from a location to another. The only ward with substantially higher rents than average is Wellington. Figure \@ref(fig:fig-6-1) shows the average amount of monthly subsidy that would be necessary to turn a STA back onto the LTR market. On average, this short-term incentive program would cost the county `r subisdy_wellington` per unit in Wellington, and `r subisdy_outside_wellington` in the rest of the county. Such a subsidy would entail a great financial commitment for the county, and most likely not the most cost effective option to regulating the STA market. The main reason as to why the rent supplement option would not be viable in Prince Edward County is because the revenues earned by STA listing are much higher than average rents, creating large gaps to cover. In sum, a rent supplement option would not be sustainable nor preferable in the county.
+
+## Concluding remarks on STA regulation
 
 \newpage
