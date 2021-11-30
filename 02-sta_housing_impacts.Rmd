@@ -752,16 +752,16 @@ affordable_homeownership_1718 %>%
   set_names(c("Ward", "After-tax household income (2016)", 
               "Annual affordability gap (2017-2018)", 
               "Annual affordability gap (2020-2021)")) %>% 
-  kbl(caption = "Difference between income and affordable homeownership threshold (2017-2018 and 2020-2021)",
+  kbl(caption = "Annual affordability gap for homeowners (2017-2018 and 2020-2021)",
       align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") 
   
 ```
 
 
-## Being a renter in Prince Edward County
+## Renter affordability
 
-```{r para_7, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+```{r renter_afford, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 rent_sept <- qread("output/rent_sept.qs", nthreads = availableCores())
   
@@ -842,10 +842,10 @@ rent_diff_table <-
   rent_sept %>% 
   group_by(ward) %>% 
   summarize(sept_avg_rent = mean(rent)) %>% 
-  left_join(., EW_rent, by ="ward") %>% 
-  mutate(affordable_rent = (avg_hh_inc/12)*0.30,
+  left_join(EW_rent, by = "ward") %>% 
+  mutate(affordable_rent = (avg_hh_inc / 12) * 0.30,
          rent_diff = affordable_rent - sept_avg_rent) %>% 
-  mutate(ward = ifelse(ward == "Township", "Townships", ward)) %>% 
+  mutate(ward = if_else(ward == "Township", "Townships", ward)) %>% 
   select(ward, sept_avg_rent, avg_hh_inc, affordable_rent, rent_diff) %>% 
   arrange(rent_diff)
 
@@ -853,21 +853,25 @@ rent_diff_picton <-
   rent_diff_table %>% 
   filter(ward == "Picton") %>% 
   pull(rent_diff) %>% 
-  {. *-1} %>% 
+  {. * -1} %>% 
   scales::dollar(accuracy = 1)
 
 rent_diff_well <- 
   rent_diff_table %>% 
   filter(ward == "Wellington") %>% 
   pull(rent_diff) %>% 
-  {. *-1} %>% 
+  {. * -1} %>% 
   scales::dollar(accuracy = 1)
-  
-  
   
 ```
 
-``` {r tab-4-4, include = TRUE}
+The housing affordability challenges facing renters in Prince Edward County are different from those of homeowners. First of all, renters make up only 16.9% of all households in the County. However, in 2016 (prior to the enormous surge in housing costs), almost half (48.9%) of renters were in a situation of housing stress—nearly three times the equivalent 17.3% rate for homeowners. The ward with the most renter housing stress was Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the County calculated its rental vacancy rate to be 0.81%—far below the 3% considered a minimum for a healthy rental market (Prince Edward County 2019).
+
+As documented above, the County has experienced a housing demand spike during the pandemic, and this has affected rents as well as housing prices. According to figures collected by the Prince Edward County Affordable Housing Corporation, average rents increased by 52% from June 2020 to June 2021. In September 2021 the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedroom and three-bedroom units were `r avg_rent_two` and `r avg_rent_three`, respectively. The overall average County rent of `r avg_rent_pec_sept_2021` in September 2021 is nearly double the average rent of `r census_avg_rent` reported in the 2016 Census.
+
+The standard affordability threshold for renters is the same 30% shelter cost-income ratio. Using September 2021 average rents from Picton, Wellington, Bloomfield and the townships in comparison with after-tax household income from the 2016 Census, it is possible to estimate affordability thresholds for renters across the County. Table \@ref(tab:tab-2-3) summarizes these findings. The difference between affordable rents and actual average market rents is a highly conservative underestimate, because the after-tax household income figures used for this calculation include incomes from both owner and renter households. Renter households earn significantly less on average than owner households, meaning that the household income used for this calculation is drawn approximately 5/6 from (higher earning) homeowners and only 1/6 from (lower earning) renters. Even given this fact, in Picton the average after-tax household income (among all homeowners and renters) is not sufficient to affordably pay for the average rental apartment: renters spend on average `r rent_diff_picton` more on rent each month than the affordable rent threshold. This figure in Wellington is `r rent_diff_well`. 
+
+``` {r tab-2-3, include = TRUE}
 
 library(kableExtra)
 
@@ -876,18 +880,23 @@ rent_diff_table %>%
          avg_hh_inc = scales::dollar(avg_hh_inc, 10),
          affordable_rent = scales::dollar(affordable_rent, 1),
          rent_diff = scales::dollar(rent_diff, 1)) %>% 
-  set_names(c("Ward", "Average rent, Sept. 2021", "After-tax household income, 2016 census", 
-              "Affordable rent threshold", "Difference with affordable rent threshold")) %>% 
-  kbl(caption = "Difference between Sept. 2021 average rents and affordable rent thresholds",
+  select(ward, sept_avg_rent, rent_diff) %>%
+  set_names(c("Ward", "Average rent (Sept. 2021)", "Monthly affordability gap")) %>% 
+  kbl(caption = "Monthly affordability gap for renters (Sept. 2021)",
       align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") 
   
 ```
 
-The renter situation in Prince Edward County is different than that of homeowners. First of all, renters make up only 16.9% of all households in the County. However, almost half (48.9%) of renters are in a situation of housing stress. The ward with the most renters' housing stress is Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the calculated rental vacancy rate was 0.81% (Prince Edward County 2019). In the past years, renters have experienced tightening conditions in part due to the increased competition renters have with seasonal tourism. The pressure in the homeownership market has put increasing pressure on the County's rental stock. There have been accounts of bidding wars in the rental market in response to the limited units available. The workforce is struggling to find rents that fit their budget, even with hourly pays of 20 to $25 per hour. The pandemic has only heightened this situation, with the largest year-over-year increase in average rent occurring from June 2020 to June 2021, with a 52% increase. As of September 2021, the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedrooms and three-bedrooms were `r avg_rent_two` and `r avg_rent_three`, respectively. The total average rent of `r avg_rent_pec_sept_2021 ` in September 2021 stands in great contrast with the 2016 census' registered average rent of `r census_avg_rent`.
 
-In order to consider rent as affordable, a given household must not spend more than 30% of their income on shelter costs. With collected rents from Picton, Wellington, Bloomfield and the townships, it was possible to establish the affordability thresholds for renters per geographic locations. Table \@ref(tab:tab-4-4) summarizes these findings. In Picton, the average after-tax household income is not sufficient to make rent affordable in Prince Edward County: renters spend on average `r rent_diff_picton` more on rent than the affordable rent threshold. This number in Wellington is `r rent_diff_well`. The difference between affordable rents and actual average market rents needs to be taken as conservative estimates. The after-tax household income used for this calculation includes incomes from both owner and renter households. Renter households earn less on average than owner households, meaning that the household income used for this calculation might be inflated and overrepresented by that of the homeowners, which are also a majority of households in Prince Edward County.
+## The impact of STAs on housing affordability
 
+Having established the broad contours of the housing affordability challenges facing Prince Edward County over the last several years, we now address the specific role of STAs in creating those challenges.
+
+
+Prince Edward County’s (PEC) housing market has been under considerable stress in the past years, with housing prices and rents rising, and rental vacancy rates falling. These are symptoms of a market where the supply of housing is insufficient to meet demand. One possible explanation for both the insufficient supply and elevated demand for housing in PEC is the growth in short-term rentals. Tourists compete with residents for housing—adding demand to the local housing market—while landlords are able to shift their properties out of the conventional housing market to become dedicated STRs—reducing the supply of conventional housing. Research has found that renting a housing unit on the STR market frequently offers landlords greater potential revenue than conventional leases (Wachsmuth & Weisler 2018). Multiple studies have also found that Airbnb and other STR platforms increase housing costs (Barron, Kung, & Proserpio 2017; Horn & Merante 2017; Garcia-Lopez et al. 2019).
+
+One of the major considerations when gauging the impacts of short-term rentals (STRs) on a specific location, therefore, is the extent to which STRs are removing long-term housing from the market. This process can occur either directly, where tenants of a unit are evicted or not replaced at the end of a lease and the unit is converted to a STR, or indirectly by absorbing new construction or investment properties which otherwise would have gone onto the long-term market. In a highly seasonal market like PEC, we can expect a number of housing units dedicated to the STR market only in the summer months, and then rented monthly in the longer-term market, or occupied by its owner, during the low season. To obtain the exact number of units that have been occupied as STRs, landlords or units would need to be individually surveyed, which is unfeasible because STR hosts are mostly anonymous on major STR platforms such as Airbnb and VRBO. Instead, we use the daily activity of listings, alongside structural characteristics such as listing type and location, to estimate which listings are operating as dedicated STRs and are therefore not available as conventional long-term housing.
 
 
 
@@ -1138,9 +1147,6 @@ housing_loss_pct_bloomfield_2021 <-
 
 ## STR-induced housing loss
 
-Prince Edward County’s (PEC) housing market has been under considerable stress in the past years, with housing prices and rents rising, and rental vacancy rates falling. These are symptoms of a market where the supply of housing is insufficient to meet demand. One possible explanation for both the insufficient supply and elevated demand for housing in PEC is the growth in short-term rentals. Tourists compete with residents for housing—adding demand to the local housing market—while landlords are able to shift their properties out of the conventional housing market to become dedicated STRs—reducing the supply of conventional housing. Research has found that renting a housing unit on the STR market frequently offers landlords greater potential revenue than conventional leases (Wachsmuth & Weisler 2018). Multiple studies have also found that Airbnb and other STR platforms increase housing costs (Barron, Kung, & Proserpio 2017; Horn & Merante 2017; Garcia-Lopez et al. 2019).
-
-One of the major considerations when gauging the impacts of short-term rentals (STRs) on a specific location, therefore, is the extent to which STRs are removing long-term housing from the market. This process can occur either directly, where tenants of a unit are evicted or not replaced at the end of a lease and the unit is converted to a STR, or indirectly by absorbing new construction or investment properties which otherwise would have gone onto the long-term market. In a highly seasonal market like PEC, we can expect a number of housing units dedicated to the STR market only in the summer months, and then rented monthly in the longer-term market, or occupied by its owner, during the low season. To obtain the exact number of units that have been occupied as STRs, landlords or units would need to be individually surveyed, which is infeasible because STR hosts are mostly anonymous on major STR platforms such as Airbnb and VRBO. Instead, we use the daily activity of listings, alongside structural characteristics such as listing type and location, to estimate which listings are operating as dedicated STRs and are therefore not available as conventional long-term housing.
 
 ``` {r make_fig_2_10}
 
@@ -1307,7 +1313,7 @@ EW_housing_table %>%
 ```
 
 
-Table \@ref(tab:tab-4-1) summarizes STR-induced housing loss patterns by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
+Table \@ref(tab:tab-4-1-2) summarizes STR-induced housing loss patterns by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
 
 ``` {r tab-4-1-2, include = TRUE}
 
@@ -1408,6 +1414,153 @@ figure_2_12_fun()
 ```
 
 (ref:fig-2-12) _The percentage of housing units converted to dedicated STRs in PEC, by ward (L) and dissemination area (R)_
+
+
+
+
+
+
+
+## Sales
+
+
+```{r, include = T}
+
+start_reg <- as.Date("2019-11-04")
+end_reg <- as.Date("2020-09-04")
+start_mora <- as.Date("2020-09-05")
+end_mora <- as.Date("2021-06-22")
+
+STA <- qread(here("output", "/STA.qs"))
+
+total_licenses_all <- 
+  STA %>% 
+  st_drop_geometry() %>% 
+  nrow()
+
+# Get properties active during the period when the registration was into effect
+reg_property <- 
+  property %>% 
+  filter(scraped >= start_reg) %>% 
+  st_transform(32618)
+
+sold_before_created <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created) %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created <- 
+{sold_before_created / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+sold_before_created_covid <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created,
+         sale_date >= "2020-03-14") %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created_covid <- 
+{sold_before_created_covid / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+created_before_sale <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date >= created) %>% 
+  count(address) %>% 
+  nrow()
+
+total_sales <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  count(year) %>% 
+  set_names(c("year", "total"))
+
+survival_factor <- 
+  property %>% 
+  st_drop_geometry() %>% 
+  filter(scraped > created, str_starts(property_ID, "ab-")) %>% 
+  group_by(year_created = year(created)) %>% 
+  summarize(still_active = mean(scraped >= "2019-11-01")) %>% 
+  filter(year_created >= 2016)
+
+proportion_home_sales_STA <-
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  inner_join(STA, by = "address") %>% 
+  filter(sale_date <= created) %>% 
+  mutate(year = year(sale_date)) %>% 
+  count(year) %>% 
+  left_join(total_sales, by = "year") %>% 
+  mutate(perc = n/total,
+         perc_adjusted = perc/(total_licenses_all/ reg_property %>% nrow())) %>% 
+  left_join(survival_factor, by = c("year" = "year_created")) %>% 
+  mutate(perc_adj_2 = perc_adjusted / still_active)
+
+```
+
+```{r make_fig_5_2}
+
+figure_2_13_fun <- function(regular = "", condensed = "") {
+
+proportion_home_sales_STA %>% 
+  mutate(perc_adjusted = perc_adjusted - perc,
+         perc_adj_2 = perc_adj_2 - perc_adjusted - perc) %>% 
+  select(year, perc, perc_adjusted, perc_adj_2) %>% 
+  pivot_longer(c(perc:perc_adj_2)) %>% 
+  mutate(name = case_when(
+    name == "perc" ~ "Direct matches",
+    name == "perc_adjusted" ~ "Inferred from registration rate",
+    name == "perc_adj_2" ~ "Inferred from listing attrition")) %>% 
+  mutate(name = factor(name, levels = c("Direct matches", 
+                                        "Inferred from registration rate",
+                                        "Inferred from listing attrition"))) %>% 
+  ggplot() +
+  geom_col(aes(x = year, y = value, fill = name), 
+           position = position_stack(reverse = TRUE)) +
+  scale_x_continuous(name = NULL, breaks = 2016:2021) +
+  scale_y_continuous(name = NULL, breaks = c(0.1, 0.2, 0.3, 0.4, 0.5), 
+                     label = scales::percent) +
+  scale_fill_manual(name = NULL, values = col_palette[c(6, 1, 4)]) +
+  theme_minimal() +
+  theme(panel.grid.minor.x = element_blank(), legend.position = "bottom")
+  
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_13.pdf"), 
+         plot = figure_2_13_fun("Futura", "Futura Condensed"), 
+         width = 9, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_13.pdf"))
+}
+
+```
+
+
+``` {r fig-2-13, include = TRUE, fig.cap = '(ref:fig-2-13)', fig.align = "center"}
+
+figure_2_13_fun()
+
+```
+(ref:fig-2-13) _TKTK_
+
+
+
+
+
+
 
 
 
