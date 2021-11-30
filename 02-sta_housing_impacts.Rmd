@@ -602,8 +602,7 @@ multiple_sales |>
 
 ## Homeownership affordability
 
-The housing sales trends described above tell only half the story of homeownership affordability in Prince Edward County. The other half is the ability of County residents to afford elevated housing prices. The most recent reliable data on Canadian incomes and housing affordability comes from the 2016 Census, which means that it will not have captured changes in income or in housing costs in the last five years. Given the incredibly rapid increase in housing prices during that period, it is important to 
-
+The housing sales trends described above tell only half the story of homeownership affordability in Prince Edward County. The other half is the ability of County residents to afford elevated housing prices. The most recent reliable data on Canadian incomes and housing affordability comes from the 2016 Census, which means that it will not have captured changes in income or—more importantly—the incredibly rapid increase in housing prices over the last five years.
 
 ```{r owner_calcs, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -611,83 +610,129 @@ sale_price_by_ward <-
   home_sales %>% 
   filter(sale_date >= "2020-01-01") %>% 
   st_drop_geometry() %>% 
-  left_join(., EW, by = "ward") %>% 
+  left_join(EW, by = "ward") %>% 
   filter(!is.na(ward)) %>% 
   st_as_sf() %>% 
   group_by(ward) %>% 
-  summarize(avg_sale_price_2021 = mean(sale_price, na.rm=TRUE))
+  summarize(avg_sale_price_2021 = mean(sale_price, na.rm = TRUE))
 
 sale_price_2020_2017 <- 
   home_sales %>% 
-  filter(sale_date >="2017-01-01", sale_date <= "2018-12-31") %>% 
+  filter(sale_date >= "2017-01-01", sale_date <= "2018-12-31") %>% 
   st_drop_geometry() %>% 
-  left_join(., EW, by = "ward") %>% 
+  left_join(EW, by = "ward") %>% 
   filter(!is.na(ward)) %>% 
   st_as_sf() %>% 
   group_by(ward) %>% 
-  summarize(avg_sale_price_1718 = mean(sale_price, na.rm=TRUE)) %>%
+  summarize(avg_sale_price_1718 = mean(sale_price, na.rm = TRUE)) %>%
   st_drop_geometry() %>% 
-  left_join(., sale_price_by_ward, by = "ward") %>% 
+  left_join(sale_price_by_ward, by = "ward") %>% 
   st_as_sf()
 
-#https://www.wallstreetmojo.com/mortgage-formula/
+# https://www.wallstreetmojo.com/mortgage-formula/
 
 affordable_homeownership_2021 <- 
   sale_price_2020_2017 %>% 
   st_drop_geometry() %>% 
-  mutate(downpayment = avg_sale_price_2021*0.2,
-         P = avg_sale_price_2021 - downpayment,
-         amortization = 25,
+  mutate(down_pay = avg_sale_price_2021*0.2,
+         P = avg_sale_price_2021 - down_pay,
+         amort = 25,
          mortgage_rate = 0.0175) %>% 
-  mutate(r = mortgage_rate/12,
-         n = amortization*12) %>% 
-  mutate(monthly_mortgage_payments = P*r*(((1+r)^n)
-                                          /
-                                          (((1+r)^n)-1)
-                                          )
-         ) %>% 
-  mutate(maintenance_cost = 700,
-         total_mortgage_payments = (monthly_mortgage_payments+maintenance_cost)*12,
-         affordable_income_2021 = total_mortgage_payments/0.3) %>% 
-  left_join(., st_drop_geometry(EW_housing) %>% select(ward, at_hh_inc), by="ward") %>% 
-  mutate(diff_affordable_real_2021 = at_hh_inc-affordable_income_2021) %>% 
+  mutate(r = mortgage_rate / 12,
+         n = amort * 12) %>% 
+  mutate(monthly_payments = P * r * (((1 + r) ^ n) / (((1 + r) ^ n) - 1))) %>% 
+  mutate(maintenance = 700,
+         total_payments = (monthly_payments + maintenance) * 12,
+         affordable_income_2021 = total_payments / 0.3) %>% 
+  left_join(st_drop_geometry(EW_housing) %>% 
+              select(ward, at_hh_inc), by = "ward") %>% 
+  mutate(diff_affordable_real_2021 = at_hh_inc - affordable_income_2021) %>% 
   select(ward, avg_sale_price_2021, at_hh_inc, diff_affordable_real_2021)
 
 affordable_homeownership_1718 <- 
   sale_price_2020_2017 %>% 
   st_drop_geometry() %>% 
-  mutate(downpayment = avg_sale_price_1718*0.2,
-         P = avg_sale_price_1718 - downpayment,
-         amortization = 25,
+  mutate(down_pay = avg_sale_price_1718*0.2,
+         P = avg_sale_price_1718 - down_pay,
+         amort = 25,
          mortgage_rate = 0.0175) %>% 
-  mutate(r = mortgage_rate/12,
-         n = amortization*12) %>% 
-  mutate(monthly_mortgage_payments = P*r*(((1+r)^n)
-                                          /
-                                            (((1+r)^n)-1)
-  )
-  ) %>% 
-  mutate(maintenance_cost = 700,
-         total_mortgage_payments = (monthly_mortgage_payments+maintenance_cost)*12,
-         affordable_income_1718 = total_mortgage_payments/0.3) %>% 
-  left_join(., st_drop_geometry(EW_housing) %>% select(ward, at_hh_inc), by="ward") %>% 
-  mutate(diff_affordable_real_1718 = at_hh_inc-affordable_income_1718) %>% 
+  mutate(r = mortgage_rate / 12,
+         n = amort * 12) %>% 
+  mutate(monthly_payments = P * r * (((1 + r) ^ n) / (((1 + r) ^ n) - 1))) %>% 
+  mutate(maintenance = 700,
+         total_payments = (monthly_payments + maintenance) * 12,
+         affordable_income_1718 = total_payments / 0.3) %>% 
+  left_join(st_drop_geometry(EW_housing) %>% 
+              select(ward, at_hh_inc), by = "ward") %>% 
+  mutate(diff_affordable_real_1718 = at_hh_inc - affordable_income_1718) %>% 
   select(ward, avg_sale_price_1718, at_hh_inc, diff_affordable_real_1718)
 
 diff_picton_1718 <- 
   affordable_homeownership_1718 %>% 
-  filter(ward=="Picton") %>% 
+  filter(ward == "Picton") %>% 
   pull(diff_affordable_real_1718) %>% 
-  {.*-1} %>% 
+  {. * -1} %>% 
   scales::dollar(10) 
 
 ```
 
-Based on the average sale prices for the past years, it was possible to estimate the average household income it would take to become a homeowner in Prince Edward County in an affordable manner. We completed the exercise using average sale prices for the 2017-2018 and 2020-2021 periods to highlight the recent market changes in the county. The calculations were based on a 25-year mortgage at a 1.75% interest rate and a 20% mortgage down payment (although 20% down payment can be considered a rare feat, with most people having small down payments and needing to insure their mortgages). Monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) were calculated to provide a yearly homeownership total costs, from which an affordable homeownership threshold was determined. The affordable homeownership threshold represents the minimum household income required to have housing costs remain at 30% of income or below. These thresholds for both 2017-2018 and 2020-2021 were then compared to the 2016 census after-tax household income, by ward (2016 being the most recent data available). The differences between the affordable thresholds and the actual household incomes are displayed in Table \@ref(tab:tab-2-2). We can see that, for both time periods, the average after-tax household income in each ward is not sufficient to make homeownership affordable in the County (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period, there are five wards for which households would require more than $50,000 to make current homeownership market conditions affordable for them, whereas the highest difference in 2017-2018 was Picton with `r diff_picton_1718`.
+``` {r make_fig_2_5}
 
+affordability_map_data <- 
+  affordable_homeownership_1718 %>% 
+  left_join(affordable_homeownership_2021 %>% 
+              select(-at_hh_inc), by = "ward") %>% 
+  select(ward, avg_sale_price_1718, avg_sale_price_2021,
+         at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) |> 
+  pivot_longer(c(diff_affordable_real_1718, diff_affordable_real_2021),
+               names_to = "years") |> 
+  mutate(years = if_else(str_detect(years, "1718"), "2017-2018", "2020-2021"))
 
+figure_2_5_fun <- function(regular = "", condensed = "") {
+  
+EW |> 
+  left_join(affordability_map_data) |> 
+  ggplot() +
+  geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(aes(fill = value), colour = "white", size = 0.3) +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  facet_wrap(vars(years)) +
+  scale_fill_steps2(low = col_palette[6], high = col_palette[3], 
+                    limits = c(-90000, 90000), breaks = 30000 * -3:3,
+                    labels = scales::dollar)  +
+  guides(fill = guide_colourbar(title = "Average\naffordability gap",
+                                title.vjust = 1)) + 
+  gg_bbox(EW) +
+  theme_void() +
+  theme(text = element_text(family = regular, face = "plain"),
+        legend.title = element_text(family = regular, face = "bold",
+                                    size = 7),
+        legend.title.align = 0.9,
+        legend.text = element_text(family = regular, size = 4),
+        panel.border = element_rect(colour = "white", size = 2),
+        strip.text = element_text(face = "bold"),
+        legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
 
+}
 
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_5.pdf"), 
+         plot = figure_2_5_fun(), 
+         width = 8, height = 3.5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
+}
+
+```
+
+Instead, we can look at average sale prices and establish at what income levels these sale prices would be affordable, then compare those levels with actual 2016 incomes in Prince Edward County. We make the highly conservative assumption that home buyers receive 25-year mortgages at a 1.75% rate and with a 20% down payment. We then calculate monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) for homes sales from 2017-2018 and 2020-2021, and establish what income level would be necessary to keep those costs under 30% of income. We compare these income levels to 2016 after-tax household income, grouped by electoral ward. The differences between the affordable thresholds and the actual household incomes are displayed in Figure \@ref(fig:fig-2-5) and Table \@ref(tab:tab-2-2). For both time periods, the average after-tax household income in each ward is not sufficient to afford homeownership (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period the situation is much worse, however; there are five wards for which households, on average, would require more than $50,000 in additional after-tax income to make homeownership affordable given current market conditions. The highest difference in 2017-2018, meanwhile, was `r diff_picton_1718` in Picton.
+
+``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
+
+figure_2_5_fun()
+
+```
+(ref:fig-2-5) _Average gap between actual after-tax income and income necessary to afford the average house_
 
 ``` {r tab-2-2, include = TRUE}
 
@@ -703,17 +748,18 @@ affordable_homeownership_1718 %>%
          diff_affordable_real_1718 = scales::dollar(diff_affordable_real_1718, 10),
          diff_affordable_real_2021 = scales::dollar(diff_affordable_real_2021, 10)) %>% 
   arrange(desc(diff_affordable_real_2021)) %>% 
-  set_names(c("Ward", "Average sale price, 2017-2018", "Average sale price, 2020-2021", 
-              "After-tax household income, 2016 census", "Difference with affordable income threshold, 2017-2018", 
-              "Difference with affordable income threshold, 2020-2021")) %>% 
-  kbl(caption = "Difference between household incomes and affordable homeownership threshold, for 2017-2018 and 2020-2021",
+  select(ward, at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) %>%
+  set_names(c("Ward", "After-tax household income (2016)", 
+              "Annual affordability gap (2017-2018)", 
+              "Annual affordability gap (2020-2021)")) %>% 
+  kbl(caption = "Difference between income and affordable homeownership threshold (2017-2018 and 2020-2021)",
       align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") 
   
 ```
 
 
-# Being a renter in Prince Edward County
+## Being a renter in Prince Edward County
 
 ```{r para_7, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
@@ -837,64 +883,6 @@ rent_diff_table %>%
   kable_styling(latex_options="scale_down") 
   
 ```
-
-``` {r make_fig_2_8}
-
-affordability_map_data <- 
-  affordable_homeownership_1718 %>% 
-  left_join(., affordable_homeownership_2021 %>% select(-at_hh_inc), by = "ward") %>% 
-  select(ward, avg_sale_price_1718, avg_sale_price_2021,
-         at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) |> 
-  pivot_longer(c(diff_affordable_real_1718, diff_affordable_real_2021),
-               names_to = "years") |> 
-  mutate(years = if_else(str_detect(years, "1718"), "2017-2018", "2020-2021"))
-
-figure_2_8_fun <- function(regular = "", condensed = "") {
-  
-EW |> 
-  left_join(affordability_map_data) |> 
-  ggplot() +
-  geom_sf(data = province, colour = "transparent", fill = "grey93") +
-  geom_sf(aes(fill = value), colour = "white", size = 0.1) +
-  geom_sf(data = water, fill = "white", colour = "transparent") +
-  facet_wrap(vars(years)) +
-  scale_fill_steps2(low = col_palette[6],
-                    high = col_palette[3], limits = c(-90000, 90000),
-                    breaks = 10000 * c(-9, -6, -3, 0, 3, 6, 9),
-                    labels = scales::dollar)  +
-  guides(fill = guide_colourbar(title = "Average\naffordability gap",
-                                title.vjust = 1)) + 
-  gg_bbox(EW) +
-  theme_void() +
-  theme(text = element_text(family = regular, face = "plain"),
-        legend.title = element_text(family = regular, face = "bold",
-                                    size = 7),
-        legend.title.align = 0.9,
-        legend.text = element_text(family = regular, size = 5),
-        panel.border = element_rect(colour = "white", size = 2),
-        strip.text = element_text(face = "bold"),
-        legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_8.pdf"), 
-         # plot = figure_1_2_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_8_fun(), 
-         width = 8, height = 3.5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_8.pdf"))
-}
-
-```
-
-
-``` {r fig-2-8, include = TRUE, fig.cap = '(ref:fig-2-8)', fig.align = "center"}
-
-figure_2_8_fun()
-
-```
-
 
 The renter situation in Prince Edward County is different than that of homeowners. First of all, renters make up only 16.9% of all households in the County. However, almost half (48.9%) of renters are in a situation of housing stress. The ward with the most renters' housing stress is Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the calculated rental vacancy rate was 0.81% (Prince Edward County 2019). In the past years, renters have experienced tightening conditions in part due to the increased competition renters have with seasonal tourism. The pressure in the homeownership market has put increasing pressure on the County's rental stock. There have been accounts of bidding wars in the rental market in response to the limited units available. The workforce is struggling to find rents that fit their budget, even with hourly pays of 20 to $25 per hour. The pandemic has only heightened this situation, with the largest year-over-year increase in average rent occurring from June 2020 to June 2021, with a 52% increase. As of September 2021, the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedrooms and three-bedrooms were `r avg_rent_two` and `r avg_rent_three`, respectively. The total average rent of `r avg_rent_pec_sept_2021 ` in September 2021 stands in great contrast with the 2016 census' registered average rent of `r census_avg_rent`.
 
