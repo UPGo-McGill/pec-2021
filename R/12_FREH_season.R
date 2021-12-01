@@ -44,7 +44,8 @@ fun_seasonal_FREH <- function(start_date, end_date) {
       filter(date >= start_date + years(i-1), 
              date < end_date + years(i-1)) %>% 
       group_by(property_ID) %>% 
-      summarize(max_days = as.numeric((max(date)-min(date))))
+      summarize(max_days = as.numeric((max(date)-min(date)))) %>% 
+      filter(max_days >= as.numeric(end_date - start_date)/2)
     
     props <- 
       daily %>% 
@@ -52,7 +53,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
              listing_type == "Entire home/apt",
              date >= start_date + years(i-1), 
              date < end_date + years(i-1)) %>% 
-      left_join(total_days, by = "property_ID") %>% 
+      inner_join(total_days, by = "property_ID") %>% 
       group_by(property_ID) %>% 
       filter(sum(status %in% c("A", "R")) >= max_days*0.75,
              sum(status == "R") >= max_days*0.25) %>% 
@@ -81,7 +82,8 @@ fun_seasonal_FREH <- function(start_date, end_date) {
       filter(date >= end_date + years(i-1), 
              date < start_date + years(i)) %>% 
       group_by(property_ID) %>% 
-      summarize(max_days = as.numeric((max(date)-min(date))))
+      summarize(max_days = as.numeric((max(date)-min(date)))) %>% 
+      filter(max_days >= as.numeric(end_date - start_date)/2)
     
     props <-
       daily %>% 
@@ -89,7 +91,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
              listing_type == "Entire home/apt",
              date >= end_date + years(i-1), 
              date < start_date + years(i)) %>% 
-      left_join(total_days, by = "property_ID") %>% 
+      inner_join(total_days, by = "property_ID") %>% 
       group_by(property_ID) %>% 
       filter(sum(status %in% c("A", "R")) >= max_days*0.75,
              sum(status == "R") >= 7) %>% 
@@ -140,7 +142,8 @@ fun_seasonal_FREH <- function(start_date, end_date) {
       filter(date >= start_date + years(i), 
              date < end_date + years(i)) %>% 
       group_by(property_ID) %>% 
-      summarize(max_days = as.numeric((max(date)-min(date))))
+      summarize(max_days = as.numeric((max(date)-min(date)))) %>% 
+      filter(max_days >= as.numeric(end_date - start_date)/2)
     
     props <- 
       daily %>% 
@@ -148,7 +151,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
              listing_type == "Entire home/apt",
              date >= start_date + years(i), 
              date < end_date + years(i)) %>% 
-      left_join(total_days, by = "property_ID") %>% 
+      inner_join(total_days, by = "property_ID") %>% 
       group_by(property_ID) %>% 
       filter(sum(status %in% c("A", "R")) >= max_days*0.75,
              sum(status == "R") >= max_days*0.25) %>% 
@@ -157,7 +160,7 @@ fun_seasonal_FREH <- function(start_date, end_date) {
     
     odd_nb <- which(1:(nb_years*2) %% 2  == 1)[-1]
     
-    seasons_list[[odd_nb[i]]] <- 
+    seasons_list[[odd_nb[i]]] <-
       daily %>% 
       filter(property_ID %in% props,
              date >= start_date + years(i), 
