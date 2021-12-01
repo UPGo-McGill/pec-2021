@@ -725,7 +725,7 @@ if (build_figures) {
 
 ```
 
-Instead, we can look at average sale prices and establish at what income levels these sale prices would be affordable, then compare those levels with actual 2016 incomes in Prince Edward County. We make the highly conservative assumption that home buyers receive 25-year mortgages at a 1.75% rate and with a 20% down payment. We then calculate monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) for homes sales from 2017-2018 and 2020-2021, and establish what income level would be necessary to keep those costs under 30% of income. We compare these income levels to 2016 after-tax household income, grouped by electoral ward. The differences between the affordable thresholds and the actual household incomes are displayed in Figure \@ref(fig:fig-2-5) and Table \@ref(tab:tab-2-2). For both time periods, the average after-tax household income in each ward is not sufficient to afford homeownership (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period the situation is much worse, however; there are five wards for which households, on average, would require more than $50,000 in additional after-tax income to make homeownership affordable given current market conditions. The highest difference in 2017-2018, meanwhile, was `r diff_picton_1718` in Picton.
+Instead, we can look at average sale prices and establish at what income levels these sale prices would be affordable, then compare those levels with actual 2016 incomes in Prince Edward County. We make the highly conservative assumption that home buyers receive 25-year mortgages at a 1.75% rate and with a 20% down payment. We then calculate monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) for homes sales from 2017-2018 and 2020-2021, and establish what income level would be necessary to keep those costs under 30% of income. We compare these income levels to 2016 after-tax household income, grouped by electoral ward. The differences between the affordable thresholds and the actual household incomes are displayed in Figure \@ref(fig:fig-2-5) and Table \@ref(tab:tab-2-2). For both time periods, the average after-tax household income in each ward is not sufficient to afford homeownership (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period the situation is much worse; there are five wards for which households, on average, would require more than $50,000 in additional after-tax income to make homeownership affordable given current market conditions. The highest difference in 2017-2018, meanwhile, was `r diff_picton_1718` in Picton.
 
 ``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
 
@@ -900,10 +900,32 @@ One of the major considerations when gauging the impacts of short-term rentals (
 
 ``` {r make_fig_2_6}
 
+full_time_listings <- qread(file = "output/full_time_listings.qs")
+
 figure_2_6_fun <- function(regular = "", condensed = "") {
   
-  seasonal_FREH %>% 
-    ggplot() +
+full_time_listings |> 
+  mutate(code = case_when(
+    year_season == "Winter 2017" ~ 1,
+    year_season == "Summer 2018" ~ 2,
+    year_season == "Winter 2018" ~ 3,
+    year_season == "Summer 2019" ~ 4,
+    year_season == "Winter 2019" ~ 5,
+    year_season == "Summer 2020" ~ 6,
+    year_season == "Winter 2020" ~ 7,
+    year_season == "Summer 2021" ~ 8)) |> 
+  group_by(property_ID) |> 
+  mutate(full_time = (code + 1) %in% code | (code - 1) %in% code) |> 
+  ungroup() |> 
+  count(year_season, full_time) |> 
+  mutate(season = case_when(
+    full_time ~ "Year-round",
+    TRUE ~ str_remove(year_season, ' \\d{4}')
+  )) |> 
+  mutate(year_season = factor(year_season, levels = c(
+    "Winter 2017", "Summer 2018", "Winter 2018", "Summer 2019", "Winter 2019",
+    "Summer 2020", "Winter 2020", "Summer 2021"))) |> 
+  ggplot() +
     geom_bar(aes(year_season, n, fill = season), stat= "identity")+
     theme(plot.title = element_text(size=10),
           legend.title = element_blank())+
@@ -936,34 +958,50 @@ if (build_figures) {
 ```{r FREH_seasonal}
 
 # FREH summer 2019
-summer_FREH_avg_pre <- 
-  seasonal_FREH %>% 
-  filter(year_season == "Summer 2019") %>% 
-  tally(n) |> 
-  pull() %>% 
+summer_FREH_2019 <- 
+  full_time_listings |> 
+  filter(year_season == "Summer 2019") |> 
+  nrow() |> 
   round(-1)
 
-# How many summer FREH / all dwellings
-summer_plateau_on_dwellings <- 
-{summer_FREH_avg_pre / sum(EW$dwellings)} %>% 
+# FREH summer 2021
+summer_FREH_2021 <- 
+  full_time_listings |> 
+  filter(year_season == "Summer 2021") |> 
+  nrow() |> 
+  round(-1)
+
+# Pct summer 2019
+summer_FREH_pct_2019 <- 
+{summer_FREH_2019 / sum(EW$dwellings)} %>% 
   scales::percent(0.1)
 
-# FREH summer seasons
-summer_FREH_avg_2021 <- 
-  seasonal_FREH %>% 
-  filter(year_season == "Summer 2021") %>% 
-  tally(n) %>% 
-  pull() %>% 
-  round(-1)
+# Pct summer 2021
+summer_FREH_pct_2021 <- 
+{summer_FREH_2021 / sum(EW$dwellings)} %>% 
+  scales::percent(0.1)
 
-# How many summer FREH / all dwellings
-summer_2021_on_dwellings <- 
-{summer_FREH_avg_2021 / sum(EW$dwellings)} %>% 
+# Pct summer 2019 Bloomfield
+summer_FREH_pct_bloomfield_2019 <- 
+  full_time_listings %>%
+  filter(year_season == "Summer 2019",
+         property_ID %in% property[property$ward == "Bloomfield",]$property_ID) %>%
+  nrow() %>%
+  {. / EW[EW$ward == "Bloomfield",]$dwellings} %>%
   scales::percent(0.1)
   
+# Pct summer 2021 Bloomfield
+summer_FREH_pct_bloomfield_2021 <- 
+  full_time_listings %>%
+  filter(year_season == "Summer 2021",
+         property_ID %in% property[property$ward == "Bloomfield",]$property_ID) %>%
+  nrow() %>%
+  {. / EW[EW$ward == "Bloomfield",]$dwellings} %>%
+  scales::percent(0.1)
+
 ```
 
-We estimate full-time STA status by observing the activity of each entire-home STA during the high season (May to September) and the low season (October to April), and identifying all the listings which were available for reservations at least 75% of the total time period. This forms the pool of listings which are highly available for a given season, and therefore likely to be dedicated STAs. We then further refine this calculation by discarding any listing that was not actually reserved at least 25% of the total time period in the high season, or at least seven nights in the low season. Figure \@ref(fig:fig-2-6) shows the number of these properties active each season since Winter 2017, further distinguishing between properties which are full-time year-round (shown in green), full-time only in the summer (shown in orange), and full-time only in the winter (shown in blue). The figure reveals significant seasonal variation, with the pre-Covid high seasons seeing nearly twice the number of dedicated STAs in operation as the low seasons. The number of full-time STAs was `r summer_FREH_avg_pre` in Summer 2019, which was `r summer_plateau_on_dwellings` of all dwellings in Prince Edward County. The figure also shows a major impact from the Covid-19 pandemic; Summer 2020 saw roughly the same number of full-time STA operations as Winter 2018, although Summer 2021 indicates that the full-time STA market is expanding again, with `r summer_FREH_avg_2021` dedicated STAs in operation. This is `r summer_2021_on_dwellings` of all dwellings in Prince Edward County which were operating as full-time STAs in the past summer.
+We estimate full-time STA status by observing the activity of each entire-home STA during the high season (May to September) and the low season (October to April), and identifying all the listings which were available for reservations at least 75% of the total time period. This forms the pool of listings which are highly available for a given season, and therefore likely to be dedicated STAs. We then further refine this calculation by discarding any listing that was not actually reserved at least 25% of the total time period in the high season, or at least seven nights in the low season. Figure \@ref(fig:fig-2-6) shows the number of these properties active each season since Winter 2017, further distinguishing between properties which are full-time year-round (shown in green), full-time only in the summer (shown in orange), and full-time only in the winter (shown in blue). The figure reveals significant seasonal variation, with the pre-Covid high seasons seeing nearly twice the number of dedicated STAs in operation as the low seasons. The peak number of full-time STAs was `r summer_FREH_2019` in Summer 2019. The figure also shows a major impact from the Covid-19 pandemic; Summer 2020 saw roughly the same number of full-time STA operations as Winter 2018, although Summer 2021 indicates that the full-time STA market is expanding again, with `r summer_FREH_2021` dedicated STAs in operation.
 
 ``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
 
@@ -972,112 +1010,161 @@ figure_2_6_fun()
 ```
 (ref:fig-2-6) _Housing units operating on a full-time basis on the STA market of the Prince Edward County, per season_
 
-Figure \@ref(fig:fig-2-7) and Table \@ref(tab:tab-2-4) summarize STA-induced housing loss by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
+``` {r make_fig_2_7}
 
-``` {r tab-4-1-2, include = TRUE}
-
-library(kableExtra)
-
-EW_housing_table %>% 
-  summarize(
-    dwellings = sum(dwellings),
-    housing_loss_2019 = sum(housing_loss_2019),
-    housing_loss_2021 = sum(housing_loss_2021),
-    change_2019_2021 = (housing_loss_2021 - housing_loss_2019) / housing_loss_2019,
-    housing_loss_pct_2021 = housing_loss_2021 / dwellings) %>% 
-  mutate(ward = "PEC") %>% 
-  bind_rows(EW_housing_table) %>% 
-  relocate(ward) %>% 
-  select(-dwellings) %>% 
-  mutate(across(c(change_2019_2021, housing_loss_pct_2021), scales::percent, accuracy = 0.1)) %>%
-  arrange(desc(housing_loss_2021)) %>%
-  rename(Ward = ward,
-         `Housing loss (2021)` = housing_loss_2021,
-         `Housing loss (2019)` = housing_loss_2019,
-         `Growth 2019-2021 (%)` = change_2019_2021,
-         `% of housing lost (2021)` = housing_loss_pct_2021) %>% 
-  kbl(caption = "STR-induced housing loss by ward in PEC",
-      align = "lrrrr") %>%
-  kable_styling(latex_options = "scale_down") %>%
-  row_spec(1, background = paste0(col_palette[2], "50"))
-
-```
-
-``` {r make_fig_2_12}
-
-figure_2_12_fun <- function(regular = "", condensed = "") {
+figure_2_7_fun <- function(regular = "", condensed = "") {
   
-  left_map <- 
-    housing_loss_EW %>% 
-    filter(date=="2021") %>% 
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = housing_loss_pct), colour = "white") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_gradientn(colors = col_palette[c(4, 3, 5)], 
-                         na.value = "grey80",
-                         limits = c(0, 0.03), oob = scales::squish, 
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "% housing\nlost to STR",
-                                  title.vjust = 1)) + 
-    gg_bbox(housing_loss_DA) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold", 
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5))
-  
-  right_map <- 
-    housing_loss_DA %>% 
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = housing_loss_pct), colour = "transparent") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_gradientn(colors = col_palette[c(4, 3, 5)], 
-                         na.value = "grey80",
-                         limits = c(0, 0.05), oob = scales::squish, 
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "% housing\nlost to STR",
-                                  title.vjust = 1)) + 
-    gg_bbox(housing_loss_DA) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold", 
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5))
-  
-  left_map + right_map + plot_layout(guides = 'collect') & 
-    theme(legend.position = "bottom")
+property |> 
+  st_drop_geometry() |> 
+  select(property_ID, ward) |> 
+  right_join(full_time_listings) |> 
+  count(ward, year_season) |> 
+  filter(year_season %in% c("Summer 2019", "Summer 2021")) |> 
+  left_join(EW) |> 
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(aes(fill = n / dwellings), colour = "white", size = 0.3) +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  facet_wrap(vars(year_season)) +
+  scale_fill_stepsn(colors = col_palette[c(3, 4, 6)], na.value = "grey80",
+                    breaks = c(0, 0.02, 0.04, 0.06, 0.08, 0.1),
+                    limits = c(0, 0.1), oob = scales::squish, 
+                    labels = scales::percent)  +
+  guides(fill = guide_colourbar(title = "Full-time STAs\nas % of all housing",
+                                title.vjust = 1)) + 
+  gg_bbox(EW) +
+  theme_void() +
+  theme(text = element_text(family = regular, face = "plain"),
+        legend.title = element_text(family = regular, face = "bold",
+                                    size = 7),
+        legend.title.align = 0.9,
+        legend.text = element_text(family = regular, size = 4),
+        panel.border = element_rect(colour = "white", size = 2),
+        strip.text = element_text(face = "bold"),
+        legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
 
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_12.pdf"), 
-         plot = figure_2_12_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  ggsave(here("output", "figures", "figure_2_7.pdf"), 
+         plot = figure_2_7_fun(), 
+         width = 8, height = 3.5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_12.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_7.pdf"))
 }
 
 ```
 
-The `r housing_loss_2021` housing units taken off of PEC’s housing market in 2021 are `r housing_loss_pct_dwelling_2021` of the total amount of housing in the city, and this housing loss has been decentralized in all parts of the county. Figure \@ref(fig:fig-4-4) shows the proportion of each ward or dissemination area’s housing stock which was operated as a dedicated short-term rental in 2021. In Picton, `r housing_loss_pct_picton_2021` of all housing units were operating as dedicated STRs in 2021. The figure is `r housing_loss_pct_wellington_2021` for Wellington and `r housing_loss_pct_bloomfield_2021` for Bloomfield.
+Figure \@ref(fig:fig-2-7) and Table \@ref(tab:tab-2-4) summarize STA-induced housing loss by ward. They demonstrate both a wide amount of geographical variation in the intensity of full-time STAs and a generalized decline in full-time STAs across all areas during the pandemic. Across the entire County, the amount of housing operating as dedicated STAs declined from `r summer_FREH_pct_2019` in Summer 2019 to `r summer_FREH_pct_2021` in Summer 2021. Bloomfield had by far the highest percentage of housing units operating as dedicated STAs in both Summer 2019 (`r summer_FREH_pct_bloomfield_2019`) and Summer 2021 (`r summer_FREH_pct_bloomfield_2021`), albeit with low absolute unit counts since the village's population is so small.
 
+``` {r fig-2-7, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
 
-``` {r fig-2-12, include = TRUE, fig.cap = '(ref:fig-2-12)', fig.align = "center"}
+figure_2_7_fun()
 
-figure_2_12_fun()
+```
+(ref:fig-2-7) _The percentage of housing units operating as dedicated STAs, by ward_
+
+``` {r tab-2-4, include = TRUE}
+
+library(kableExtra)
+
+ward_table <- 
+  property |> 
+  st_drop_geometry() |> 
+  select(property_ID, ward) |> 
+  right_join(full_time_listings) |> 
+  count(ward, year_season) |> 
+  filter(year_season %in% c("Summer 2019", "Summer 2021")) |> 
+  left_join(EW) |> 
+  filter(year_season %in% c("Summer 2019", "Summer 2021")) |> 
+  select(ward, year_season, n, dwellings) |> 
+  pivot_wider(names_from = year_season, values_from = c(n)) |> 
+  rename(n_2019 = `Summer 2019`, n_2021 = `Summer 2021`)
+
+ward_table |> 
+  summarize(
+    ward = "Prince Edward County",
+    across(c(dwellings:n_2021), sum, na.rm = TRUE)) |> 
+  bind_rows(ward_table) |> 
+  filter(!is.na(ward)) |> 
+  mutate(
+    pct_2019 = scales::percent(n_2019 / dwellings, 0.1),
+    pct_2021 = scales::percent(n_2021 / dwellings, 0.1),
+    n_2019 = round(n_2019, -1),
+    n_2021 = round(n_2021, -1)) |> 
+  select(ward, n_2019, pct_2019, n_2021, pct_2021) |> 
+  set_names(c("Ward", "Full-time STAs (Summer 2019)", 
+              "As % of housing (Summer 2019)",
+              "Full-time STAs (Summer 2021)", 
+              "As % of housing (Summer 2021)")) |> 
+  kbl(caption = "Full-time STAs by ward",
+      align = "lrrrrr") |>
+  kable_styling(latex_options = "scale_down") |> 
+  row_spec(1, background = paste0(col_palette[2], "50"))
 
 ```
 
-(ref:fig-2-12) _The percentage of housing units converted to dedicated STRs in PEC, by ward (L) and dissemination area (R)_
+```{r monthly_FT}
 
+monthly_str <- function(start_date, end_date, cut = 25) {
+  daily %>% 
+    filter(date >= start_date, date <= end_date, status != "B") %>% 
+    group_by(month = lubridate::month(date, label = TRUE, abbr = FALSE)) %>% 
+    count(property_ID) %>% 
+    filter(n >= cut) %>%
+    count(month) %>% 
+    mutate(month = str_to_sentence(month))
+}
 
+monthly_2019 <- 
+  monthly_str("2019-01-01", "2019-12-31") %>% 
+  rename(n_2019 = n)
 
+monthly_2021 <- 
+  monthly_str("2021-01-01", "2021-12-31") %>% 
+  rename(n_2021 = n)
 
+variation_df <- 
+  left_join(monthly_2019, monthly_2021) %>% 
+  mutate(variation = (n_2021 - n_2019) / n_2019)
 
+jan_month_dif <- 
+  variation_df |> 
+  filter(month == "January") |> 
+  pull(variation) |> 
+  abs() |> 
+  scales::percent(0.1)
+
+sep_month_dif <- 
+  variation_df |> 
+  filter(month == "September") |> 
+  pull(variation) |> 
+  abs() |> 
+  scales::percent(0.1)
+
+```
+
+A final perspective on the change in full-time STAs during the pandemic can be seen by examining STA activity on a monthly—rather than seasonal basis. Table \@ref(tb:tab-2-5) shows the properties that were active at least 25 days out of the month in each month in 2019 and 2021. Activity in 2019 displays a strong seasonality pattern, with monthly full-time listings bottoming out in February, then peaking in July before beginning to decline again. (Cell colouring indicates which months received greater or smaller shares of total annual activity.) In 2021, by contrast, full-time listings have been steadily rising through the end of September (the final month for which we have data). While there were `r jan_month_dif` fewer full-time listings in January 2021 compared to January 2019, that gap had shrunk to only `r sep_month_dif` by September 2021. This suggests that the dedicated STA market is close to recovering from the negative shock of the pandemic.
+
+``` {r tab-2-5, include = TRUE}
+
+library(kableExtra)
+
+variation_df %>% 
+  mutate(variation = scales::percent(variation, 0.1)) %>% 
+  rename(Month = month,
+         "Full-time STAs (2019)" = n_2019,
+         "Full-time STAs (2021)" = n_2021,
+         "Variation (%)" = variation) %>% 
+  kbl(caption = "Full-time STAs per month", align = "lrrrrr") %>% 
+  kable_styling(latex_options="scale_down") %>%
+  column_spec(2, background = spec_color(variation_df$n_2019[1:12], 
+                                         alpha = 0.4, end = 0.7)) %>% 
+  column_spec(3, background = spec_color(variation_df$n_2021[1:12], 
+                                         alpha = 0.4, end = 0.7))
+
+```
 
 
 ## Sales
@@ -1169,9 +1256,9 @@ proportion_home_sales_STA <-
 
 ```
 
-```{r make_fig_5_2}
+```{r make_fig_2_8}
 
-figure_2_13_fun <- function(regular = "", condensed = "") {
+figure_2_8_fun <- function(regular = "", condensed = "") {
 
 proportion_home_sales_STA %>% 
   mutate(perc_adjusted = perc_adjusted - perc,
@@ -1198,96 +1285,23 @@ proportion_home_sales_STA %>%
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_13.pdf"), 
-         plot = figure_2_13_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_2_8.pdf"), 
+         plot = figure_2_8_fun("Futura", "Futura Condensed"), 
          width = 9, height = 4.2, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_13.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_8.pdf"))
 }
 
 ```
 
 
-``` {r fig-2-13, include = TRUE, fig.cap = '(ref:fig-2-13)', fig.align = "center"}
+``` {r fig-2-8, include = TRUE, fig.cap = '(ref:fig-2-8)', fig.align = "center"}
 
-figure_2_13_fun()
-
-```
-(ref:fig-2-13) _TKTK_
-
-
-
-
-
-
-
-
-
-
-
-## Market supply's seasonal characteristics meets COVID-19
-
-
-TKTKT MOVE THIS TO THE HOUSING IMPACTS CHAPTER
-
-```{r para_3_3}
-
-
-monthly_fulltime_str <-  function(start_date, end_date, cut = 25) {
-daily %>% 
-  filter(date >= start_date, date <= end_date, status != "B") %>% 
-  group_by(month = lubridate::month(date, label =T, abbr = F)) %>% 
-  count(property_ID) %>% 
-  filter(n>=cut) %>%
-  count(month, name = "fulltime_properties") %>% 
-  mutate(month = str_to_sentence(month))
-}
-
-precovid <- monthly_fulltime_str("2019-01-01", "2020-01-01") %>% 
-  rename(precovid_fulltime = fulltime_properties)
-
-first_year_covid <- monthly_fulltime_str(max(daily$date)-months(12)+1, max(daily$date)+1) %>% 
-  rename(covid_fulltime = fulltime_properties)
-
-variation_df <- 
-  left_join(precovid, first_year_covid) %>% 
-  mutate(variation = (covid_fulltime - precovid_fulltime) / precovid_fulltime)
-
-var_less_most_busy <- 
-  scales::percent((max(precovid$precovid_fulltime) -
-                     min(precovid$precovid_fulltime))/
-                    min(precovid$precovid_fulltime))
-
-correlation <- cor(variation_df$variation, variation_df$covid_fulltime) %>% 
-  round(digits = 2)
+figure_2_8_fun()
 
 ```
+(ref:fig-2-8) _The share of annual home sales attributable to new STAs (2016-2021)_
 
-``` {r tab-3-1, include = TRUE}
-
-library(kableExtra)
-
-variation_df %>% 
-  mutate(variation = scales::percent(variation)) %>% 
-  rename(Month = month,
-         "2019" = precovid_fulltime,
-         "Last 12 months" = covid_fulltime,
-         "Variation (%)" = variation) %>% 
-  kbl(caption = "Full-time STR on monthly basis",
-      align = "lrrrrr") %>% 
-  kable_styling(latex_options="scale_down") %>%
-  column_spec(2,
-              background = spec_color(variation_df$precovid_fulltime[1:12], alpha = 0.4, end = 0.7)) %>% 
-    column_spec(3,
-              background = spec_color(variation_df$covid_fulltime[1:12], alpha = 0.4, end = 0.7))
-
-```
-
-Table \@ref(tab:tab-3-1) shows the average number of properties that were, on a monthly basis, dedicated to the STR market. To be considered as dedicated STR on a monthly basis, a property needs to have at least 25 days of activity (either available or reserved) during the month. In 2019, the number of dedicated STR on a monthly basis ranged between `r min(precovid$precovid_fulltime)` and `r max(precovid$precovid_fulltime)`. The table demonstrates a strong seasonality pattern, as there is a difference of `r var_less_most_busy` between the most and the less busy months of 2019. 
-
-The pandemic led to a major decrease in the number of dedicated monthly STR in Prince Edward County. In the last 12 months of data, from September 2020 through August 2021, we have seen constant decrease in the number of STR operating on a monthly full-time basis compared to 2019 levels. This can mean one of two things: either there were fewer bookings, or hosts blocked their calendars or deleted their listings. The latter explanation is more valid when considering the facts on the demand side of the market.
-
-<!-- We found a very strong positive correlation (r = `r correlation`) between the number of full-time STR (monthly) during the first year after the outbreak, and the variation column. Indeed, the busiest month of that year were also those with the smallest decrease in the number of full-time STR on the territory. For example, the monthly peak of full-time STR after the outbreak was in September, and this month has seen a `r scales::percent(variation_df$variation[09], accuracy = 0.02)` decrease compared to the previous year. However, in the less busy month after the pandemic outbreak, February 2021, there was a decrease of `r scales::percent(variation_df$variation[02], accuracy = 0.02)` compared to the previous year. -->
 
 
 \newpage
