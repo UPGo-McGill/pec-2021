@@ -129,7 +129,7 @@ water <- rbind(select(river, -everything()), select(ocean, -everything()))
 
 ```
 
-**TKTK**
+**Housing prices and sales volumes have accelerated significantly since the start of the pandemic, from 460 properties sold in 2019 to an expected 1,110 by the end of 2021. While prices were rising prior to 2020, the data suggest that price growth was beginning to level off until the pandemic introduced a massive demand shock to the housing market (average prices in December 2020 were 87.1% higher than in December 2019).  Rents rose 52% between June 2020 and June 2021, rises due to an increase in demand without a corresponding increase in supply. Prior to the pandemic, 5.8% of Prince Edward County housing units operated as dedicated STA in the summer. This figure was 3.5% in the summer of 2021, but by the end of the season, it appears that STA supply is returning to pre-pandemic levels. About half of all housing sales in 2016 and 2017 can be attributed to new STAs, but that share has halved in recent years.**
 
 <br>
 
