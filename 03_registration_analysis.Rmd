@@ -28,10 +28,7 @@ qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
 STA <- qread(here("output", "/STA.qs"))
 
-
 ```
-
-
 ``` {r objects, include = T}
 
 start_reg <- as.Date("2019-11-04")
@@ -137,7 +134,6 @@ total_n_license <-
 
 
 ```
-
 ``` {r tab-5-1, include = TRUE}
 
 library(kableExtra)
@@ -162,7 +158,8 @@ STA %>%
   
 ```
 
-On 9 October 2018, Prince Edward County's city council approved a by-law allowing the registration of short-term accommodations (STA) on its territory. The new licensing program requires STA hosts to acquire one license per accommodation, to be renewed annually. The license fees depend on the number of guest room within the accommodation. The density of STAs operating within the county is set for each zone or area of the County, based on the zoning by-law. The percentage of STAs out of total existing dwelling units is set at 15%, with varying radius thresholds depending on the zones. The County recognizes four different types of STAs: traditional B&Bs, where owner lives on site; partial or entire principal residence STAs; partial or entire secondary residence STAs; and on-farm tourist homes. The licensing system came into effect in November 2019. The Covid-related travel restrictions started in the month of March 2020, with a moratorium on STA licensing established by the County on 30 September 2020. The STA registration was reinstated in the County for traditional B&Bs and principal residence STA on 22 June 2021, leaving other types of STAs accommodation still enable to be granted a license. The following chapter provides an analysis of Prince Edward County's STA licensing system in relation to short-term rentals.
+On 9 October 2018, Prince Edward County's city council approved a bylaw regulating STAs in its territory. The bylaw require STA hosts to acquire one license per accommodation, to be renewed annually, with license fees depending on the number of guestrooms within the accommodation. The County recognizes four different types of STAs: traditional B&Bs, where the owner lives on site; partial or entire principal-residence STAs; partial or entire secondary-residence STAs; and on-farm tourist homes. The bylaw does not set any restrictions on any of these categories, but it sets a maximum density of STAs for each zone or area of the County, and limits the total number of STAs County-wide to 15% of existing dwelling units. The licensing system came into effect in November 2019; as of that date, all STAs needed to be registered with the County. Covid-related travel restrictions were imposed in March 2020, and the County issued a moratorium on STA licensing on 30 September 2020. STA registration was reinstated for traditional B&Bs and principal-residence STAs on 22 June 2021, but the moratorium has remained in place for secondary-residence STAs, which therefore are currently unable to be licensed. The following chapter provides an overview of compliance with the STA licensing system, and the possible impact of the licensing moratorium on the reduced supply of STAs during the pandemic.
+
 
 ## Overview of STA licenses
 
@@ -296,7 +293,6 @@ The STA registration system operated from November 2019 to September 2020, up un
 figure_5_1_fun()
 
 ```
-
 (ref:fig-5-1) _Number of new STR properties created by day, 7-day rolling average_
 
 ```{r STA_STR_analysis, include = T}
@@ -478,53 +474,9 @@ proportion_home_sales_STA <-
 
 ```
 
-```{r make_fig_5_2}
-
-figure_5_2_fun <- function(regular = "", condensed = "") {
-
-proportion_home_sales_STA %>% 
-  mutate(perc_adjusted = perc_adjusted - perc,
-         perc_adj_2 = perc_adj_2 - perc_adjusted - perc) %>% 
-  select(year, perc, perc_adjusted, perc_adj_2) %>% 
-  pivot_longer(c(perc:perc_adj_2)) %>% 
-  mutate(name = case_when(
-    name == "perc" ~ "Direct matches",
-    name == "perc_adjusted" ~ "Inferred from registration rate",
-    name == "perc_adj_2" ~ "Inferred from listing attrition")) %>% 
-  mutate(name = factor(name, levels = c("Direct matches", 
-                                        "Inferred from registration rate",
-                                        "Inferred from listing attrition"))) %>% 
-  ggplot() +
-  geom_col(aes(x = year, y = value, fill = name), 
-           position = position_stack(reverse = TRUE)) +
-  scale_x_continuous(name = NULL, breaks = 2016:2021) +
-  scale_y_continuous(name = NULL, breaks = c(0.1, 0.2, 0.3, 0.4, 0.5), 
-                     label = scales::percent) +
-  scale_fill_manual(name = NULL, values = col_palette[c(6, 1, 4)]) +
-  theme_minimal() +
-  theme(panel.grid.minor.x = element_blank(), legend.position = "bottom")
-  
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_5_2.pdf"), 
-         plot = figure_5_2_fun("Futura", "Futura Condensed"), 
-         width = 9, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_5_2.pdf"))
-}
-
-```
 
 There are `r sold_before_created` housing units that were sold since 2016 that then applied for a STA license during the application period. Out of all the `r total_licenses_all` license applications received by the county, about a third (`r per_sold_before_created`) of them were for housing units that were bought after January 2016. More recently, `r sold_before_created_covid` (`r per_sold_before_created_covid` of all license applications) were for houses bought after March 2020, when Covid hit and fueled the surge in housing demand and sale prices. Registrations being linked to newly bought housing units shows that a number of units are bought with the purpose of turning them in STRs. There was also a number of STA license applications (`r created_before_sale`) that were received for properties that were then sold shortly after. Considering that STA licensing is granfathered even through property sales, those housing units were most likely sold as an investment property operating as a short-term rental.
 
-``` {r fig-5-2, include = TRUE, fig.cap = '(ref:fig-5-2)', fig.align = "center"}
-
-figure_5_2_fun()
-
-```
-
-(ref:fig-5-2) _Percentage of home sales for short-term rentals per year, real numbers (orange) and adjusted with compliance rate (yellow)_
 
 ```{r para_X}
 
