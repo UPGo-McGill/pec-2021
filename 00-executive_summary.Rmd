@@ -1,8 +1,19 @@
 # Executive summary {-}
 
-**This report analyzes short-term rentals (STRs) in Prince Edward County (PEC), specifically as they relate to current housing conditions in the county. It first provides an overview of the housing situation in Prince Edward County, with an emphasis on property sales and affordability for both owners and renters. It provides an overview of STRs in the county, including their type, geographic location and levels of commercial activity. It assesses the seasonality patterns of STRs, both in terms of activity and location. It measures the impact of COVID-19 on the STR market, in terms of active listings, reservations and nightly prices. It measures the impact of STRs on Prince Edward County’s housing market, particularly relating to housing affordability and availability, through an assessment of the presence of commercially-operated STRs during the high and low seasons in Prince Edward County’s wards. It offers an overview of the efficacy of the registration on STR operations. Finally, it provides an analysis of pathways to reinstating STRs, through by-law, form-based and alternative methods, with distinctive focus on primary and secondary residences.**
+**This report analyzes short-term accommodations (STAs) in Prince Edward County (PEC), specifically as they relate to current housing conditions in the county. It provides an overview of STAs in the county, including their type, geographic location and levels of commercial activity. It assesses the seasonality patterns of STAs in terms of activity and location, and also amidst the Covid-19 pandemic. It offers an overview of the housing situation in Prince Edward County, with an emphasis on recent property sales and affordability for both owners and renters. It measures the impact of STAs on Prince Edward County’s housing market, particularly relating to housing affordability and availability, through an assessment of the presence of commercially-operated STAs during the high and low seasons in Prince Edward County’s wards. It offers an overview of the efficacy of the registration on STR operations. Finally, it provides an analysis of pathways to reinstating the STA registration system, with distinctive focus on primary and secondary residences and geography.**
 
 \noindent\rule{\textwidth}{1pt}
+
+<!-- **SHORT-TERM RENTALS IN PRINCE EDWARD COUNTY: MARKET OVERVIEW** -->
+
+<!-- - There are on a daily average 490 active STA listings in Prince Edward County housing units in 2021, which collectively earned $138,000 per day. -->
+<!-- - The average number of active listings declined by 37.2% compared to 2019, while revenue increased by 52.7%. -->
+<!-- - The ward with the most active listings is Picton, with 19.5%, followed by Hallowell (13.4%) and Wellington (11.5%). -->
+<!-- - Most (92.9%) STA listings were entire homes, responsible for 98.0% of total revenues. -->
+<!-- - Revenue is distributed unevenly among hosts, with the top 10% of hosts earning 49.2% of revenues and the top 1% earning 20.8% of all revenues. -->
+<!-- - Multilistings account for almost half (49.6%) of STA listings in the county, earning 50.6% of total host revenue. -->
+<!-- - The Covid-19 pandemic has caused reservations to drop by 20%, while nightly prices were almost twice (48.4%) as high in 2021 compared to 2019. -->
+<!-- - The pandemic has also flattened the seasonality pattern in the county, with non-summer months receiving more reservations on average than the years before. -->
 
 <!-- **HOUSING IN PRINCE EDWARD COUNTY: SUMMARY ANALYSIS** -->
 
@@ -10,24 +21,6 @@
 <!-- - In order for 2020 and 2021 housing prices to be affordable for renters in the county, households would require an additional $XX,XXX in after-tax income in Picton, $XX,XXX in TKTK and $XX,XXX in TKTK. -->
 <!-- - Up to half of home sales were attributable to new short-term accommodations being created in the county in 2016, while that number was a quarter in 2020.  -->
 <!-- - The largest year-over-year increases in rent occurred in 2021, when rents increased by 52%. Renters in Picton spend on average $TKTK more on rent than what is considered affordable, while this number is $TKTK for Wellington. -->
-
-<!-- **SHORT-TERM RENTALS IN PRINCE EDWARD COUNTY: MARKET OVERVIEW** -->
-
-<!-- - There were TKTK active STR listings in Prince Edward County housing units in 2020, which collectively earned $151.4 million. -->
-<!-- - Listings in the county are highly decentralized compared to other STR markets in Canada. Picton is the ward with the most active STR listings, followed by Hallowell and Wellington. -->
-<!-- - More than two thirds (69.6%) of Prince Edward County’s STR listings are entire homes, and entire homes are responsible for 86.3% of all revenue. -->
-<!-- - Revenue is concentrated unevenly among hosts, with the top 10% earning 43.2% of revenue, and the top 1% earning 13.6%, but Prince Edward County has much less revenue concentration than other large cities in Canada. -->
-<!-- - Commercial operators who control multiple STR listings account for 34.7% listings and 30.6% revenue, and those shares have been falling consistently since the introduction of the City’s 2018 STR regulations. -->
-<!-- - STR activity in Prince Edward County has suffered an unprecedented collapse during the COVID-19 pandemic. -->
-<!-- - Reservations since the Covid-19 pandemic are down 25%% compared to pre-pandemic levels. However, prices have been around 75% above the trend in the county: a unique situation in Canadian tourist destination markets. -->
-
-<!-- **SEASONALITY OF THE SHORT-TERM RENTAL MARKET IN PRINCE EDWARD COUNTY** -->
-
-<!-- - TKTK -->
-<!-- - TKTK -->
-<!-- - TKTK -->
-<!-- - TKTK -->
-<!-- - TKTK -->
 
 <!-- **SHORT-TERM RENTALS IN PRINCE EDWARD COUNTY: HOUSING IMPACTS** -->
 

@@ -327,7 +327,7 @@ ml_revenue_2019 <-
 
 ```
 
-**There are on a daily average `r avg_listings_active` active STA listings in Prince Edward County housing units in 2021, which collectively earn `r daily_rev` a day. While the number of active listings has decreased considerably (`r var_active_listings_2019_2021`), the revenue has increased significantly (`r var_daily_rev_2019_2021`). STA activity is very decentralized on the island, but is less common on the Northern part. The quasi totality (`r eh_listings`) of Prince Edward County’s STA listings are entire homes, and entire homes are responsible for `r eh_revenue` of all revenue. Revenue is concentrated unevenly among hosts, with the top 10% earning half (`r host_rev_top_10`) of revenue, and the top 1% earning `r host_rev_top_1`. Commercial operators who control multiple STA listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`).**
+**There are on a daily average `r avg_listings_active` active STA listings in Prince Edward County housing units in 2021, which collectively earned `r daily_rev` per day. The average number of active listings declined by `r var_active_listings_2019_2021` compared to 2019, while revenue increased by `r var_daily_rev_2019_2021`. The ward with the most active listings is Picton, with 19.5%. In Bloomfield, 34.7% of all dwellings were active STA listings in 2021. Almost all (`r eh_listings`) STA listings were entire homes, responsible for `r eh_revenue` of total revenues. Revenue is distributed unevenly among hosts, with the top 10% of hosts earning `r host_rev_top_10` of revenues. Commercial operators who control multiple STA listings account for half of listings (`r ml_listings`) and revenue (`r ml_revenue`). Overall, the Covid-19 pandemic has caused reservations to drop by 20%, while nightly prices were almost twice (48.4%) as high in 2021 compared to 2019. The pandemic has also flattened the seasonality pattern in the county, with non-summer months receiving more reservations on average than the years before. The share of reservations occurring in towns and townships also flattened because of Covid, with their respective shares remaining stable throughout the year.**
 
 <br>
 
@@ -1686,6 +1686,7 @@ figure_1_7_fun()
 ward_type_comp <- 
   daily |> 
   left_join(st_drop_geometry(select(EW, -dwellings)), by = "ward") |> 
+  mutate(type = ifelse(type == "Village", "Town", type)) |>
   filter(status == "R", !is.na(type)) |> 
   count(type, date) |> 
   group_by(date) |> 
@@ -1705,7 +1706,7 @@ ward_type_comp |>
   geom_label(aes(date, pct, label = label, colour = type)) +
   facet_wrap(vars(year), scales = "free_x") +
   scale_x_date(name = NULL) +
-  scale_color_manual(values = col_palette[1:3]) +
+  scale_color_manual(values = col_palette[1:2]) +
   scale_y_continuous(name = NULL, labels = scales::percent_format(accuracy = 1),
                      limits = c(0, 0.675)) +
   theme_minimal() +
@@ -1725,14 +1726,14 @@ if (build_figures) {
 
 ```
 
-Covid-19 has flattened the seasonality of STA activity in Prince Edward County, and it has also flattened geographic variation in that activity. Figure \@ref(fig:fig-1-8) shows the percentage of total reservations happening in town, township or village. In 2019, the townships had a relatively low share of STA reservations in the off-season—between 55% and 60%—which then rose substantially during the summer high season, to roughly 65%. The towns and villages displayed the opposite pattern: relatively more activity in the off season and less in the high season. In 2021, these curves are all flat. This pattern is consistent with the constrained supply of STAs identified above; the usual influx of summer STAs in the townships failed to arrive in 2021.
+Covid-19 has flattened the seasonality of STA activity in Prince Edward County, and it has also flattened geographic variation in that activity. Figure \@ref(fig:fig-1-8) shows the percentage of total reservations happening in towns (includes Picton, Bloomfield and Wellington) or townships. In 2019, the townships had a relatively low share of STA reservations in the off-season—between 55% and 60%—which then rose substantially during the summer high season, to roughly 65%. The towns and villages displayed the opposite pattern: relatively more activity in the off season and less in the high season. In 2021, these curves are all flat. This pattern is consistent with the constrained supply of STAs identified above; the usual influx of summer STAs in the townships failed to arrive in 2021.
 
 ``` {r fig-1-8, include = TRUE, fig.cap = '(ref:fig-1-8)', fig.align = "center"}
 
 figure_1_8_fun()
 
 ```
-(ref:fig-1-8) _Share of daily total reservation, by type of ward (7-day average)_
+(ref:fig-1-8) _Share of daily total reservations, by type of ward (7-day average)_
 
 <br>
 

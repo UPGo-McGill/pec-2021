@@ -405,7 +405,7 @@ Out of the `r n_STA_post_mora` license applications that were received since the
 
 ## How is the STA market related to Prince Edward County's housing market?
 
-The STA registration database enabled the analysis of the license applications with the house sales that occurred from 2016 to today. This acts a an indicator of the contribution of short-term rental to the County's current housing situation. Have properties been sold to then apply to become a STA? Or conversly, have properties been converted into STAs, and then sold on the market as short-term rental investment properties? 
+The STA registration database enabled the analysis of the license applications with the house sales that occurred from 2016 to today. This acts a an indicator of the contribution of short-term rental to the County's current housing situation. Have properties been sold to then apply to become a STA? Or conversely, have properties been converted into STAs, and then sold on the market as short-term rental investment properties? 
 
 ```{r, include = T}
 

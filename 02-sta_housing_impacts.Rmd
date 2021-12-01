@@ -29,7 +29,6 @@ seasonal_FREH <- qread("output/seasonal_FREH.qs")
 build_figures <- TRUE
 
 ```
-
 ```{r housing_objects, cache=TRUE, cache.lazy=FALSE}
 
 home_sales <- qread(here("output", "home_sales.qs"), nthreads = availableCores())
@@ -108,7 +107,6 @@ EW_housing <-
   st_transform(32618)
 
 ```
-
 ```{r on_water, cache = TRUE, cache.lazy = FALSE}
 
 ocean <-
@@ -135,211 +133,14 @@ water <- rbind(select(river, -everything()), select(ocean, -everything()))
 
 <br>
 
-## The housing context in Prince Edward County
+## Housing issues in Prince Edward County
 
-Prince Edward County's housing market has been under severe stress in the last several years. Housing demand—driven by some combination of in-movers, STAs, and second-home sales—has far outstripped housing supply. The Covid-19 pandemic has exacerbated these demand-side issues by bringing in an influx of new buyers looking for a second home, in part due to the increased possibilities for remote work. As a result, housing prices and rents have both risen far faster than local incomes. This chapter provides an overview of housing conditions for both homeowners and renters in Prince Edward County, and then analyzes the role of STAs in the County's housing affordability challenges.
-
-## Being a homeowner in Prince Edward County
-
-``` {r make_fig_2_1}
-
-figure_2_1_fun <- function(regular = "", condensed = "") {
-  
-  scale_factor <-
-  home_sales |> 
-  st_drop_geometry() |> 
-  filter(year(sale_date) == 2020) |> 
-  summarize(scale = sum(month(sale_date) >= 7) / sum(month(sale_date) <= 6)) |> 
-  pull(scale) |> 
-  {\(x) x + 1}()
-
-  data_for_graph <- 
-  home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(sale_date = year(sale_date)) %>% 
-  filter(!is.na(sale_date)) %>% 
-  group_by(sale_date) %>% 
-  summarize(n = n(), avg = mean(sale_price, na.rm = TRUE)) |> 
-  mutate(n = if_else(sale_date == 2021, round(n * scale_factor), as.numeric(n)),
-         shift = sale_date + n ^ 0.45 / 50)
-  
-  ggplot(data_for_graph) +
-  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date <= 2019),
-              se = FALSE, colour = col_palette[2], method = "lm", 
-              formula = y ~ log(x - 2015)) +
-  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date >= 2019),
-              se = FALSE, colour = col_palette[7], method = "lm") +
-  geom_point(aes(sale_date, avg, size = n), colour = col_palette[5]) +
-  geom_text(aes(shift, avg, label = n)) +
-  scale_x_continuous(name = NULL, limits = c(2016, 2021.5), breaks = 2016:2021) +
-  scale_y_continuous(name = NULL, limits = c(300000, 800000), 
-                     labels = scales::dollar) +
-  scale_size(limits = c(0, 1200), range = c(0, 20)) +
-  theme_minimal() +
-  theme(legend.position = "none", panel.grid.minor.x = element_blank())
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_1.pdf"), 
-         # plot = figure_1_1_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_1_fun("Futura", "Futura Condensed"), 
-         width = 9, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
-}
+The common definition of affordable housing is that for which the costs do not exceed 30% of the household's disposable income. The Canadian Mortgage and Housing Corporation calls this metric the "shelter cost-income ratio" (2020). Additionally, a healthy rental market is considered one in which the vacancy rate is of 3% of above (ACTO 2021). By either of these metrics, Prince Edward County's housing market has been under severe stress in the last several years. Housing demand—driven by some combination of in-movers, STAs, and second-home sales—has far outstripped housing supply. The Covid-19 pandemic has exacerbated these demand-side issues by bringing in an influx of new buyers looking for a second home, in part due to the increased possibilities for remote work. As a result, housing prices and rents have both risen far faster than local incomes. This chapter provides an overview of housing conditions for both homeowners and renters in Prince Edward County, and then analyzes the role of STAs in the County's housing affordability challenges.
 
 
-```
+## Housing sales and prices
 
-```{r para_1, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-p_thirty_owner_bloomfield <- 
-  EW_housing %>% 
-  st_drop_geometry %>% 
-  arrange(desc(p_thirty_owner)) %>% 
-  slice(1) %>% 
-  pull(p_thirty_owner) %>%   
-  scales::percent(accuracy = 0.1)
-
-p_thirty_owner_athol <- 
-  EW_housing %>% 
-  st_drop_geometry %>% 
-  arrange(p_thirty_owner) %>% 
-  slice(1) %>% 
-  pull(p_thirty_owner) %>%   
-  scales::percent(accuracy = 0.1)
-
-```
-
-
-The following section provides an assessment of the housing situation in the county for both homeowners and renters, with a specific focus on affordability and availability. The common definition of housing that is affordable for which the costs do not exceed 30% of the household's disposable income, or what the Canadian Mortgage and Housing Corporation defines as the shelter cost-income ratio (2020). Additionally, a healthy rental market is considered one in which the vacancy rate is of 3% of above (ACTO 2021). 
-
-
-
-
-
-
-``` {r make_fig_2_2}
-
-figure_2_2_fun <- function(regular = "", condensed = "") {
-
-  left_map <-
-    DA_housing %>%
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "white") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
-                         na.value = "grey80",
-                         limits = c(0.05, 0.25), oob = scales::squish,
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
-                                  title.vjust = 1)) +
-    gg_bbox(DA_housing) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold",
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5),
-          panel.border = element_rect(colour = "white", size = 2))
-
-  right_map <-
-    EW_housing %>%
-    ggplot() +
-    geom_sf(data = province, colour = "transparent", fill = "grey93") +
-    geom_sf(aes(fill = p_thirty_owner), colour = "transparent") +
-    geom_sf(data = water, fill = "white", colour = "transparent") +
-    scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)],
-                         na.value = "grey80",
-                         limits = c(0.1, 0.2), oob = scales::squish,
-                         labels = scales::percent)  +
-    guides(fill = guide_colourbar(title = "Percentage owner's\nhousing stress",
-                                  title.vjust = 1)) +
-    gg_bbox(DA_housing) +
-    theme_void() +
-    theme(text = element_text(family = regular, face = "plain"),
-          legend.title = element_text(family = regular, face = "bold",
-                                      size = 7),
-          legend.title.align = 0.9,
-          legend.text = element_text(family = regular, size = 5),
-          panel.border = element_rect(colour = "white", size = 2))
-
-  left_map + right_map + plot_layout(guide = "collect") &
-    theme(legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_2.pdf"),
-         plot = figure_2_2_fun("Futura", "Futura Condensed"),
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-
-  extrafont::embed_fonts(here("output", "figures", "figure_2_2.pdf"))
-}
-
-```
-
-From 2008 to 2018, the median home price in the county has almost doubled, going from $205K to $395K, an increase equivalent to seven times that of the increase in median household incomes (The County Foundation 2018). The influx of new homes in Prince Edward County is limited, with only 4.2% of housing units having been built between 2011-2016. By contrast, 61.0% of all homes in Prince Edward County were built prior to 1980. Based on the affordability measure above, 17.3% of homeowners are considered housing stressed. This percentage varies between ward, with Bloomfield having `r p_thirty_owner_bloomfield` of owners households spending more than 30% of their incomes on housing and Athol having the least housing-stressed households, with `r p_thirty_owner_athol`. Figure  \@ref(fig:fig-2-2) shows the geographic distribution of owner households in situation of housing stress by dissemination area (left) and by ward (right). The ward map displays a distinction between the level of housing stress between Western and Eastern wards.
-
-``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-2-1)', fig.align = "center"}
-
-figure_2_1_fun()
-
-```
-
-``` {r fig-2-2, include = TRUE, fig.cap = '(ref:fig-2-2)', fig.align = "center"}
-
-figure_2_2_fun()
-
-```
-
-(ref:fig-2-2) _Percentage of homeowners' housing stress by dissemination area (R) and ward (L)_
-
-``` {r make_fig_2_3}
-
-figure_2_3_fun <- function(regular = "", condensed = "") {
-
-home_sales %>%
-  st_drop_geometry() %>%
-  mutate(year_month = format(sale_date, "%Y-%m")) %>%
-  mutate(year_month = paste0(year_month, "-01")) %>%
-  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>%
-  group_by(year_month) %>%
-  summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>%
-  ggplot() +
-  geom_col(aes(year_month, n), fill = col_palette[5], lwd=0)+
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
-        text = element_text(family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_3.pdf"),
-         plot = figure_2_3_fun("Futura", "Futura Condensed"),
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-
-  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
-}
-
-```
-
-With a relatively stable number of housing units available, the county is experiencing additional pressure in the past few years, which cannot be measured through 2016 census data. Two external market forces, namely short-term rentals and secondary home purchases by households from urban areas, have caused property prices to increases. According to Charles Dowdall, the largest year-over-year increases in housing sale prices occurred in the June 2020-June 2021 period, with an increase of 79.9%. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the county from 2016, totaling 3,017 sales. Figure \@ref(fig:fig-2-3) below summarizes the number of residential real estate sales in the county, starting on 6 January 2016.
-
-``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
-
-figure_2_3_fun()
-
-```
-
-(ref:fig-2-3) _Monthly number of property sales in Prince Edward County_
-
-```{r para_3, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+```{r sales_figures, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 peak_housing_sale <- 
   home_sales %>% 
@@ -351,18 +152,6 @@ peak_housing_sale <-
    summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
    arrange(desc(n)) %>% 
    slice(1) %>% 
-   pull(n)
-
-second_peak_housing_sale <- 
-  home_sales %>% 
-   st_drop_geometry() %>% 
-   mutate(year_month = format(sale_date, "%Y-%m")) %>% 
-   mutate(year_month = paste0(year_month, "-01")) %>% 
-   mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
-   group_by(year_month) %>% 
-   summarize(n=n(), mean_sale = mean(sale_price, na.rm=TRUE)) %>% 
-   arrange(desc(n)) %>% 
-   slice(2) %>% 
    pull(n)
 
 dec_2020_sale_price <- 
@@ -468,16 +257,6 @@ avg_sale_2020 <-
   pull(avg) %>%
   scales::dollar(accuracy = 10)
 
-n_sale_2021 <- 
-  home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(sale_date = year(sale_date)) %>% 
-  filter(!is.na(sale_date)) %>% 
-  group_by(sale_date) %>% 
-  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
-  filter(sale_date == 2021) %>% 
-  pull(n)
-
 avg_sale_2021 <- 
   home_sales %>% 
   st_drop_geometry() %>% 
@@ -489,78 +268,183 @@ avg_sale_2021 <-
   pull(avg) %>%
   scales::dollar(accuracy = 10)
 
+scale_factor <-
+  home_sales |> 
+  st_drop_geometry() |> 
+  filter(year(sale_date) == 2020) |> 
+  summarize(scale = sum(month(sale_date) >= 7) / sum(month(sale_date) <= 6)) |> 
+  pull(scale) |> 
+  {\(x) x + 1}()
 
-```
-
-``` {r tab-4-1, include = TRUE}
-
-library(kableExtra)
-
-home_sales %>% 
+data_for_graph <- 
+  home_sales %>% 
   st_drop_geometry() %>% 
   mutate(sale_date = year(sale_date)) %>% 
   filter(!is.na(sale_date)) %>% 
   group_by(sale_date) %>% 
-  summarize(n = n(), avg = round(mean(sale_price, na.rm=TRUE), -1)) %>% 
-  mutate(avg = scales::dollar(avg)) %>% 
-  set_names(c("Year", "Number of property sales", "Average sale price")) %>% 
-  kbl(caption = "Yearly sales portrait in Prince Edward County",
-      align = "lrrrrr") %>% 
-  kable_styling(latex_options="scale_down")
-  
+  summarize(n = n(), avg = mean(sale_price, na.rm = TRUE)) |> 
+  mutate(n = if_else(sale_date == 2021, round(n * scale_factor), as.numeric(n)),
+         shift = sale_date + n ^ 0.45 / 50)
+
+n_sale_2021 <- 
+  data_for_graph |> 
+  filter(sale_date == 2021) |> 
+  pull(n) |> 
+  scales::comma()
+
+
 ```
 
-``` {r make_fig_2_4}
+Even prior to the last several years, housing prices were increasing rapidly in Prince Edward County. By one estimate, the median home price in the county almost doubled between 2008 to 2018, going from $205,000 to $395,000. That is an increase seven times greater than the increase in median household incomes in the same time period (The County Foundation 2018). In the last five years, however, two external market forces—namely STAs and secondary home purchases by households from urban areas—have added a new source of housing demand. In the face of relatively stable housing supply (as of the 2016 census, only 4.2% of housing units had been built in the previous five years), this new demand has contributed to record-setting housing price increases. To conduct an analysis of the homeownership market, our team was provided by the Prince Edward County Real Estate Board with a dataset of every residential real estate transaction in the County from January 2016 through September 2021, totaling `r scales::comma(nrow(home_sales))` sales.
 
-figure_2_4_fun <- function(regular = "", condensed = "") {
+``` {r make_fig_2_1}
+
+figure_2_1_fun <- function(regular = "", condensed = "") {
+  
+sales_for_map <- 
+  home_sales %>% 
+  filter(sale_date >= "2021-01-01") %>% 
+  st_drop_geometry() %>% 
+  left_join(., EW, by = "ward") %>% 
+  filter(!is.na(ward)) %>% 
+  st_as_sf() %>% 
+  group_by(ward) %>% 
+  summarize(avg_sale_price_2021 = mean(sale_price, na.rm = TRUE))
+
+sales_labels <-
+  sales_for_map |> 
+  st_centroid(of_largest_polygon = TRUE) |> 
+  mutate(x = st_coordinates(geometry)[, 1],
+         y = st_coordinates(geometry)[, 2],
+         label = scales::dollar(avg_sale_price_2021, 100)) |> 
+  st_drop_geometry()
+
+sales_for_map |> 
+ggplot() +
+  geom_sf(data = province, colour = "transparent", fill = "grey93") +
+  geom_sf(aes(fill = avg_sale_price_2021), colour = "white") +
+  geom_sf(data = water, fill = "white", colour = "transparent") +
+  ggrepel::geom_label_repel(aes(x, y, label = label), data = sales_labels,
+                            size = 2, nudge_y = c(0, 0, -5000, 2000, 0, 0, 5000,
+                                                  0, 0, 0)) +
+  scale_fill_stepsn(colors = col_palette[c(3, 4, 6)], na.value = "grey80",)  +
+  gg_bbox(EW) +
+  theme_void() +
+  theme(text = element_text(family = regular, face = "plain"),
+        legend.position = "none",
+        panel.border = element_rect(colour = "white", size = 2))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_1.pdf"), 
+         plot = figure_2_1_fun(), 
+         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_1.pdf"))
+}
+
+```
+
+Figure \@ref(fig:fig-2-1) shows the average selling price by electoral ward for each home sold in 2021. Prices are highest in the eastern and central parts of the County, but, with the exception of Athol, the average price in each ward is above $650,000. (That figure climbs above $1 million in South Marysburgh).
+
+``` {r fig-2-1, include = TRUE, fig.cap = '(ref:fig-2-1)', fig.align = "center"}
+
+figure_2_1_fun()
+
+```
+(ref:fig-2-1) _Average home sale prices by ward in 2021_
+
+``` {r make_fig_2_2}
+
+figure_2_2_fun <- function(regular = "", condensed = "") {
+  
+  data_for_graph <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(sale_date = year(sale_date)) %>% 
+  filter(!is.na(sale_date)) %>% 
+  group_by(sale_date) %>% 
+  summarize(n = n(), avg = mean(sale_price, na.rm = TRUE)) |> 
+  mutate(n = if_else(sale_date == 2021, round(n * scale_factor), as.numeric(n)),
+         shift = sale_date + n ^ 0.45 / 50)
+  
+  ggplot(data_for_graph) +
+  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date <= 2019),
+              se = FALSE, colour = col_palette[2], method = "lm", 
+              formula = y ~ log(x - 2015)) +
+  geom_smooth(aes(sale_date, avg), data = filter(data_for_graph, sale_date >= 2019),
+              se = FALSE, colour = col_palette[7], method = "lm") +
+  geom_point(aes(sale_date, avg, size = n), colour = col_palette[5]) +
+  geom_text(aes(shift, avg, label = n)) +
+  scale_x_continuous(name = NULL, limits = c(2016, 2021.5), breaks = 2016:2021) +
+  scale_y_continuous(name = NULL, limits = c(300000, 800000), 
+                     labels = scales::dollar) +
+  scale_size(limits = c(0, 1200), range = c(0, 20)) +
+  theme_minimal() +
+  theme(legend.position = "none", panel.grid.minor.x = element_blank())
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_2.pdf"), 
+         plot = figure_2_2_fun(), 
+         width = 9, height = 5, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_2.pdf"))
+}
+
+```
+
+Figure \@ref(fig:fig-2-2) summarizes the volume and average prices of home sales since 2016. There are two important trends in this data. The first is that, although house prices were rising steadily through 2019, price growth was starting to level off. (This is visible in the declining slope of the light blue trend line.) By contrast, since the start of the pandemic, sale prices have been on a far steeper trajectory (the purple trend line)—nearly doubling in just two years. The average price was price of `r avg_sale_2016` in 2016, but rose to `r avg_sale_2019` in 2019, `r avg_sale_2020` in 2020, and `r avg_sale_2021` in 2021 (so far). The peak average monthly sale price reached `r dec_2020_sale_price` in December 2020, which is a staggering `r yoy_sale_2021` higher than the the same month the year before. 
+
+``` {r fig-2-2, include = TRUE, fig.cap = '(ref:fig-2-2)', fig.align = "center"}
+
+figure_2_2_fun()
+
+```
+(ref:fig-2-2) _Housing sales prices and volume, 2016-2021_
+
+``` {r make_fig_2_3}
+
+figure_2_3_fun <- function(regular = "", condensed = "") {
 
 home_sales_variation %>%
+  mutate(label = if_else(year_month == "2018-01-01", var, NA_character_)) %>%
   ggplot(aes(year_month, value, colour = var)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
   geom_line(lwd = 1, na.rm = TRUE) +
+  geom_label(aes(label = label), size = 3, family = condensed) +
   scale_x_date(name = NULL) +
   scale_y_continuous(name = NULL, limits = c(-1, NA),
                      labels = scales::percent) +
   scale_color_manual(name = NULL, values = col_palette[c(1, 3)]) +
   theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(),
+  theme(legend.position = "none", panel.grid.minor.x = element_blank(),
         text = element_text(family = regular))
 
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_4.pdf"),
-         plot = figure_2_4_fun("Futura", "Futura Condensed"),
+  ggsave(here("output", "figures", "figure_2_3.pdf"),
+         plot = figure_2_3_fun(),
          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
 
-  extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
 }
 
 ```
 
-The housing market in Prince Edward County has experienced both a growth in the number of property sales and an increase in the average sale prices of the properties. In 2016, there were `r n_sale_2016` property sales in the County, with an average sale price of  `r avg_sale_2016`. The number of sales decreased between 2017 and 2019 to reach `r n_sale_2019` sales. The highest recorded number of sales occurred in 2020, with  `r n_sale_2020`. Additionally, the average sale price of properties has constantly been increasing since 2016, to reach `r avg_sale_2019` in 2019, `r avg_sale_2020` in 2020 and `r avg_sale_2021` in 2021. Table \@ref(tab:tab-4-1) below summarizes the number and avergae sale prices per year.
+The second trend is the increasing sales volume during the pandemic. In 2016, there were `r n_sale_2016` property sales in the County, but this number declined over the next several years to reach `r n_sale_2019` in 2019. Sales volume began to surge in the month following the pandemic, reaching a monthly peak of `r peak_housing_sale` sales in July 2020. In total, 2020 saw a increase to `r n_sale_2020` sales, while 2021 is on track for `r n_sale_2021` sales by year's end—nearly three times higher than 2019. Figure \@ref(fig:fig-2-3) summarizes the year-over-year changes in monthly number of sales and sale price. 
 
-There is a high increase in the number of residential sales starting in the second half of 2020, with the peak of real estate sales being in July 2020, with a total of `r peak_housing_sale` property sales, followed by `r second_peak_housing_sale` in September of 2020. This peak in property sales has also been accompanied by large increases in average sale prices, with a peak average sale price in December 2020 of `r dec_2020_sale_price`. This number is a staggering year-over-year increase of `r yoy_sale_2021` compared to the same month the year before. Figure \@ref(fig:fig-2-4) summarizes the year-over-year changes in the number of sales and sale price per month. 
+``` {r fig-2-3, include = TRUE, fig.cap = '(ref:fig-2-3)', fig.align = "center"}
 
-``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
-
-figure_2_4_fun()
+figure_2_3_fun()
 
 ```
+(ref:fig-2-3) _Year-over-year changes in monthly real estate sales and average sale prices_
 
-(ref:fig-2-4) _Year-over-year changes in monthly real estate sales and average sale prices_
-
-```{r para_4, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-list_ask_price <- 
-  home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(year_month = format(sale_date, "%Y-%m")) %>% 
-  mutate(year_month = paste0(year_month, "-01")) %>% 
-  mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
-  mutate(diff_price = sale_price - list_price) %>% 
-  group_by(year_month) %>% 
-  summarize(diff_price = mean(diff_price, na.rm=TRUE))
+```{r days_on_market, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 DOM <- 
   home_sales %>% 
@@ -569,14 +453,14 @@ DOM <-
   mutate(year_month = paste0(year_month, "-01")) %>% 
   mutate(year_month = as_date(year_month, format = "%Y-%m-%d")) %>% 
   group_by(year_month) %>% 
-  summarize(avg_DOM = mean(DOM, na.rm=TRUE))
+  summarize(avg_DOM = mean(DOM, na.rm = TRUE))
 
 DOM_2019 <- 
   home_sales %>% 
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   group_by(year) %>% 
-  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm = TRUE), digit = 0)) %>% 
   filter(year == 2019) %>% 
   pull(avg_DOM)
 
@@ -585,7 +469,7 @@ DOM_2020 <-
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   group_by(year) %>% 
-  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm = TRUE), digit = 0)) %>% 
   filter(year == 2020) %>% 
   pull(avg_DOM)
 
@@ -594,21 +478,20 @@ DOM_2021 <-
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   group_by(year) %>% 
-  summarize(avg_DOM = round(mean(DOM, na.rm=TRUE), digit=0)) %>% 
+  summarize(avg_DOM = round(mean(DOM, na.rm = TRUE), digit = 0)) %>% 
   filter(year == 2021) %>% 
   pull(avg_DOM)
 
-diff_2020 <- 
+diff_2019 <- 
   home_sales %>% 
   st_drop_geometry() %>% 
   mutate(year = year(sale_date)) %>% 
   mutate(diff_price = sale_price - list_price) %>% 
   group_by(year) %>% 
-  summarize(diff_price = round(mean(diff_price, na.rm=TRUE), digit=-1)) %>% 
-  filter(year == 2020) %>% 
+  summarize(diff_price = mean(diff_price, na.rm = TRUE)) %>% 
+  filter(year == 2019) %>% 
   pull(diff_price) %>% 
-  prettyNum(",") %>% 
-  paste0("$", .)
+  scales::dollar(100)
 
 diff_2021 <- 
   home_sales %>% 
@@ -616,23 +499,26 @@ diff_2021 <-
   mutate(year = year(sale_date)) %>% 
   mutate(diff_price = sale_price - list_price) %>% 
   group_by(year) %>% 
-  summarize(diff_price = round(mean(diff_price, na.rm=TRUE), digit=-1)) %>% 
+  summarize(diff_price = mean(diff_price, na.rm = TRUE)) %>% 
   filter(year == 2021) %>% 
   pull(diff_price) %>% 
-  prettyNum(",") %>% 
-  paste0("$", .)
-
+  scales::dollar(100)
 
 ```
 
-``` {r make_fig_2_5}
+``` {r make_fig_2_4}
 
-figure_2_5_fun <- function(regular = "", condensed = "") {
+figure_2_4_fun <- function(regular = "", condensed = "") {
   
-  DOM %>% 
-  ggplot() +
-  geom_line(aes(year_month, avg_DOM), color = col_palette[2], lwd=1)+
-  scale_y_continuous(name = NULL, label = scales::comma) +
+home_sales %>% 
+  st_drop_geometry() %>% 
+  group_by(sale_date) %>% 
+  summarize(avg_DOM = mean(DOM, na.rm=TRUE)) |> 
+  mutate(avg_DOM = slide_dbl(avg_DOM, mean, .before = 6)) |> 
+  ggplot(aes(sale_date, avg_DOM)) +
+  geom_line(color = col_palette[2], alpha = 0.5) +
+  stat_smooth(color = col_palette[2], method = "loess", se = FALSE, span = 0.8) +
+  scale_y_continuous(name = NULL, label = scales::comma, limits = c(0, 150)) +
   scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
                date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
   theme_minimal() +
@@ -642,64 +528,27 @@ figure_2_5_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_5.pdf"), 
-         plot = figure_2_5_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_2_4.pdf"), 
+         plot = figure_2_4_fun(), 
          width = 8, height = 4.2, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_4.pdf"))
 }
 
 ```
 
-``` {r make_fig_2_6}
+Several other indicators support the picture of a housing market in the midst of a demand shock, including the number of days on the market, the difference between asking price and sale price, and the number of resales. Figure \@ref(fig:fig-2-3) shows the number of days on market for home sales in Prince Edward County, and reveals a rapidly falling average during the pandemic. The average sale in 2019 had been on the market for `r DOM_2019` days, but that number fell to `r DOM_2020` in 2020, and to just `r DOM_2021` days in 2021. During the same time period, the difference between original asking price and final sale price shifted substantially, rising from `r diff_2019` in 2019 (indicating that the average property sold for less than its asking price) to `r diff_2021` in 2021—the first time this indicator has been positive since our dataset began in 2016.
 
-figure_2_6_fun <- function(regular = "", condensed = "") {
-  
-right_fig <- 
-  list_ask_price %>% 
-  ggplot() +
-  geom_line(aes(year_month, diff_price), color = col_palette[3], lwd=1)+
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  scale_y_continuous(name = NULL, label = scales::dollar) +
-  scale_x_date(name = NULL, date_breaks = "1 year", minor_breaks = NULL,
-               date_labels = c("2021", "2016", "2017", "2018", "2019", "2020"))+
-  theme_minimal() +
-  theme(legend.position = "bottom", panel.grid.minor.x = element_blank(), 
-        text = element_text(family = regular))
+``` {r fig-2-4, include = TRUE, fig.cap = '(ref:fig-2-4)', fig.align = "center"}
 
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_6.pdf"), 
-         plot = figure_2_6_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_6.pdf"))
-}
+figure_2_4_fun()
 
 ```
+(ref:fig-2-4) _Average number of days on market for successful home sales (7-day average)_
 
-There are numerous proxies that can help us assess the state of the real estate market in a given geography in addition to yearly changes in the number of home sales and average sale prices. The number of days on the market and the difference between asking price and sale price are two indicators of a hot real estate market. Figures \@ref(fig:fig-2-5) and \@ref(fig:fig-2-6) show both of those indicators. The average days on the market for the properties decreased in 2020 and even more so in 2021. The year with the highest average of days in the market is 2019 with `r DOM_2019` days. The following two years experienced declining averages, with properties in 2020 being sold after `r DOM_2020` days on average, and 2021 displaying the lowest average in the available data at `r DOM_2021` days. This speed in property sales is also accompanied by sale prices higher than the original asking prices starting late 2020. The only positive yearly average between the list price and the sale price is 2021 with `r diff_2021`, with 2020 having the smallest negative difference at `r diff_2020`.
+```{r multiple_sales, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
-``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
-
-figure_2_5_fun()
-
-```
-
-(ref:fig-2-5) _Monthly averages of days on the market_
-
-``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
-
-figure_2_6_fun()
-
-```
-
-(ref:fig-2-6) _Monthly difference between asking and sale prices_
-
-```{r para_5, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
-
-multiple_sales <- 
+multiple_sales <-
   home_sales %>% 
   st_drop_geometry() %>% 
   arrange(sale_date) %>% 
@@ -707,202 +556,151 @@ multiple_sales <-
   summarize(sale_dates = list(sale_date)) %>% 
   filter(lengths(sale_dates) > 1) %>%
   rowwise() %>% 
-  mutate(first_time = sale_dates[1],
-         second_time = sale_dates[2],
-         third_time = sale_dates[3],
-         fourth_time = sale_dates[4]) 
+  mutate(difs = as.numeric(min(diff(sale_dates)))) |>
+  ungroup() |> 
+  filter(difs <= 730) |> 
+  rowwise() |> 
+  mutate(year = lubridate::year(max(sale_dates))) |> 
+  ungroup() |> 
+  count(year) |> 
+  rename(resales = n) |> 
+  left_join(home_sales %>% 
+              st_drop_geometry() %>% 
+              count(year = year(sale_date))) |> 
+  mutate(resale_pct = resales / n) |> 
+  filter(year >= 2018) |> 
+  select(-n)
 
-second <- 
-  multiple_sales %>% 
-  mutate(second_time_year = year(second_time),
-         third_time_year = year(third_time),
-         fourth_time_year = year(fourth_time)) %>% 
-  group_by(second_time_year) %>% 
-  summarize(n_second = n()) %>% 
-  filter(!is.na(second_time_year)) %>% 
-  rename(year=second_time_year)
-
-second_2017 <- 
-  second %>% 
-  filter(year == 2017) %>% 
-  pull(n_second)
-
-second_2018 <- 
-  second %>% 
-  filter(year == 2018) %>% 
-  pull(n_second)
-
-second_2019 <- 
-  second %>% 
-  filter(year == 2019) %>% 
-  pull(n_second)
-
-second_2020 <- 
-  second %>% 
-  filter(year == 2020) %>% 
-  pull(n_second)
-
-second_2021 <- 
-  second %>% 
-  filter(year == 2021) %>% 
-  pull(n_second)
-
-third <- 
-  multiple_sales %>% 
-  mutate(second_time_year = year(second_time),
-         third_time_year = year(third_time),
-         fourth_time_year = year(fourth_time)) %>% 
-  group_by(third_time_year) %>% 
-  summarize(n_third = n()) %>% 
-  filter(!is.na(third_time_year))%>% 
-  rename(year=third_time_year)
-
-third_2021 <- 
-  third %>% 
-  filter(year == 2021) %>% 
-  pull(n_third)
-
-fourth <- 
-  multiple_sales %>% 
-  mutate(second_time_year = year(second_time),
-         third_time_year = year(third_time),
-         fourth_time_year = year(fourth_time)) %>% 
-  group_by(fourth_time_year) %>% 
-  summarize(n_fourth = n()) %>% 
-  filter(!is.na(fourth_time_year)) %>% 
-  rename(year=fourth_time_year)
+total_sales_2018_on <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  filter(sale_date >= "2018-01-01") %>%
+  arrange(sale_date) %>% 
+  count(address, ward, unit_number) %>% 
+  nrow() %>%
+  scales::comma()
 
 ```
 
-``` {r tab-4-2, include = TRUE}
+Out of the `r total_sales_2018_on` sales which occurred in Prince Edward County from 2018 to 2021, a total of `r sum(multiple_sales$resales)` residential properties had already been sold at least once in the previous two years (Table \@ref(tab:tab-2-1)). Quick sales such as these may indicate "house flipping", and is a clear symptom of a housing market where speculative investments are playing a role. (In fact, one property in Prince Edward County has been sold four separate times between 2016 and 2021.) The table demonstrates that quick sales have risen rapidly since 2018, both in absolute numbers and as a proportion of all sales. In 2021 so far, `r `scales::percent(max(multiple_sales$resale_pct)), 0.1)` of all home sales are properties which had been sold in the previous two years.
+
+``` {r tab-2-1, include = TRUE}
 
 library(kableExtra)
 
-left_join(second, third) %>% 
-  left_join(., fourth) %>% 
-  set_names(c("Year of sale", 
-              "Sold for the second time",
-              "Sold for the third time",
-              "Sold for the fourth time")) %>% 
+multiple_sales |> 
+  mutate(resale_pct = scales::percent(resale_pct, 0.1)) |> 
+  set_names(c("Year of sale", "Multi-sale properties", 
+              "Multi-sale properties as % of all properties sold")) |> 
   kbl(caption = "Properties sold multiple times between 2016 and 2021",
-      align = "lrrrrr") %>% 
+      align = "lrr") %>% 
   kable_styling(latex_options="scale_down") 
 
   
 ```
 
-Out of the 3,017 sales which occurred in Prince Edward, a total of 213 residential properties were sold more than one time during 2016 and 2021 (Table \@ref(tab:tab-4-2)). This quick turnover is an indicator of the state of the homeownership market: whereas houses are usually bought for long term living situations, it is not uncommon in hot property markets to see properties being sold multiple times in a short timespan. To explore this situation in Prince Edward County, we have looked at the addresses that came up more than once in the sales database, and grouped this number per year. The number of properties sold for a second time was similar in 2017 and 2018, respectively with `r second_2017` and `r second_2018`. The number increased by more than 50% between 2018 and 2019 to reach `r second_2019`. 2020 is the year with the most recorded second sales, reaching `r second_2020`, more than twice that of the year before. This phenomenon was less pronounced in 2021, with only `r second_2021` second time sales, but with the most properties being sold for a third time, reaching `r third_2021`. The most times a single property was sold in this time period is four times, although observed only once. While the limited date range of this dataset poses issues as to the comparability in between years (i.e. there are more years between 2021 and 2016 to record a second sale, compared to 2017 and 2016, for example), it provides another indicator of the state of the housing market in Prince Edward County. Combined with an overall increasing number of sales and average sale prices, positive differences between the list price and the sale price and shrinking time on the market, we can observe that Prince Edward County has been faced with a booming homeownership market since 2016, which is also the year of the last available census data. 
 
-# Homeownership affordability in Prince Edward County
+## Homeownership affordability
 
-```{r para_6, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+The housing sales trends described above tell only half the story of homeownership affordability in Prince Edward County. The other half is the ability of County residents to afford elevated housing prices. The most recent reliable data on Canadian incomes and housing affordability comes from the 2016 Census, which means that it will not have captured changes in income or—more importantly—the incredibly rapid increase in housing prices over the last five years.
+
+```{r owner_calcs, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 sale_price_by_ward <- 
   home_sales %>% 
-  filter(sale_date >="2020-01-01") %>% 
+  filter(sale_date >= "2020-01-01") %>% 
   st_drop_geometry() %>% 
-  left_join(., EW, by = "ward") %>% 
+  left_join(EW, by = "ward") %>% 
   filter(!is.na(ward)) %>% 
   st_as_sf() %>% 
   group_by(ward) %>% 
-  summarize(avg_sale_price_2021 = mean(sale_price, na.rm=TRUE))
+  summarize(avg_sale_price_2021 = mean(sale_price, na.rm = TRUE))
 
 sale_price_2020_2017 <- 
   home_sales %>% 
-  filter(sale_date >="2017-01-01", sale_date <= "2018-12-31") %>% 
+  filter(sale_date >= "2017-01-01", sale_date <= "2018-12-31") %>% 
   st_drop_geometry() %>% 
-  left_join(., EW, by = "ward") %>% 
+  left_join(EW, by = "ward") %>% 
   filter(!is.na(ward)) %>% 
   st_as_sf() %>% 
   group_by(ward) %>% 
-  summarize(avg_sale_price_1718 = mean(sale_price, na.rm=TRUE)) %>%
+  summarize(avg_sale_price_1718 = mean(sale_price, na.rm = TRUE)) %>%
   st_drop_geometry() %>% 
-  left_join(., sale_price_by_ward, by = "ward") %>% 
+  left_join(sale_price_by_ward, by = "ward") %>% 
   st_as_sf()
 
-north_avg_price <- 
-  sale_price_by_ward %>% 
-  st_drop_geometry() %>%
-  arrange(desc(avg_sale_price_2021)) %>% 
-  slice(1) %>% 
-  pull(avg_sale_price_2021) %>% 
-  scales::dollar(10)
-
-athol_avg_price <- 
-  sale_price_by_ward %>% 
-  st_drop_geometry() %>%
-  arrange(avg_sale_price_2021) %>% 
-  slice(1) %>% 
-  pull(avg_sale_price_2021) %>% 
-  scales::dollar(10)
-
-#https://www.wallstreetmojo.com/mortgage-formula/
+# https://www.wallstreetmojo.com/mortgage-formula/
 
 affordable_homeownership_2021 <- 
   sale_price_2020_2017 %>% 
   st_drop_geometry() %>% 
-  mutate(downpayment = avg_sale_price_2021*0.2,
-         P = avg_sale_price_2021 - downpayment,
-         amortization = 25,
+  mutate(down_pay = avg_sale_price_2021*0.2,
+         P = avg_sale_price_2021 - down_pay,
+         amort = 25,
          mortgage_rate = 0.0175) %>% 
-  mutate(r = mortgage_rate/12,
-         n = amortization*12) %>% 
-  mutate(monthly_mortgage_payments = P*r*(((1+r)^n)
-                                          /
-                                          (((1+r)^n)-1)
-                                          )
-         ) %>% 
-  mutate(maintenance_cost = 700,
-         total_mortgage_payments = (monthly_mortgage_payments+maintenance_cost)*12,
-         affordable_income_2021 = total_mortgage_payments/0.3) %>% 
-  left_join(., st_drop_geometry(EW_housing) %>% select(ward, at_hh_inc), by="ward") %>% 
-  mutate(diff_affordable_real_2021 = at_hh_inc-affordable_income_2021) %>% 
+  mutate(r = mortgage_rate / 12,
+         n = amort * 12) %>% 
+  mutate(monthly_payments = P * r * (((1 + r) ^ n) / (((1 + r) ^ n) - 1))) %>% 
+  mutate(maintenance = 700,
+         total_payments = (monthly_payments + maintenance) * 12,
+         affordable_income_2021 = total_payments / 0.3) %>% 
+  left_join(st_drop_geometry(EW_housing) %>% 
+              select(ward, at_hh_inc), by = "ward") %>% 
+  mutate(diff_affordable_real_2021 = at_hh_inc - affordable_income_2021) %>% 
   select(ward, avg_sale_price_2021, at_hh_inc, diff_affordable_real_2021)
 
 affordable_homeownership_1718 <- 
   sale_price_2020_2017 %>% 
   st_drop_geometry() %>% 
-  mutate(downpayment = avg_sale_price_1718*0.2,
-         P = avg_sale_price_1718 - downpayment,
-         amortization = 25,
+  mutate(down_pay = avg_sale_price_1718*0.2,
+         P = avg_sale_price_1718 - down_pay,
+         amort = 25,
          mortgage_rate = 0.0175) %>% 
-  mutate(r = mortgage_rate/12,
-         n = amortization*12) %>% 
-  mutate(monthly_mortgage_payments = P*r*(((1+r)^n)
-                                          /
-                                            (((1+r)^n)-1)
-  )
-  ) %>% 
-  mutate(maintenance_cost = 700,
-         total_mortgage_payments = (monthly_mortgage_payments+maintenance_cost)*12,
-         affordable_income_1718 = total_mortgage_payments/0.3) %>% 
-  left_join(., st_drop_geometry(EW_housing) %>% select(ward, at_hh_inc), by="ward") %>% 
-  mutate(diff_affordable_real_1718 = at_hh_inc-affordable_income_1718) %>% 
+  mutate(r = mortgage_rate / 12,
+         n = amort * 12) %>% 
+  mutate(monthly_payments = P * r * (((1 + r) ^ n) / (((1 + r) ^ n) - 1))) %>% 
+  mutate(maintenance = 700,
+         total_payments = (monthly_payments + maintenance) * 12,
+         affordable_income_1718 = total_payments / 0.3) %>% 
+  left_join(st_drop_geometry(EW_housing) %>% 
+              select(ward, at_hh_inc), by = "ward") %>% 
+  mutate(diff_affordable_real_1718 = at_hh_inc - affordable_income_1718) %>% 
   select(ward, avg_sale_price_1718, at_hh_inc, diff_affordable_real_1718)
 
 diff_picton_1718 <- 
   affordable_homeownership_1718 %>% 
-  filter(ward=="Picton") %>% 
+  filter(ward == "Picton") %>% 
   pull(diff_affordable_real_1718) %>% 
-  {.*-1} %>% 
+  {. * -1} %>% 
   scales::dollar(10) 
 
 ```
 
-``` {r make_fig_2_7}
+``` {r make_fig_2_5}
 
-figure_2_7_fun <- function(regular = "", condensed = "") {
+affordability_map_data <- 
+  affordable_homeownership_1718 %>% 
+  left_join(affordable_homeownership_2021 %>% 
+              select(-at_hh_inc), by = "ward") %>% 
+  select(ward, avg_sale_price_1718, avg_sale_price_2021,
+         at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) |> 
+  pivot_longer(c(diff_affordable_real_1718, diff_affordable_real_2021),
+               names_to = "years") |> 
+  mutate(years = if_else(str_detect(years, "1718"), "2017-2018", "2020-2021"))
+
+figure_2_5_fun <- function(regular = "", condensed = "") {
   
-sale_price_2020_2017 %>% 
+EW |> 
+  left_join(affordability_map_data) |> 
   ggplot() +
   geom_sf(data = province, colour = "transparent", fill = "grey93") +
-  geom_sf(aes(fill = avg_sale_price_2021), colour = "white") +
+  geom_sf(aes(fill = value), colour = "white", size = 0.3) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
-  scale_fill_stepsn(colors = col_palette[c(5, 3, 4, 6)], 
-                       na.value = "grey80",
-                       limits = c(400000, 1000000), oob = scales::squish, 
-                       labels = scales::dollar)  +
-  guides(fill = guide_colourbar(title = "Average sale\nprice",
+  facet_wrap(vars(years)) +
+  scale_fill_steps2(low = col_palette[6], high = col_palette[3], 
+                    limits = c(-90000, 90000), breaks = 30000 * -3:3,
+                    labels = scales::dollar)  +
+  guides(fill = guide_colourbar(title = "Average\naffordability gap",
                                 title.vjust = 1)) + 
   gg_bbox(EW) +
   theme_void() +
@@ -910,32 +708,33 @@ sale_price_2020_2017 %>%
         legend.title = element_text(family = regular, face = "bold",
                                     size = 7),
         legend.title.align = 0.9,
-        legend.text = element_text(family = regular, size = 5),
-        panel.border = element_rect(colour = "white", size = 2))
+        legend.text = element_text(family = regular, size = 4),
+        panel.border = element_rect(colour = "white", size = 2),
+        strip.text = element_text(face = "bold"),
+        legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
 
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_7.pdf"), 
-         plot = figure_2_7_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 4.2, units = "in", useDingbats = FALSE)
+  ggsave(here("output", "figures", "figure_2_5.pdf"), 
+         plot = figure_2_5_fun(), 
+         width = 8, height = 3.5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_7.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_5.pdf"))
 }
 
 ```
 
-Due to the relatively outdated nature of the last available census, it can be difficult to utilize this data to dress a portrait of the housing affordability in the County. However, we can still estimate based on the average sale prices by ward the income it would take to be able to afford being a homeowner in Prince Edward County without being in a situation of housing stress (which is set at the 30% threshold mentioned above). As we have seen in the first part of the chapter, homeowners in housing stress represent 17.3% of all homeowners, with varying averages by ward. The average sale price varies by ward, with North Marysburgh `r north_avg_price` having the highest average, and Athol the lowest `r athol_avg_price` for the years 2020 and 2021 only (Figure \@ref(fig:fig-2-7)).
+Instead, we can look at average sale prices and establish at what income levels these sale prices would be affordable, then compare those levels with actual 2016 incomes in Prince Edward County. We make the highly conservative assumption that home buyers receive 25-year mortgages at a 1.75% rate and with a 20% down payment. We then calculate monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) for homes sales from 2017-2018 and 2020-2021, and establish what income level would be necessary to keep those costs under 30% of income. We compare these income levels to 2016 after-tax household income, grouped by electoral ward. The differences between the affordable thresholds and the actual household incomes are displayed in Figure \@ref(fig:fig-2-5) and Table \@ref(tab:tab-2-2). For both time periods, the average after-tax household income in each ward is not sufficient to afford homeownership (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period the situation is much worse, however; there are five wards for which households, on average, would require more than $50,000 in additional after-tax income to make homeownership affordable given current market conditions. The highest difference in 2017-2018, meanwhile, was `r diff_picton_1718` in Picton.
 
-``` {r fig-2-7, include = TRUE, fig.cap = '(ref:fig-4-6)', fig.align = "center"}
+``` {r fig-2-5, include = TRUE, fig.cap = '(ref:fig-2-5)', fig.align = "center"}
 
-figure_2_7_fun()
+figure_2_5_fun()
 
 ```
+(ref:fig-2-5) _Average gap between actual after-tax income and income necessary to afford the average house_
 
-(ref:fig-2-7) _Average sale prices by ward in 2020 and 2021_
-
-``` {r tab-4-3, include = TRUE}
+``` {r tab-2-2, include = TRUE}
 
 library(kableExtra)
 
@@ -949,20 +748,20 @@ affordable_homeownership_1718 %>%
          diff_affordable_real_1718 = scales::dollar(diff_affordable_real_1718, 10),
          diff_affordable_real_2021 = scales::dollar(diff_affordable_real_2021, 10)) %>% 
   arrange(desc(diff_affordable_real_2021)) %>% 
-  set_names(c("Ward", "Average sale price, 2017-2018", "Average sale price, 2020-2021", 
-              "After-tax household income, 2016 census", "Difference with affordable income threshold, 2017-2018", 
-              "Difference with affordable income threshold, 2020-2021")) %>% 
-  kbl(caption = "Difference between household incomes and affordable homeownership threshold, for 2017-2018 and 2020-2021",
+  select(ward, at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) %>%
+  set_names(c("Ward", "After-tax household income (2016)", 
+              "Annual affordability gap (2017-2018)", 
+              "Annual affordability gap (2020-2021)")) %>% 
+  kbl(caption = "Annual affordability gap for homeowners (2017-2018 and 2020-2021)",
       align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") 
   
 ```
 
-Based on the average sale prices for the past years, it was possible to estimate the average household income it would take to become a homeowner in Prince Edward County in an affordable manner. We completed the exercise using average sale prices for the 2017-2018 and 2020-2021 periods to highlight the recent market changes in the county. The calculations were based on a 25-year mortgage at a 1.75% interest rate and a 20% mortgage down payment (although 20% down payment can be considered a rare feat, with most people having small down payments and needing to insure their mortgages). Monthly mortgage payments and homeownership maintenance costs (property taxes, utilities) were calculated to provide a yearly homeownership total costs, from which an affordable homeownership threshold was determined. The affordable homeownership threshold represents the minimum household income required to have housing costs remain at 30% of income or below. These thresholds for both 2017-2018 and 2020-2021 were then compared to the 2016 census after-tax household income, by ward (2016 being the most recent data available). The differences between the affordable thresholds and the actual household incomes are displayed in Table \@ref(tab:tab-4-3). We can see that, for both time periods, the average after-tax household income in each ward is not sufficient to make homeownership affordable in the County (with North Marysburgh in 2017-2018 being the only exception). In the 2020-2021 period, there are five wards for which households would require more than $50,000 to make current homeownership market conditions affordable for them, whereas the highest difference in 2017-2018 was Picton with `r diff_picton_1718`.
 
-# Being a renter in Prince Edward County
+## Renter affordability
 
-```{r para_7, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
+```{r renter_afford, cache = TRUE, cache.lazy = FALSE, cache.extra = mtime(here("output", "str_processed.qsm"))}
 
 rent_sept <- qread("output/rent_sept.qs", nthreads = availableCores())
   
@@ -1043,10 +842,10 @@ rent_diff_table <-
   rent_sept %>% 
   group_by(ward) %>% 
   summarize(sept_avg_rent = mean(rent)) %>% 
-  left_join(., EW_rent, by ="ward") %>% 
-  mutate(affordable_rent = (avg_hh_inc/12)*0.30,
+  left_join(EW_rent, by = "ward") %>% 
+  mutate(affordable_rent = (avg_hh_inc / 12) * 0.30,
          rent_diff = affordable_rent - sept_avg_rent) %>% 
-  mutate(ward = ifelse(ward == "Township", "Townships", ward)) %>% 
+  mutate(ward = if_else(ward == "Township", "Townships", ward)) %>% 
   select(ward, sept_avg_rent, avg_hh_inc, affordable_rent, rent_diff) %>% 
   arrange(rent_diff)
 
@@ -1054,21 +853,25 @@ rent_diff_picton <-
   rent_diff_table %>% 
   filter(ward == "Picton") %>% 
   pull(rent_diff) %>% 
-  {. *-1} %>% 
+  {. * -1} %>% 
   scales::dollar(accuracy = 1)
 
 rent_diff_well <- 
   rent_diff_table %>% 
   filter(ward == "Wellington") %>% 
   pull(rent_diff) %>% 
-  {. *-1} %>% 
+  {. * -1} %>% 
   scales::dollar(accuracy = 1)
-  
-  
   
 ```
 
-``` {r tab-4-4, include = TRUE}
+The housing affordability challenges facing renters in Prince Edward County are different from those of homeowners. First of all, renters make up only 16.9% of all households in the County. However, in 2016 (prior to the enormous surge in housing costs), almost half (48.9%) of renters were in a situation of housing stress—nearly three times the equivalent 17.3% rate for homeowners. The ward with the most renter housing stress was Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the County calculated its rental vacancy rate to be 0.81%—far below the 3% considered a minimum for a healthy rental market (Prince Edward County 2019).
+
+As documented above, the County has experienced a housing demand spike during the pandemic, and this has affected rents as well as housing prices. According to figures collected by the Prince Edward County Affordable Housing Corporation, average rents increased by 52% from June 2020 to June 2021. In September 2021 the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedroom and three-bedroom units were `r avg_rent_two` and `r avg_rent_three`, respectively. The overall average County rent of `r avg_rent_pec_sept_2021` in September 2021 is nearly double the average rent of `r census_avg_rent` reported in the 2016 Census.
+
+The standard affordability threshold for renters is the same 30% shelter cost-income ratio. Using September 2021 average rents from Picton, Wellington, Bloomfield and the townships in comparison with after-tax household income from the 2016 Census, it is possible to estimate affordability thresholds for renters across the County. Table \@ref(tab:tab-2-3) summarizes these findings. The difference between affordable rents and actual average market rents is a highly conservative underestimate, because the after-tax household income figures used for this calculation include incomes from both owner and renter households. Renter households earn significantly less on average than owner households, meaning that the household income used for this calculation is drawn approximately 5/6 from (higher earning) homeowners and only 1/6 from (lower earning) renters. Even given this fact, in Picton the average after-tax household income (among all homeowners and renters) is not sufficient to affordably pay for the average rental apartment: renters spend on average `r rent_diff_picton` more on rent each month than the affordable rent threshold. This figure in Wellington is `r rent_diff_well`. 
+
+``` {r tab-2-3, include = TRUE}
 
 library(kableExtra)
 
@@ -1077,449 +880,27 @@ rent_diff_table %>%
          avg_hh_inc = scales::dollar(avg_hh_inc, 10),
          affordable_rent = scales::dollar(affordable_rent, 1),
          rent_diff = scales::dollar(rent_diff, 1)) %>% 
-  set_names(c("Ward", "Average rent, Sept. 2021", "After-tax household income, 2016 census", 
-              "Affordable rent threshold", "Difference with affordable rent threshold")) %>% 
-  kbl(caption = "Difference between Sept. 2021 average rents and affordable rent thresholds",
+  select(ward, sept_avg_rent, rent_diff) %>%
+  set_names(c("Ward", "Average rent (Sept. 2021)", "Monthly affordability gap")) %>% 
+  kbl(caption = "Monthly affordability gap for renters (Sept. 2021)",
       align = "lrrrrr") %>% 
   kable_styling(latex_options="scale_down") 
   
 ```
 
-``` {r make_fig_2_8}
 
-affordability_map_data <- 
-  affordable_homeownership_1718 %>% 
-  left_join(., affordable_homeownership_2021 %>% select(-at_hh_inc), by = "ward") %>% 
-  select(ward, avg_sale_price_1718, avg_sale_price_2021,
-         at_hh_inc, diff_affordable_real_1718, diff_affordable_real_2021) |> 
-  pivot_longer(c(diff_affordable_real_1718, diff_affordable_real_2021),
-               names_to = "years") |> 
-  mutate(years = if_else(str_detect(years, "1718"), "2017-2018", "2020-2021"))
+## The impact of STAs on housing affordability
 
-figure_2_8_fun <- function(regular = "", condensed = "") {
-  
-EW |> 
-  left_join(affordability_map_data) |> 
-  ggplot() +
-  geom_sf(data = province, colour = "transparent", fill = "grey93") +
-  geom_sf(aes(fill = value), colour = "white", size = 0.1) +
-  geom_sf(data = water, fill = "white", colour = "transparent") +
-  facet_wrap(vars(years)) +
-  scale_fill_steps2(low = col_palette[6],
-                    high = col_palette[3], limits = c(-90000, 90000),
-                    breaks = 10000 * c(-9, -6, -3, 0, 3, 6, 9),
-                    labels = scales::dollar)  +
-  guides(fill = guide_colourbar(title = "Average\naffordability gap",
-                                title.vjust = 1)) + 
-  gg_bbox(EW) +
-  theme_void() +
-  theme(text = element_text(family = regular, face = "plain"),
-        legend.title = element_text(family = regular, face = "bold",
-                                    size = 7),
-        legend.title.align = 0.9,
-        legend.text = element_text(family = regular, size = 5),
-        panel.border = element_rect(colour = "white", size = 2),
-        strip.text = element_text(face = "bold"),
-        legend.position = "bottom", legend.key.width = unit(1.8, "lines"))
+Having established the broad contours of the housing affordability challenges facing Prince Edward County over the last several years, we now address the specific role of STAs in creating those challenges. After all, one possible explanation for at least some of both the insufficient supply and elevated demand for housing in PEC is the growth in short-term rentals. Tourists compete with residents for housing—adding demand to the local housing market—while landlords shift their properties out of the conventional housing market to become dedicated STAs—reducing the supply of conventional housing. Research has found that renting a housing unit on the STR market frequently offers landlords greater potential revenue than conventional leases (Wachsmuth & Weisler 2018). Multiple studies have also found that Airbnb and other STA platforms increase housing costs (Barron, Kung, & Proserpio 2017; Horn & Merante 2017; Garcia-Lopez et al. 2019).
 
-}
 
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_8.pdf"), 
-         # plot = figure_1_2_fun("Futura", "Futura Condensed"), 
-         plot = figure_2_8_fun(), 
-         width = 8, height = 3.5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_8.pdf"))
-}
+## Full-time STAs
 
-```
+One of the major considerations when gauging the impacts of short-term rentals (STAs) on a specific location is the extent to which STAs are removing long-term housing from the market. This process can occur either directly, for example where tenants of a rental unit are evicted or not replaced at the end of a lease and the unit is converted to a STR, or indirectly by absorbing new construction or investment properties which otherwise would have gone onto the long-term market. In a highly seasonal market such as Prince Edward County, moreover, it is likely that there will be many housing units which are operated as dedicated STAs during the summer high season but then occupied by tenants or by their owners during the low season. To obtain the exact number of units that have been converted to full-time STAs (either year-round or during the summer), it would be necessary to survey individual property owners en masse, which is unfeasible because online STA hosts are mostly anonymous. Instead, we use the daily activity of STA listings, alongside structural characteristics such as listing type and location, to estimate which listings are operating as dedicated STAs and are therefore not available as conventional long-term housing.
 
+``` {r make_fig_2_6}
 
-``` {r fig-2-8, include = TRUE, fig.cap = '(ref:fig-2-8)', fig.align = "center"}
-
-figure_2_8_fun()
-
-```
-
-
-The renter situation in Prince Edward County is different than that of homeowners. First of all, renters make up only 16.9% of all households in the County. However, almost half (48.9%) of renters are in a situation of housing stress. The ward with the most renters' housing stress is Wellington, with `r p_thirty_renter_well` of renters spending more than 30% of their household income on rent, followed by Picton with `r p_thirty_renter_picton` and Hallowell with `r p_thirty_renter_hallo`. As of October 2017, the calculated rental vacancy rate was 0.81% (Prince Edward County 2019). In the past years, renters have experienced tightening conditions in part due to the increased competition renters have with seasonal tourism. The pressure in the homeownership market has put increasing pressure on the County's rental stock. There have been accounts of bidding wars in the rental market in response to the limited units available. The workforce is struggling to find rents that fit their budget, even with hourly pays of 20 to $25 per hour. The pandemic has only heightened this situation, with the largest year-over-year increase in average rent occurring from June 2020 to June 2021, with a 52% increase. As of September 2021, the average rent for a bachelor unit was `r avg_rent_bach` while the average rent for a one-bedroom was `r avg_rent_one`. The average rents for two-bedrooms and three-bedrooms were `r avg_rent_two` and `r avg_rent_three`, respectively. The total average rent of `r avg_rent_pec_sept_2021 ` in September 2021 stands in great contrast with the 2016 census' registered average rent of `r census_avg_rent`.
-
-In order to consider rent as affordable, a given household must not spend more than 30% of their income on shelter costs. With collected rents from Picton, Wellington, Bloomfield and the townships, it was possible to establish the affordability thresholds for renters per geographic locations. Table \@ref(tab:tab-4-4) summarizes these findings. In Picton, the average after-tax household income is not sufficient to make rent affordable in Prince Edward County: renters spend on average `r rent_diff_picton` more on rent than the affordable rent threshold. This number in Wellington is `r rent_diff_well`. The difference between affordable rents and actual average market rents needs to be taken as conservative estimates. The after-tax household income used for this calculation includes incomes from both owner and renter households. Renter households earn less on average than owner households, meaning that the household income used for this calculation might be inflated and overrepresented by that of the homeowners, which are also a majority of households in Prince Edward County.
-
-
-
-
-
-```{r new_objects_2}
-
-FREH <- 
-  daily %>% 
-  # 180 days after VRBO
-  filter(date >= as.Date("2017-06-01") + days(180)) %>% 
-  group_by(date) %>% 
-  summarize(across(c(FREH_6), sum))
-
-FREH_EW <- 
-  daily %>% 
-  filter(date >= start_2019) %>% 
-  group_by(ward, date) %>% 
-  summarize(FREH = sum(FREH_6)) %>% 
-  mutate(date = case_when(str_starts(date, "2019") ~ 2019,
-                         str_starts(date, "2020") ~ 2020,
-                         str_starts(date, "2021") ~ 2021)) %>% 
-  group_by(ward, date) %>% 
-  summarize(FREH = round(mean(FREH))) 
-  
-
-FREH_DA <- 
-  daily %>% 
-  filter(date == max(daily$date)) %>% 
-  left_join(select(st_drop_geometry(property), property_ID, GeoUID)) %>% 
-  group_by(GeoUID) %>% 
-  summarize(FREH = sum(FREH_6))
-
-GH_EW <- 
-  GH %>% 
-  filter(date >= start_2019) %>% 
-  mutate(geometry = st_centroid(geometry)) %>% 
-  st_join(EW) %>% 
-  st_drop_geometry() %>% 
-  group_by(ward, date) %>% 
-  summarize(GH = sum(housing_units, na.rm = TRUE)) %>% 
-  as_tibble() %>% 
-  mutate(date = case_when(str_starts(date, "2019") ~ 2019,
-                         str_starts(date, "2020") ~ 2020,
-                         str_starts(date, "2021") ~ 2021)) %>% 
-  group_by(ward, date) %>% 
-  summarize(GH = round(mean(GH))) 
-
-GH_DA <- 
-  GH %>% 
-  filter(date == max(daily$date)) %>% 
-  mutate(geometry = st_centroid(geometry)) %>% 
-  st_join(DA) %>% 
-  st_drop_geometry() %>% 
-  group_by(GeoUID) %>% 
-  summarize(GH = sum(housing_units, na.rm = TRUE)) %>% 
-  as_tibble()
-
-FREH_total <- 
-  daily %>% 
-  filter(date >= "2017-06-01") %>% 
-  group_by(date) %>% 
-  summarize(across(c(FREH_6), sum))
-
-GH_total <-
-  GH %>%
-  st_drop_geometry() %>%
-  # filter(status != "B") %>% 
-  group_by(date) %>%
-  summarize(GH = sum(housing_units)) %>%
-  mutate(GH = slide_dbl(GH, mean, .before = 29))
-
-housing_loss <-
-  FREH_total %>%
-  select(date, FREH_6) %>% 
-  left_join(GH_total, by = "date") %>%
-  rename(`Entire home/apt` = FREH_6, `Private room` = GH) %>%
-  pivot_longer(c(`Entire home/apt`, `Private room`), 
-               names_to = "Listing type",
-               values_to = "Housing units") %>% 
-  mutate(`Listing type` = factor(`Listing type`, 
-                                 levels = c("Private room", "Entire home/apt")))  
-
-housing_loss_EW <- 
-  EW %>% 
-  left_join(FREH_EW) %>% 
-  left_join(GH_EW) %>% 
-  mutate(GH = if_else(is.na(GH), 0, GH),
-         housing_loss_pct = (FREH + GH) / dwellings)
-
-housing_loss_DA <- 
-  DA %>% 
-  left_join(FREH_DA) %>% 
-  left_join(GH_DA) %>% 
-  mutate(GH = if_else(is.na(GH), 0L, GH),
-         housing_loss_pct = (FREH + GH) / dwellings)
-
-EW_housing_table <- 
-  EW %>% 
-  st_drop_geometry() %>% 
-  left_join(FREH_EW) %>% 
-  left_join(GH_EW) %>%
-  mutate(GH = if_else(is.na(GH), 0, GH)) %>% 
-  group_by(ward) %>% 
-  summarize(
-    dwellings = mean(dwellings),
-    housing_loss_2019 = sum(FREH[date == 2019]) + sum(GH[date == 2019]),
-    housing_loss_2021 = sum(FREH[date == 2021]) + sum(GH[date == 2021]),
-    change_2019_2021 = (housing_loss_2021 - housing_loss_2019) / housing_loss_2019,
-    housing_loss_pct_2021 = housing_loss_2021 / dwellings)
-  
-```
-
-```{r exec_summ_2}
-
-# Avg housing loss for 2021
-housing_loss_2021 <- 
-# FREH in 2021
-{{FREH %>% 
-  filter(date >= start_2021) %>% 
-  summarize(mean(FREH_6)) %>% 
-  pull() %>% 
-  round(digit = -1)} +
-# GH in 2021
-{GH %>% 
-  st_drop_geometry() %>% 
-  filter(date >= start_2021) %>% 
-  group_by(date) %>% 
-  summarize(h_u = sum(housing_units)) %>%
-  pull(h_u) %>% mean() %>% 
-  round(digit = -1)}}
-
-
-# Avg housing loss for 2019
-housing_loss_2019 <- 
-  {{FREH %>% 
-      filter(date >= start_2019, date <= end_2019) %>% 
-      summarize(mean(FREH_6)) %>% pull()} +
-      {GH %>% st_drop_geometry() %>% 
-      filter(date >= start_2019, date <= end_2019) %>% 
-        group_by(date) %>% summarize(h_u = sum(housing_units)) %>%
-        pull(h_u) %>% mean()}} %>% 
-  round(digit = -1) %>% 
-  prettyNum(",")
-
-# Absolute numbers of change in dedicated STRs from 2019 to 2021
-housing_loss_change_absolute <- 
-  {{{FREH %>% 
-      filter(date >= start_2019, date <= end_2019) %>% 
-      summarize(mean(FREH_6)) %>% pull()} +
-      {GH %>% st_drop_geometry() %>% 
-      filter(date >= start_2019, date <= end_2019) %>% 
-        group_by(date) %>% summarize(h_u = sum(housing_units)) %>%
-        pull(h_u) %>% mean()}} - 
-      {{FREH %>% 
-      filter(date >= start_2021) %>% 
-      summarize(mean(FREH_6)) %>% pull()} +
-      {GH %>% st_drop_geometry() %>% 
-      filter(date >= start_2021) %>% 
-        group_by(date) %>% summarize(h_u = sum(housing_units)) %>%
-        pull(h_u) %>% mean()}}} %>% 
-  round(digit = -1) %>% 
-  prettyNum(",")
-
-
-# 2019 to 2021 increase in housing loss
-housing_loss_change <- 
-  {{{FREH %>% 
-      filter(date >= start_2021) %>% 
-      summarize(mean(FREH_6)) %>% pull()} +
-      {GH %>% st_drop_geometry() %>% 
-      filter(date >= start_2021) %>% 
-        group_by(date) %>% summarize(h_u = sum(housing_units)) %>%
-        pull(h_u) %>% mean()}} /
-      {{FREH %>% 
-      filter(date >= start_2019, date <= end_2019) %>% 
-      summarize(mean(FREH_6)) %>% pull()} +
-      {GH %>% st_drop_geometry() %>% 
-      filter(date >= start_2019, date <= end_2019) %>% 
-        group_by(date) %>% summarize(h_u = sum(housing_units)) %>%
-        pull(h_u) %>% mean()}}} %>% 
-  {. - 1} %>% 
-  {. * -1} %>% 
-  round(3) %>% 
-  scales::percent(0.1)
-
-
-housing_loss_pct_dwelling_2021 <- 
-  {{{FREH %>% 
-      filter(date >= start_2021) %>% 
-      summarize(mean(FREH_6)) %>% pull()} +
-      {GH %>% st_drop_geometry() %>% 
-      filter(date >= start_2021) %>% 
-        group_by(date) %>% summarize(h_u = sum(housing_units)) %>%
-        pull(h_u) %>% mean()}} /
-      sum(EW$dwellings)} %>% 
-  round(3) %>% 
-  scales::percent(0.1)
-
-housing_loss_pct_EW_2021 <- 
-  EW %>% 
-  left_join(FREH_EW) %>% 
-  left_join(GH_EW) %>% 
-  filter(date == "2021") %>% 
-  mutate(GH = if_else(is.na(GH), 0, GH),
-         housing_loss_per_dwelling = (FREH + GH) / dwellings,
-         housing_loss_per_dwelling = round(housing_loss_per_dwelling, 3)) %>% 
-  st_drop_geometry()
-
-housing_loss_pct_EW_2019 <- 
-  EW %>% 
-  left_join(FREH_EW) %>% 
-  left_join(GH_EW) %>% 
-  filter(date == "2019") %>% 
-  mutate(GH = if_else(is.na(GH), 0, GH),
-         housing_loss_per_dwelling = (FREH + GH) / dwellings,
-         housing_loss_per_dwelling = round(housing_loss_per_dwelling, 3)) %>% 
-  st_drop_geometry()
-
-housing_loss_pct_picton_2019 <- 
-  housing_loss_pct_EW_2019 %>% 
-  filter(ward %in% c("Picton")) %>% 
-    pull(housing_loss_per_dwelling) %>% 
-  scales::percent(0.1)
-
-housing_loss_pct_picton_2021 <- 
-  housing_loss_pct_EW_2021 %>% 
-  filter(ward == "Picton") %>% 
-  pull(housing_loss_per_dwelling) %>% 
-  scales::percent(0.1)
-
-housing_loss_pct_wellington_2021 <- 
-  housing_loss_pct_EW_2021 %>% 
-  filter(ward == "Wellington") %>% 
-  pull(housing_loss_per_dwelling) %>% 
-  scales::percent(0.1)
-
-housing_loss_pct_bloomfield_2021 <- 
-  housing_loss_pct_EW_2021 %>% 
-  filter(ward == "Bloomfield") %>% 
-  pull(housing_loss_per_dwelling) %>% 
-  scales::percent(0.1)
-
-
-```
-
-
-
-
-## STR-induced housing loss
-
-Prince Edward County’s (PEC) housing market has been under considerable stress in the past years, with housing prices and rents rising, and rental vacancy rates falling. These are symptoms of a market where the supply of housing is insufficient to meet demand. One possible explanation for both the insufficient supply and elevated demand for housing in PEC is the growth in short-term rentals. Tourists compete with residents for housing—adding demand to the local housing market—while landlords are able to shift their properties out of the conventional housing market to become dedicated STRs—reducing the supply of conventional housing. Research has found that renting a housing unit on the STR market frequently offers landlords greater potential revenue than conventional leases (Wachsmuth & Weisler 2018). Multiple studies have also found that Airbnb and other STR platforms increase housing costs (Barron, Kung, & Proserpio 2017; Horn & Merante 2017; Garcia-Lopez et al. 2019).
-
-One of the major considerations when gauging the impacts of short-term rentals (STRs) on a specific location, therefore, is the extent to which STRs are removing long-term housing from the market. This process can occur either directly, where tenants of a unit are evicted or not replaced at the end of a lease and the unit is converted to a STR, or indirectly by absorbing new construction or investment properties which otherwise would have gone onto the long-term market. In a highly seasonal market like PEC, we can expect a number of housing units dedicated to the STR market only in the summer months, and then rented monthly in the longer-term market, or occupied by its owner, during the low season. To obtain the exact number of units that have been occupied as STRs, landlords or units would need to be individually surveyed, which is infeasible because STR hosts are mostly anonymous on major STR platforms such as Airbnb and VRBO. Instead, we use the daily activity of listings, alongside structural characteristics such as listing type and location, to estimate which listings are operating as dedicated STRs and are therefore not available as conventional long-term housing.
-
-_Frequently Rented Entire-Home (FREH) listings:_ The number of frequently-rented units is one way to estimate STR-induced housing loss. If a STR is either reserved or available for reservations the vast majority of the time, it is reasonable to assume that it is not serving as an individual’s principal residence at the same time. Along these lines, in this report, we define frequently rented entire-home (FREH) listings as entire-home listings which were active (either reserved or available) on Airbnb or VRBO the vast majority of the last 180 days (at least 162 nights).
-
-_Ghost hostels:_ In addition to FREH listings, it is possible that entire housing units have been subdivided into multiple private-room listings, each of which appearing to be a spare bedroom or the like, while actually collectively representing an apartment removed from the long-term housing market. We call these clusters of private-room listings “ghost hostels”, building on the advocacy group Fairbnb.ca’s term “ghost hotels”—multiple FREH listings located in a single building, collectively serving as de facto hotels instead of long-term housing (Wieditz 2017). We detect ghost hostels by finding clusters of three or more private-room listings operated by a single host, whose reported locations are close enough to each other that they are likely to have originated in the same actual housing unit. (Airbnb and VRBO obfuscate listing locations by shifting them randomly up to 200 m.)
-
-```{r para_1_2}
-
-# FREH in 2021
-FREH_2021 <- 
-  FREH %>% 
-  filter(date >= start_2021) %>% 
-  summarize(mean(FREH_6)) %>% 
-  pull() %>% 
-  round(digit = -1) %>% 
-  prettyNum(",")
-
-# GH in 2021
-GH_2021 <- 
-  GH %>% 
-  st_drop_geometry() %>% 
-  filter(date >= start_2021) %>% 
-  group_by(date) %>% 
-  summarize(h_u = sum(housing_units)) %>%
-  pull(h_u) %>% mean() %>% 
-  round(digit = -1) %>% 
-  prettyNum(",")
-
-# Change in listings 2020
-active_yoy_change <- 
-  daily %>% 
-  filter(housing, status != "B", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>% 
-  group_by(year_2021 = str_starts(date, "2021")) %>% 
-  summarize(active_listings = n() / yday(max(date)),
-            avg_daily_revenue = sum(price[status == "R"]) / yday(max(date)), .groups = "drop") %>% 
-  summarize(across(c(active_listings, avg_daily_revenue), ~{(.x[2] - .x[1]) / .x[1]}), .groups = "drop")
-
-# YOY listing change
-active_yoy_listings <- 
-  active_yoy_change$active_listings %>% 
-  {. * -1} %>% 
-  scales::percent(accuracy = 0.1)
-
-# FREH summer seasons pre-covid
-summer_FREH_avg_pre <- 
-seasonal_FREH %>% 
-  filter(season == "Summer",
-         str_detect(year_season, "2018|2019")) %>% 
-  summarize(mean(n)) %>% 
-  pull() %>% 
-  round(digit = -1)
-
-# How many summer FREH / all dwellings
-summer_plateau_on_dwellings <- 
-{summer_FREH_avg_pre / sum(EW$dwellings)} %>% 
-  scales::percent(0.1)
-
-# FREH summer seasons
-summer_FREH_avg_2021 <- 
-seasonal_FREH %>% 
-  filter(season == "Summer",
-         str_detect(year_season, "2021")) %>% 
-  summarize(mean(n)) %>% 
-  pull() %>% 
-  round(digit = -1)
-
-# How many summer FREH / all dwellings
-summer_2021_on_dwellings <- 
-{summer_FREH_avg_2021 / sum(EW$dwellings)} %>% 
-  scales::percent(0.1)
-  
-
-```
-
-``` {r make_fig_2_9}
-
-figure_2_9_fun <- function(regular = "", condensed = "") {
-  
-housing_loss %>% 
-  group_by(`Listing type`) %>% 
-  mutate(`Housing units` = slide_dbl(`Housing units`, mean, .before = 6, .complete = TRUE)) %>% 
-  filter(!is.na(`Housing units`)) %>% 
-  ggplot(aes(date, `Housing units`, fill = `Listing type`)) +
-  geom_col(lwd = 0) +
-  scale_fill_manual(values = col_palette[c(2, 4)]) +
-  # VRBO enters in June, 180 days to calcul accurately the overall number of FREH
-  scale_x_date(name = NULL, limits = c(as.Date("2017-06-01") + days(180), NA)) +
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "bottom", 
-        panel.grid.minor.x = element_blank(),
-        text = element_text(face = "plain", family = regular),
-        legend.title = element_text(face = "bold", family = regular, 
-                                    size = 10),
-        legend.text = element_text( size = 10, family = regular))
-
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_9.pdf"), 
-         plot = figure_2_9_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_9.pdf"))
-}
-
-```
-
-On average in 2021, there were `r FREH_2021` FREH listings in PEC, and `r GH_2021` more housing units which were operating as ghost hostels. In total, therefore, short-term rentals are taking `r housing_loss_2021` housing units off of PEC’s long-term market (Figure \@ref(fig:fig-2-9)). Notably, while the number of active daily listings declined by `r active_yoy_listings` between 2019 and 2021, the number of housing units which STRs took off of PEC’s housing market decreased at a much sharper rate. There were `r housing_loss_change` fewer dedicated STRs in 2021 compared to 2019, from `r housing_loss_2019` to `r housing_loss_2021`. This high decline in commercially-operated STRs reflects that the pandemic has disproportionately affected commercial operators in the County.
-
-``` {r fig-2-9, include = TRUE, fig.cap = '(ref:fig-2-9)', fig.align = "center"}
-
-figure_2_9_fun()
-
-```
-(ref:fig-2-9) _Housing units converted to dedicated STRs in the Prince Edward County_
-
-``` {r make_fig_2_10}
-
-figure_2_10_fun <- function(regular = "", condensed = "") {
+figure_2_6_fun <- function(regular = "", condensed = "") {
   
   seasonal_FREH %>% 
     ggplot() +
@@ -1543,132 +924,55 @@ figure_2_10_fun <- function(regular = "", condensed = "") {
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_10.pdf"), 
-         plot = figure_2_10_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_2_6.pdf"), 
+         plot = figure_2_6_fun(), 
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_10.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_2_6.pdf"))
 }
 
 ```
 
-As we saw in the previous chapter, PEC has a highly seasonal market. Some owner-occupiers might leave in the summer to take advantage of the high demand for STR, while they occupy their home in winter. A landlord can also take advantage of the STR market in the summer, and rent out their unit in the winter on a more longer-term market. We explored these possibilities by separating seasons: Summer months range from May to September included, and winter months from October to April. The number of full-time entire-homes active on the STR market in winter is at the same level than the FREH indicator. However, in the summer months, the number of full-time entire-home STR was around `r summer_FREH_avg_pre` in the summers of 2018 and 2019, what seems to be a plateau in PEC as no growth has been seen between these two years. This number was equivalent to `r summer_plateau_on_dwellings` of all dwellings in PEC. In the summer of 2021, the number of full-time STR was `r summer_FREH_avg_2021`, which is a significant increase on the 2020 level, but still below the pre-Covid level. It is the equivalent of `r summer_2021_on_dwellings` of all dwellings in PEC. Figure \@ref(fig:fig-2-10) showcases the beginning of a recovery for the commercially-operated STRs.  
+```{r FREH_seasonal}
 
-``` {r fig-2-10, include = TRUE, fig.cap = '(ref:fig-2-10)', fig.align = "center"}
+# FREH summer 2019
+summer_FREH_avg_pre <- 
+  seasonal_FREH %>% 
+  filter(year_season == "Summer 2019") %>% 
+  tally(n) |> 
+  pull() %>% 
+  round(-1)
 
-figure_2_10_fun()
-
-```
-(ref:fig-2-10) _Housing units operating on a full-time basis on the STR market of the Prince Edward County, per season_
-
-```{r para_3_2}
-
-after_180days_vrbo <- as.Date("2017-06-01") + days(180)
-
-# End-of-year summaries
-housing_loss_summaries <- 
-  daily %>% 
-  filter(housing, status != "B", listing_type %in% c("Entire home/apt",
-                                                     "Private room")) %>% 
-  group_by(date) %>% 
-  summarize(eh = mean(FREH_6[listing_type == "Entire home/apt"]),
-            pr = mean(GH[listing_type == "Private room"])) %>% 
-  mutate(across(c(eh, pr), slide_dbl, mean, .before = 30)) %>% 
-  filter(date >= after_180days_vrbo)
-
-eh_housing_loss <- 
-  housing_loss_summaries %>% 
-  filter(date >= start_2021) %>% 
-  pull(eh) %>% mean() %>% 
+# How many summer FREH / all dwellings
+summer_plateau_on_dwellings <- 
+{summer_FREH_avg_pre / sum(EW$dwellings)} %>% 
   scales::percent(0.1)
 
-pr_housing_loss <- 
-  housing_loss_summaries %>% 
-  filter(date >= start_2021) %>% 
-  pull(pr) %>% mean() %>% 
+# FREH summer seasons
+summer_FREH_avg_2021 <- 
+  seasonal_FREH %>% 
+  filter(year_season == "Summer 2021") %>% 
+  tally(n) %>% 
+  pull() %>% 
+  round(-1)
+
+# How many summer FREH / all dwellings
+summer_2021_on_dwellings <- 
+{summer_FREH_avg_2021 / sum(EW$dwellings)} %>% 
   scales::percent(0.1)
-
-eh_housing_loss_pre_covid <- 
-  housing_loss_summaries %>% 
-  filter(date < start_2021) %>% 
-  pull(eh) %>% mean() %>% 
-  scales::percent(0.1)
-
-pr_housing_loss_pre_covid <- 
-  housing_loss_summaries %>% 
-  filter(date < start_2021) %>% 
-  pull(pr) %>% mean() %>% 
-  scales::percent(0.1)
-
-
-# Table for figure
-housing_loss_share <- 
-  daily %>% 
-  filter(housing, 
-         status != "B", 
-         listing_type %in% c("Entire home/apt", "Private room")) %>% 
-  group_by(date) %>% 
-  summarize(
-    `Entire home/apt` = mean(FREH_6[listing_type == "Entire home/apt"]),
-    `Private room` = mean(GH[listing_type == "Private room"])) %>% 
-  filter(date >= after_180days_vrbo) %>% 
-  pivot_longer(-date, names_to = "Listing type", 
-               values_to = "housing_loss_pct") %>% 
-  group_by(`Listing type`) %>% 
-  mutate(housing_loss_pct = slide_dbl(housing_loss_pct, mean, .before = 13))
-
-avg_change_2019_2021 <- 
-EW_housing_table %>% 
-  summarize(
-    dwellings = sum(dwellings),
-    housing_loss_2019 = sum(housing_loss_2019),
-    housing_loss_2021 = sum(housing_loss_2021),
-    change_2019_2021 = (housing_loss_2021 - housing_loss_2019) / housing_loss_2019,
-    housing_loss_pct_2021 = housing_loss_2021 / dwellings) %>% 
-  mutate(ward = "PEC") %>% pull(change_2019_2021) %>% 
-  scales::percent(accuracy = 0.1)
-
-
-```
-
-``` {r make_fig_2_11}
-
-figure_2_11_fun <- function(regular = "", condensed = "") {
   
-  housing_loss_share %>% 
-    ggplot(aes(date, housing_loss_pct, colour = `Listing type`)) +
-    geom_line(lwd = 1) +
-    scale_x_date(name=NULL) +
-    scale_y_continuous(name = NULL, labels = scales::percent) +
-    scale_colour_manual(values = col_palette[c(5, 1)]) +
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor.x = element_blank())
-  
-}
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_11.pdf"), 
-         plot = figure_2_11_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_2_11.pdf"))
-}
-
 ```
 
-On average, for the pre-Covid years, half of entire-home listings (`r eh_housing_loss_pre_covid`) and of the private-room listings (`r pr_housing_loss_pre_covid`) were taking housing off the long-term market. On average, in 2021, only a fourth of entire-home listings (`r eh_housing_loss`) but back to haf of private-room listings (`r pr_housing_loss`) were being operated in a full-time or close-to-full-time fashion (Figure \@ref(fig:fig-4-3)). The yearly up-and-down pattern on Figure \@ref(fig:fig-2-11) is that, in winter, a lower percentage of FREH listings are removed from the platform than for less commercial listings. In addition, there are more active listings in the summer, shrinking the percentage of entire home/apt STR that contributes to long-term housing-loss even if their number in absolute was stable before the pandemic.
+We estimate full-time STA status by observing the activity of each entire-home STA during the high season (May to September) and the low season (October to April), and identifying all the listings which were available for reservations at least 75% of the total time period. This forms the pool of listings which are highly available for a given season, and therefore likely to be dedicated STAs. We then further refine this calculation by discarding any listing that was not actually reserved at least 25% of the total time period in the high season, or at least seven nights in the low season. Figure \@ref(fig:fig-2-6) shows the number of these properties active each season since Winter 2017, further distinguishing between properties which are full-time year-round (shown in green), full-time only in the summer (shown in orange), and full-time only in the winter (shown in blue). The figure reveals significant seasonal variation, with the pre-Covid high seasons seeing nearly twice the number of dedicated STAs in operation as the low seasons. The number of full-time STAs was `r summer_FREH_avg_pre` in Summer 2019, which was `r summer_plateau_on_dwellings` of all dwellings in Prince Edward County. The figure also shows a major impact from the Covid-19 pandemic; Summer 2020 saw roughly the same number of full-time STA operations as Winter 2018, although Summer 2021 indicates that the full-time STA market is expanding again, with `r summer_FREH_avg_2021` dedicated STAs in operation. This is `r summer_2021_on_dwellings` of all dwellings in Prince Edward County which were operating as full-time STAs in the past summer.
 
-Table \@ref(tab:tab-4-1) summarizes STR-induced housing loss patterns by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
+``` {r fig-2-6, include = TRUE, fig.cap = '(ref:fig-2-6)', fig.align = "center"}
 
-
-``` {r fig-2-11, include = TRUE, fig.cap = '(ref:fig-2-11)', fig.align = "center"}
-
-figure_2_11_fun()
+figure_2_6_fun()
 
 ```
+(ref:fig-2-6) _Housing units operating on a full-time basis on the STA market of the Prince Edward County, per season_
 
-(ref:fig-2-11) _The percentage of active STR listings contributing to long-term housing loss each day in PEC (14-day average)_
+Figure \@ref(fig:fig-2-7) and Table \@ref(tab:tab-2-4) summarize STA-induced housing loss by ward. It demonstrates that the County-wide trend of shrinking dedicated STRs due to the pandemic holds in all wards. The decline between pre-pandemic and 2021 levels in STR-induced housing loss has been evenly distributed between virtually all wards, with an average of `r avg_change_2019_2021`.
 
 ``` {r tab-4-1-2, include = TRUE}
 
@@ -1769,6 +1073,153 @@ figure_2_12_fun()
 ```
 
 (ref:fig-2-12) _The percentage of housing units converted to dedicated STRs in PEC, by ward (L) and dissemination area (R)_
+
+
+
+
+
+
+
+## Sales
+
+
+```{r, include = T}
+
+start_reg <- as.Date("2019-11-04")
+end_reg <- as.Date("2020-09-04")
+start_mora <- as.Date("2020-09-05")
+end_mora <- as.Date("2021-06-22")
+
+STA <- qread(here("output", "/STA.qs"))
+
+total_licenses_all <- 
+  STA %>% 
+  st_drop_geometry() %>% 
+  nrow()
+
+# Get properties active during the period when the registration was into effect
+reg_property <- 
+  property %>% 
+  filter(scraped >= start_reg) %>% 
+  st_transform(32618)
+
+sold_before_created <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created) %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created <- 
+{sold_before_created / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+sold_before_created_covid <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date <= created,
+         sale_date >= "2020-03-14") %>% 
+  count(address) %>% 
+  nrow()
+
+per_sold_before_created_covid <- 
+{sold_before_created_covid / nrow(STA)} %>% 
+  scales::percent(0.1)
+
+created_before_sale <- 
+home_sales %>% 
+  st_drop_geometry() %>% 
+  left_join(STA, by = "address") %>% 
+  filter(!is.na(id)) %>%
+  filter(sale_date >= created) %>% 
+  count(address) %>% 
+  nrow()
+
+total_sales <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(year = year(sale_date)) %>% 
+  count(year) %>% 
+  set_names(c("year", "total"))
+
+survival_factor <- 
+  property %>% 
+  st_drop_geometry() %>% 
+  filter(scraped > created, str_starts(property_ID, "ab-")) %>% 
+  group_by(year_created = year(created)) %>% 
+  summarize(still_active = mean(scraped >= "2019-11-01")) %>% 
+  filter(year_created >= 2016)
+
+proportion_home_sales_STA <-
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  inner_join(STA, by = "address") %>% 
+  filter(sale_date <= created) %>% 
+  mutate(year = year(sale_date)) %>% 
+  count(year) %>% 
+  left_join(total_sales, by = "year") %>% 
+  mutate(perc = n/total,
+         perc_adjusted = perc/(total_licenses_all/ reg_property %>% nrow())) %>% 
+  left_join(survival_factor, by = c("year" = "year_created")) %>% 
+  mutate(perc_adj_2 = perc_adjusted / still_active)
+
+```
+
+```{r make_fig_5_2}
+
+figure_2_13_fun <- function(regular = "", condensed = "") {
+
+proportion_home_sales_STA %>% 
+  mutate(perc_adjusted = perc_adjusted - perc,
+         perc_adj_2 = perc_adj_2 - perc_adjusted - perc) %>% 
+  select(year, perc, perc_adjusted, perc_adj_2) %>% 
+  pivot_longer(c(perc:perc_adj_2)) %>% 
+  mutate(name = case_when(
+    name == "perc" ~ "Direct matches",
+    name == "perc_adjusted" ~ "Inferred from registration rate",
+    name == "perc_adj_2" ~ "Inferred from listing attrition")) %>% 
+  mutate(name = factor(name, levels = c("Direct matches", 
+                                        "Inferred from registration rate",
+                                        "Inferred from listing attrition"))) %>% 
+  ggplot() +
+  geom_col(aes(x = year, y = value, fill = name), 
+           position = position_stack(reverse = TRUE)) +
+  scale_x_continuous(name = NULL, breaks = 2016:2021) +
+  scale_y_continuous(name = NULL, breaks = c(0.1, 0.2, 0.3, 0.4, 0.5), 
+                     label = scales::percent) +
+  scale_fill_manual(name = NULL, values = col_palette[c(6, 1, 4)]) +
+  theme_minimal() +
+  theme(panel.grid.minor.x = element_blank(), legend.position = "bottom")
+  
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_2_13.pdf"), 
+         plot = figure_2_13_fun("Futura", "Futura Condensed"), 
+         width = 9, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_2_13.pdf"))
+}
+
+```
+
+
+``` {r fig-2-13, include = TRUE, fig.cap = '(ref:fig-2-13)', fig.align = "center"}
+
+figure_2_13_fun()
+
+```
+(ref:fig-2-13) _TKTK_
+
+
+
+
+
+
 
 
 
