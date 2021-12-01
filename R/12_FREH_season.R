@@ -222,29 +222,6 @@ fun_seasonal_FREH_output <- fun_seasonal_FREH(summer_start, summer_end)
 full_time_listings <- fun_seasonal_FREH_output[[2]]
 seasonal_FREH <- fun_seasonal_FREH_output[[1]]
 
-# Plot
-seasonal_plot <- 
-  seasonal_FREH %>% 
-  ggplot()+
-  geom_bar(aes(year_season, n, fill = season), stat= "identity")+
-  theme(plot.title = element_text(size=10),
-        legend.title = element_blank())+
-  scale_fill_manual("legend", 
-                    values = c("Year-round" = col_palette[3],
-                               "Summer" = col_palette[1],
-                               "Winter" = col_palette[2]))+
-  scale_y_continuous(name = NULL, label = scales::comma) +
-  theme_minimal()+
-  xlab("")+
-  ylab("")+
-  theme(legend.position = "bottom", legend.title = element_blank(),
-        panel.grid.minor.x = element_blank())
-
-ggsave("output/figures/housing_loss.pdf", 
-       # plot = figure_5_1_fun("Futura", "Futura Condensed"), 
-       plot = seasonal_plot, 
-       width = 9, height = 4.2, units = "in", useDingbats = FALSE)
-
 
 # Save --------------------------------------------------------------------
 
