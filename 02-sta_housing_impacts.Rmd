@@ -1056,7 +1056,7 @@ if (build_figures) {
 
 ```
 
-Figure \@ref(fig:fig-2-7) and Table \@ref(tab:tab-2-4) summarize STA-induced housing loss by ward. They demonstrate both a wide amount of geographical variation in the intensity of full-time STAs and a generalized decline in full-time STAs across all areas during the pandemic. Across the entire County, the amount of housing operating as dedicated STAs declined from `r summer_FREH_pct_2019` in Summer 2019 to `r summer_FREH_pct_2021` in Summer 2021. Bloomfield had by far the highest percentage of housing units operating as dedicated STAs in both Summer 2019 (`r summer_FREH_pct_bloomfield_2019`) and Summer 2021 (`r summer_FREH_pct_bloomfield_2021`), albeit with low absolute unit counts since the village's population is so small.
+Figure \@ref(fig:fig-2-7) and Table \@ref(tab:tab-2-4) summarize STA-induced housing loss by ward. They demonstrate both a wide amount of geographical variation in the intensity of full-time STAs and a generalized decline in full-time STAs across all areas during the pandemic. Across the entire County, the amount of housing operating as dedicated STAs declined from `r summer_FREH_pct_2019` in Summer 2019 to `r summer_FREH_pct_2021` in Summer 2021. This is a large decline, but even the smaller `r summer_FREH_pct_2021` figure is higher than any other municipality in Ontario with the exception of the Blue Mountains. Bloomfield had by far the highest percentage of housing units operating as dedicated STAs in both Summer 2019 (`r summer_FREH_pct_bloomfield_2019`) and Summer 2021 (`r summer_FREH_pct_bloomfield_2021`), albeit with low absolute unit counts since the village's population is so small.
 
 ``` {r fig-2-7, include = TRUE, fig.cap = '(ref:fig-2-7)', fig.align = "center"}
 
@@ -1145,7 +1145,7 @@ sep_month_dif <-
 
 ```
 
-A final perspective on the change in full-time STAs during the pandemic can be seen by examining STA activity on a monthly—rather than seasonal basis. Table \@ref(tb:tab-2-5) shows the properties that were active at least 25 days out of the month in each month in 2019 and 2021. Activity in 2019 displays a strong seasonality pattern, with monthly full-time listings bottoming out in February, then peaking in July before beginning to decline again. (Cell colouring indicates which months received greater or smaller shares of total annual activity.) In 2021, by contrast, full-time listings have been steadily rising through the end of September (the final month for which we have data). While there were `r jan_month_dif` fewer full-time listings in January 2021 compared to January 2019, that gap had shrunk to only `r sep_month_dif` by September 2021. This suggests that the dedicated STA market is close to recovering from the negative shock of the pandemic.
+A final perspective on the change in full-time STAs during the pandemic can be seen by examining STA activity on a monthly—rather than seasonal basis. Table \@ref(tab:tab-2-5) shows the properties that were active at least 25 days out of the month in each month in 2019 and 2021. Activity in 2019 displays a strong seasonality pattern, with monthly full-time listings bottoming out in February, then peaking in July before beginning to decline again. (Cell colouring indicates which months received greater or smaller shares of total annual activity.) In 2021, by contrast, full-time listings have been steadily rising through the end of September (the final month for which we have data). While there were `r jan_month_dif` fewer full-time listings in January 2021 compared to January 2019, that gap had shrunk to only `r sep_month_dif` by September 2021. This suggests that the dedicated STA market in Prince Edward County is close to recovering from the negative shock of the pandemic.
 
 ``` {r tab-2-5, include = TRUE}
 
@@ -1167,10 +1167,11 @@ variation_df %>%
 ```
 
 
-## Sales
+## Are STAs responsible for rising home prices and sales volumes?
 
+So far we have established two broad facts about Prince Edward County's housing market and STAs: First, while housing prices were rising prior to the pandemic, price (and rent) increases and sales volumes have accelerated dramatically since 2020. Second, during this same time period the number of active STAs has declined, albeit from a very high baseline. The combination of these two facts suggests that the rapid deterioration in housing affordability since the beginning of the pandemic is probably not a consequence primarily of STA activity. However, there is an additional way to approach this question, which is to look for home sales which directly resulted in new STAs. Because STA hosts were obligated to register their properties with the County from November 2019 through September 2020 (discussed more in the next chapter), it is possible to match the addresses of home sales with the addresses of registered STAs to obtain a different estimate of the relationship between STAs and housing market dynamics.
 
-```{r, include = T}
+```{r, include = TRUE}
 
 start_reg <- as.Date("2019-11-04")
 end_reg <- as.Date("2020-09-04")
@@ -1250,7 +1251,8 @@ proportion_home_sales_STA <-
   count(year) %>% 
   left_join(total_sales, by = "year") %>% 
   mutate(perc = n/total,
-         perc_adjusted = perc/(total_licenses_all/ reg_property %>% nrow())) %>% 
+         perc_adjusted = perc / 
+           (total_licenses_all / reg_property %>% nrow())) %>% 
   left_join(survival_factor, by = c("year" = "year_created")) %>% 
   mutate(perc_adj_2 = perc_adjusted / still_active)
 
@@ -1294,6 +1296,9 @@ if (build_figures) {
 
 ```
 
+In total, out of the `r scales::comma(nrow(STA))` properties registered as STAs in Prince Edward County, `r scales::comma(sold_before_created)` (`r per_sold_before_created`) were sold prior to being registered at least once since 2016. Put differently, these `r scales::comma(sold_before_created)` sales are (`r scales::percent(sold_before_created / nrow(home_sales), 0.1)`) of the total `r scales::comma(nrow(home_sales))` home sales which occurred in Prince Edward County between 2016 and September 2021. This latter percentage substantially underestimates the actual number of home sales which became STAs for two reasons, however. First, despite the legal requirement to register, not all active STA hosts actually registered their properties with the County. Any STA that did not register will not be able to be matched to a home sale. Second, STA registration did not begin until November 2019, but many of the STAs which were active in earlier years were no longer active by that date. So, for example, a property which was sold in February 2016, converted into an STA in April 2016, operated for three years, and then deactivated in September 2019 would not match to an STA registration.
+
+Figure \@ref(fig:fig-2-8) shows the estimated proportion of home sales each year since 2016 which became STAs, adjusting for both of these sources of systemic underestimation. The dark orange portions of each bar shows direct matches between home sales and new STA listings: in each case, the exact address of the sale was registered as an STA subsequent to the sale. The lighter orange portions of each bar show the additional matches which we did not detect but which we can infer existed based on the fact that only `r scales::percent(total_licenses_all / reg_property %>% nrow(), 0.1)` of STA listings which were active during the time when the registration system was in effect actually registered. Finally, the yellow portion of each bar shows the additional matches which we can infer from the natural attrition of STA listings over time: many 2016 listings had been taken down by the time registration began in November 2019, but only a few 2019 listings had been taken down.
 
 ``` {r fig-2-8, include = TRUE, fig.cap = '(ref:fig-2-8)', fig.align = "center"}
 
@@ -1302,6 +1307,20 @@ figure_2_8_fun()
 ```
 (ref:fig-2-8) _The share of annual home sales attributable to new STAs (2016-2021)_
 
+The figure suggests that approximately half of _all_ home sales in Prince Edward County in 2016 and 2017 can be attributed to new STA activity. At the same time, that proportion has systematically fallen each year since 2017, reaching `r scales::percent(proportion_home_sales_STA[proportion_home_sales_STA$year == 2020,]$perc_adj_2, 0.1)` in 2020. Some of this decline can be attributable to the shortened time frame in which a new home sale can be converted to an STA as the data approaches the present—i.e., there are certainly some home sales from 2020 and 2021 which will become STAs in the future but have not done so yet. But the trend is clear: STAs have transitioned from arguably the main driver of housing sales in 2016 and 2017 to a still significant but minority driver of sales during the pandemic.
+
+
+## Conclusion
+
+The key findings of this chapter are as follows:
+
+- Housing prices and sales volumes have dramatically accelerated since the start of the pandemic, with correspondingly negative impacts on homeownership affordability. While prices were rising before 2020 as well, the evidence suggests that price growth was beginning to level off until the pandemic introduced a massive demand shock into the housing market.
+- Residential rents have also seen enormous increases, driven by the same market fundamentals, i.e. huge demand increases without corresponding supply increases.
+- Prior to the pandemic, fully `r summer_FREH_pct_2019` of housing in Prince Edward County was operating as a dedicated STA in the summer. This is certainly a large enough share to have made a major contribution to the housing unaffordability problems in the County which were present before the pandemic.
+- The amount of full-time STAs declined substantially during the pandemic, and only as of the end of Summer 2021 does it appear that STA supply is recovering to pre-pandemic levels.
+- Approximately half of all home sales in 2016 and 2017 can be attributed to new STAs, but that shared has dropped by half in the last several years.
+
+Taken together, these findings suggest that STA activity in Prince Edward County has been an important driver of the medium-term housing affordability issues in the County, but that the dramatic deterioration in housing affordability since the beginning of the pandemic is not primarily a consequence of STA activity. 
 
 
 \newpage
