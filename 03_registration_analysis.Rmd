@@ -22,8 +22,8 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- F
-regular <- NULL
+build_figures <- TRUE
+# regular <- NULL
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
@@ -55,8 +55,12 @@ total_licenses_all <-
   st_drop_geometry() %>% 
   nrow()
 
+bb_licenses <- round(sum(!STA$entire_apt, na.rm = TRUE) * 0.1)
+
+total_licenses_STA <- total_licenses_all - bb_licenses
+  
 p_registration_compliance <- 
-  (total_licenses_all/ reg_property %>% nrow()) %>% scales::percent(accuracy = 0.1)
+  (total_licenses_STA/ reg_property %>% nrow()) %>% scales::percent(accuracy = 0.1)
 
 valid_STA <-
   STA %>% 
@@ -214,7 +218,7 @@ if (build_figures) {
 
 ```
 
-Since the start of the registration in November 2019, a total of `r n_reg_property` listings have been posted on Airbnb or Vrbo in Prince Edward County. During the same time period, there have been `r total_licenses_all` license applications. In theory, each of listings should be registered, which suggests an overall compliance rate of `r p_registration_compliance`. In reality compliance is likely somewhat better than this, since there will be some duplicate listings on STA platforms which only correspond to a single STA registration (although we have attempted to detect and remove any such cases already), but broadly speaking it is possible to conclude that a weak majority of STA hosts have either complied or are in the process of complying with the registration system. A somewhat more positive perspective emerges from comparing the number of active STAs each day with the number of active licenses on that same day (Figure \@ref(fig:fig-3-1)). On average each day since the registration system began, `r compliance_perc` of active listings were potentially operating with an active license. 
+Since the start of the registration in November 2019, a total of `r n_reg_property` listings have been posted on Airbnb or Vrbo in Prince Edward County. During the same time period, there have been `r total_licenses_all` license applications. Approximately `r bb_licenses` of these applications were for traditional B&Bs, leaving `r total_licenses_STA` applications for STAs on Airbnb and other online platforms. In theory, each of listings should be registered, which suggests an overall compliance rate of `r p_registration_compliance`. In reality compliance is likely somewhat better than this, since there will be some duplicate listings on STA platforms which only correspond to a single STA registration (although we have attempted to detect and remove any such cases already), but broadly speaking it is possible to conclude that a weak majority of STA hosts have either complied or are in the process of complying with the registration system. A somewhat more positive perspective emerges from comparing the number of active STAs each day with the number of active licenses on that same day (Figure \@ref(fig:fig-3-1)). On average each day since the registration system began, `r compliance_perc` of active listings were potentially operating with an active license. 
 
 ``` {r fig-3-1, include = TRUE, fig.cap = '(ref:fig-3-1)', fig.align = "center"}
 
@@ -373,7 +377,7 @@ if (build_figures) {
 
 ```
 
-The STA registration system operated from November 2019 to September 2020, up until Prince Edward County's city council voted on a STA registration moratorium amidst the Covid-19 pandemic (Countylive 2020). No new short-term rental accommodations were technically allowed to be created in Prince Edward County from the end of September 2020. The STA registration moratorium was lifted in the end of June 2021 for bed & breakfasts and owner-occupied STRs only (Countylive 2021). Looking at Figure \@ref(fig:fig-3-2), we can see the number of new properties created on Airbnb and/or VRBO per day, both during the STA registration period and the STA registration moratorium. The number of listings being created started to decrease at the end of 2019. During the 10-month STA registration period, a total of `r n_created_reg` new STR listings operating out of housing units were created. In the following 7-month moratorium, `r n_created_mora` new listings were created, with an additional `r n_created_post_mora` in the partial moratorium period, spanning from June 2021 to the end of August (the end of the available data). Both the registration and the moratorium did not seem to have a direct effect on the creation of new STRs, which has remained similar in both periods studied. However, we can see that a resurgence of new listings being created occurred during the 2021 peak season.
+Figure \@ref(fig:fig-3-2) shows the number of new properties created on Airbnb or Vrbo per day, both during the STA registration period and the STA registration moratorium. The number of listings being created started to decrease at the end of 2019. During the 10-month STA registration period, a total of `r n_created_reg` new STR listings operating out of housing units were created. In the following 7-month moratorium, `r n_created_mora` new listings were created, with an additional `r n_created_post_mora` in the partial partial moratorium period, spanning from June 2021 to the end of August (the end of the available data). Both the registration and the moratorium did not seem to have a direct effect on the creation of new STRs, which has remained similar in both periods studied. However, we can see that a resurgence of new listings being created occurred during the 2021 peak season.
 
 ``` {r fig-3-2, include = TRUE, fig.cap = '(ref:fig-3-2)', fig.align = "center"}
 
@@ -488,49 +492,49 @@ Out of the `r n_STA_post_mora` license applications that were received since the
 
 ```{r STA_sales_ratio}
 
-sta_nightly_prices <- 
-daily %>% 
-  filter(status == "R") %>% 
-  mutate(yearmon = tsibble::yearmonth(date)) %>% 
-  group_by(yearmon) %>% 
-  summarize(nightly_price = mean(price)) %>% 
-  mutate(yearmon = as.Date(yearmon))
+sta_nightly_prices <-
+  daily |> 
+  filter(status == "R", listing_type == "Entire home/apt") |> 
+  group_by(date) |> 
+  summarize(nightly_price = mean(price)) |> 
+  mutate(nightly_price = slide_dbl(nightly_price, mean, .before = 6)) |> 
+  filter(date >= "2017-06-01")
 
 sale_price <- 
-  home_sales %>% 
-  st_drop_geometry() %>% 
-  mutate(yearmon = tsibble::yearmonth(sale_date)) %>% 
-  group_by(yearmon) %>% 
-  summarize(avg_price = mean(sale_price, na.rm=T)) %>% 
-  mutate(yearmon = as.Date(yearmon)) %>% 
-  mutate(down_pay = avg_price*0.2,
+  home_sales |> 
+  st_drop_geometry() |> 
+  group_by(sale_date) |> 
+  summarize(avg_price = mean(sale_price, na.rm = TRUE)) |> 
+  mutate(avg_price = slide_dbl(avg_price, mean, .before = 6)) |> 
+  filter(sale_date >= "2017-06-01") |> 
+  mutate(down_pay = avg_price * 0.2,
          P = avg_price - down_pay,
          amort = 25,
-         mortgage_rate = 0.0175) %>% 
+         mortgage_rate = 0.0175) |> 
   mutate(r = mortgage_rate / 12,
-         n = amort * 12) %>% 
-  mutate(monthly_payments = P * r * (((1 + r) ^ n) / (((1 + r) ^ n) - 1))) %>% 
+         n = amort * 12) |> 
+  mutate(monthly_payments = P * r * (((1 + r) ^ n) / (((1 + r) ^ n) - 1))) |> 
   mutate(maintenance = 700,
          total_payments = (monthly_payments + maintenance) * 12,
-         affordable_income_2021 = total_payments / 0.3) %>% 
-  select(yearmon, monthly_payments)
+         affordable_income_2021 = total_payments / 0.3) |> 
+  select(date = sale_date, monthly_payments)
 
 nights_booked_needed <- 
   sta_nightly_prices %>% 
   left_join(sale_price) %>% 
-  mutate(nights_needed = monthly_payments/nightly_price) 
+  mutate(nights_needed = monthly_payments / nightly_price) 
 
 needed_to_afford_2018 <- 
-nights_booked_needed %>% 
-  filter(yearmon >= "2018-01-01", yearmon < "2019-01-01") %>%
-  summarize(mean(nights_needed)) %>% 
+  nights_booked_needed %>% 
+  filter(date >= "2018-01-01", date < "2019-01-01") %>%
+  summarize(mean(nights_needed, na.rm = TRUE)) %>% 
   pull() %>% 
   round(., digits = 2)
 
 needed_to_afford_2021 <- 
-nights_booked_needed %>% 
-  filter(yearmon >= "2021-01-01") %>%
-  summarize(mean(nights_needed, na.rm =T)) %>% 
+  nights_booked_needed %>% 
+  filter(date >= "2021-01-01") %>%
+  summarize(mean(nights_needed, na.rm = TRUE)) %>% 
   pull() %>% 
   round(., digits = 2)
 
@@ -540,22 +544,23 @@ nights_booked_needed %>%
 
 figure_3_3_fun <- function(regular = "", condensed = "") {
   
-nights_booked_needed %>%
-  filter(yearmon >= "2018-01-01") %>% 
-  ggplot()+ 
-  geom_line(aes(yearmon, y = nights_needed), size = 1, color = col_palette[1])+ 
-  geom_smooth(aes(yearmon, y = nights_needed), se = F, color = col_palette[2])+
-  ylab("Number of nights")+
-  xlab(NULL)+
-  theme_minimal()+
-  theme(panel.grid.minor.x = element_blank(),
-        text = element_text(face = "plain", family = regular))
+  nights_booked_needed %>%
+    ggplot() + 
+    geom_line(aes(date, y = nights_needed), size = 1, color = col_palette[1],
+              alpha = 0.5) + 
+    stat_smooth(aes(date, y = nights_needed), se = FALSE, method = "loess",
+                span = 0.4, color = col_palette[1]) +
+    ylab(NULL) +
+    xlab(NULL) +
+    theme_minimal() +
+    theme(panel.grid.minor.x = element_blank(),
+          text = element_text(face = "plain", family = regular))
 
 }
 
 if (build_figures) {
   ggsave(here("output", "figures", "figure_3_3.pdf"), 
-         plot = figure_3_2_fun(), 
+         plot = figure_3_3_fun(), 
          width = 9, height = 4.2, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_3_3.pdf"))
@@ -570,6 +575,6 @@ If registration and the moratorium do not appear to have had a direct effect, wh
 figure_3_3_fun()
 
 ```
-(ref:fig-3-3) _Number of nights needed to afford monthly mortgage payment_
+(ref:fig-3-3) _Average number of reserved STA nights needed to afford monthly mortgage payment_
 
 \newpage

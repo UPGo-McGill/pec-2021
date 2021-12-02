@@ -47,35 +47,62 @@ options(tinytex.verbose = TRUE)
 
 The previous chapters show that the housing situation in Prince Edward County has changed drastically since the start of the Covid-19 pandemic. In the county, Covid is the principal driver of the current housing challenges. The pandemic caused STA accommodations to decline in quantity but drastically increase the nightly prices, making for highly profitable operations for the listings still active. The number and sale prices of homes have also skyrocketed, namely due to a booming remote work-induced demand for homes out of city centers and secondary homes purchases. Both the short-term accommodation and secondary home market act as a single market applying pressure to Prince Edward County's housing stock. In addition, the low influx of new construction causes increased pressure on the existing stock, calling for more locally-oriented housing units. This chapter provides regulatory pathways for the reinstatement of a STA registration system, in light of the county's need for a healthy housing market for residents.
 
-## Regulatory priorities
+## Regulatory best practices
 
-In light of our analysis, two priorities emerged for the reinstating of a short-term accommodation registration system in Prince Edward County. First, the STA registration system needs to be able to differentiate STAs operated out of primary and secondary residences, and prioritize owner occupied STAs. There have been numerous studies that have showed that the trade-off between STAs and housing affordability is largest with dedicated, or full-time commercial, STAs (Wachsmuth et al 2021; Garcia-López et al. 2019, Wachsmuth & Weisler 2018; Horn & Merante 2017). Other detrimental effects of dedicated STAs in cities include noise, littering and overcrowding (Celata and Romano 2020; Nieuwland and van Melik 2020). STA activity in the county should thus be redirected to owner-occupied, "homesharing" STAs to minimize the negative externalities of the short-term market. Second, a successful STA registration system in the county should aim to reduce to the minimum or potentially eliminate grandfathering of STAs. Indeed, any change to the STA legal landscape will enormously benefit current STA operators, ultimately reducing the efficacy of the rules. Given the market conditions of present STAs, any unit which would not be subject to stricter rules would be in an advantageous position once the updated regulations come into effect. 
+Below we discuss specific regulatory scenarios that make different trade-offs in the STA market. However, there are a number of regulatory best practices which are likely to be worth implementing regardless of which regulatory scenario is followed.
+
+
+### Prioritize owner-occupied STAs
+
+First, the STA registration system needs to be able to differentiate STAs operated out of primary and secondary residences, and prioritize owner occupied STAs. There have been numerous studies that have showed that the trade-off between STAs and housing affordability is largest with dedicated, or full-time commercial, STAs (Wachsmuth et al 2021; Garcia-López et al. 2019, Wachsmuth & Weisler 2018; Horn & Merante 2017). Other detrimental effects of dedicated STAs in cities include noise, littering and overcrowding (Celata and Romano 2020; Nieuwland and van Melik 2020). STA activity in the county should thus be redirected to owner-occupied, "homesharing" STAs to minimize the negative externalities of the short-term market.
+
+
+### Make display of license number mandatory
+
+
+### Reduce grandfathering of existing licenses whereever possible
+
+
+Second, a successful STA registration system in the county should aim to reduce to the minimum or potentially eliminate grandfathering of STAs. Indeed, any change to the STA legal landscape will enormously benefit current STA operators, ultimately reducing the efficacy of the rules. Given the market conditions of present STAs, any unit which would not be subject to stricter rules would be in an advantageous position once the updated regulations come into effect. 
+
+
+## Regulatory scenario #1: "Redistribute"
 
 Based on our findings and established priorities, we modeled four potential scenarios based on two sets of conditions. Prince Edward could either Redistribute or Restrict, and do so either in the townships only, or in the towns and townships (in the entire county). 
 
 The "Redistribute" route would promote home-sharing in Prince Edward County by removing dedicated STAs and redistribute STA activity more broadly in the hands of more county households. The aim is to grow the size of the STA market in terms of operating accommodations, but to minimize the negative housing impacts associated with full time operations. The county would grant unlimited STA licenses, both only for a host's principal residence. This way, total STA revenues would be redistributed among Prince Edward County families, with local firms providing intermediary services such as property management.
 
+
+### 1- Redistribute, towns + townships
+
+With the all-encompassing redistribution scenario, the 35,000 reserved nights (earning $15.9 million) in the summer of 2021 which occurred in commercially-operated STRs could support 1,700 home sharers operating between two to four weeks in the summer, earning $9,500 as yearly additional income. With the grandfathering of the current 149 active secondary-home licenses, there would be 21,000 nights reserved, totaling $6.2 million in revenue, distributted among 1,000 home sharers that would earn $6,200 each on average. This supplementary income stream could at the same time help households with housing-relating costs, contributing to address affordability concerns in Prince Edward County.  
+
+### 2 - Redistribute, towns only
+
+If the redistribution model were to occur only in towns, the 14,500 reserved nights ($5.5 million) directed to commercial STAs during the summer of 2021 could support 700 home sharers active for two to four weeks in the summer, for an average revenue of $8,000 per household. With the grandfathering of 61 valid second-home licenses in towns, the number of reserved nights being redistributed to households would be 8,600 ($2.4 million in revenue) to support 400 home sharers, each earning $6,000. It is important to note that, in both situations where STA regulations were applied in towns only, the likely effect will be to displace most STA to the townships since the barriers to operate would be lower than in towns. 
+
+
+
+## Regulatory scenario #2: "Restrict"
+
 The "Restrict" route would control the number of STAs in Prince Edward County by restricting the number of STA licenses being granted, but still allowing commercial operations. Restricting the number of licenses would shrink the STA market in order to shrink the negative housing impacts, concentrating STA activity in fewer and bigger operations. The "Restrict" models would use high license fees to ensure that licenses are used by hosts willing to operate at a high frequency, thereby ensuring an active STA market to address tourist demand. 
 
 Both the "Redistribute" and the "Restrict" models could be implemented on two geographic scales: either in the towns only, or both in the towns and townships, covering all Prince Edward County. The flexibility in geographic covering is meant to either focus STA regulation efforts in towns where housing types are more adequate for full time residents, or apply regulation all over to ensure that no STA activiy displacement occurs from the towns to the townships. The impact of the four policy options are the following:
 
-## 1- Redistribute, towns + townships
 
-With the all-encompassing redistribution scenario, the 35,000 reserved nights (earning $15.9 million) in the summer of 2021 which occurred in commercially-operated STRs could support 1,700 home sharers operating between two to four weeks in the summer, earning $9,500 as yearly additional income. With the grandfathering of the current 149 active secondary-home licenses, there would be 21,000 nights reserved, totaling $6.2 million in revenue, distributted among 1,000 home sharers that would earn $6,200 each on average. This supplementary income stream could at the same time help households with housing-relating costs, contributing to address affordability concerns in Prince Edward County.  
-
-## 2 - Redistribute, towns only
-
-If the redistribution model were to occur only in towns, the 14,500 reserved nights ($5.5 million) directed to commercial STAs during the summer of 2021 could support 700 home sharers active for two to four weeks in the summer, for an average revenue of $8,000 per household. With the grandfathering of 61 valid second-home licenses in towns, the number of reserved nights being redistributed to households would be 8,600 ($2.4 million in revenue) to support 400 home sharers, each earning $6,000. It is important to note that, in both situations where STA regulations were applied in towns only, the likely effect will be to displace most STA to the townships since the barriers to operate would be lower than in towns. 
-
-## 3 - Restrict, towns + townships
+### 3 - Restrict, towns + townships
 
 Depending on which level of STA activity the county would like to sustain, a certain number of STA licenses could be emitted to commercial STA operations. For the enire county, 800 STA licenses would allow 2019 levels, and 500 licenses would maintain 2021, with fewer licenses leading to a shrinking of the STA market. 
 
-## 4 - Restrict, towns only
+### 4 - Restrict, towns only
 
 If the restriction was to occur in towns only, there would need to be 300 STA licenses to allow 2019 levels, and 200 licenses to maintain 2021 levels.
 
-## Short-term incentive program
+## Less promising options
+
+TKTK
+
+### Short-term incentive program
 
 ```{r short_term_incentive}
 
@@ -396,9 +423,15 @@ surplus_rent %>%
 
 While average rents are similar across the county, monthly STA revenue differs from a location to another. The only ward with substantially higher rents than average is Wellington. Figure \@ref(fig:fig-6-1) shows the average amount of monthly subsidy that would be necessary to turn a STA back onto the LTR market. On average, this short-term incentive program would cost the county `r subisdy_wellington` per unit in Wellington, and `r subisdy_outside_wellington` in the rest of the county. Such a subsidy would entail a great financial commitment for the county, and most likely not the most cost effective option to regulating the STA market. The main reason as to why the rent supplement option would not be viable in Prince Edward County is because the revenues earned by STA listing are much higher than average rents, creating large gaps to cover. In sum, a rent supplement option would not be sustainable nor preferable in the county.
 
-## Concluding remarks on STA regulation
+### Restrictions on annual reservations
+
+
+### Land-use regulations
 
 Other regulatory pathways were analyzed for the reinstatement of STA regulations in Prince Edward County. Regulating STA through land-use is a popular option in municipalities that have clear land use designations within their territory, such as commercial and residential zones. Full-time STAs are then allowed only in commercial zones, given their commercially-oriented nature. Such regulations are however more appropriate for urban setting with significant distinct zones, which is not necessarily the case in all Prince Edward County wards.
+
+
+## Conclusions
 
 In all, STA regulation enables the monitoring and control of STA activity in the county. However, as seen in this report, the secondary home market also plays a big role in the current housing situation in Prince Edward County. The volume and sale prices of homes in the past two years combined with the declining percentage of sales associated to new STA listings show that the pressure on the market can increasingly be attributed to second homes. Since the simplest substitute for a commercial STA is a second home, both the Redistribute and the Restrict regulatory options will likely increase second home supply. STA regulations is thus only one piece of the puzzle when it comes to housing availability and affordability in the county. In terms of managing secondary homes, there is unfortunately no magic bullet besides building more housing in typologies which are well-suited to local residents but less well-suited to second homes.
 
