@@ -22,11 +22,14 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- TRUE
+build_figures <- F
+regular <- NULL
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
 STA <- qread(here("output", "/STA.qs"))
+home_sales <- qread("output/home_sales.qs")
+
 
 ```
 ``` {r objects, include = TRUE}
@@ -370,7 +373,7 @@ if (build_figures) {
 
 ```
 
-The STA registration system operated from November 2019 to September 2020, up until Prince Edward County's city council voted on a STA registration moratorium amidst the Covid-19 pandemic (Countylive 2020). No new short-term rental accommodations were technically allowed to be created in Prince Edward County from the end of September 2020. The STA registration moratorium was lifted in the end of June 2021 for bed & breakfasts and owner-occupied STRs only (Countylive 2021). Looking at Figure \@ref(fig:fig-3-2), we can see the number of new properties created on Airbnb and/or VRBO per day, both during the STA registration period and the STA registration moratorium. The number of listings being created started to decrease at the end of 2019. During the 10-month STA registration period, a total of `r n_created_reg` new STR listings operating out of housing units were created. In the following 7-month moratorium, `r n_created_mora` new listings were created, with an additional `r n_created_post_mora` in the partial partial moratorium period, spanning from June 2021 to the end of August (the end of the available data). Both the registration and the moratorium did not seem to have a direct effect on the creation of new STRs, which has remained similar in both periods studied. However, we can see that a resurgence of new listings being created occurred during the 2021 peak season.
+The STA registration system operated from November 2019 to September 2020, up until Prince Edward County's city council voted on a STA registration moratorium amidst the Covid-19 pandemic (Countylive 2020). No new short-term rental accommodations were technically allowed to be created in Prince Edward County from the end of September 2020. The STA registration moratorium was lifted in the end of June 2021 for bed & breakfasts and owner-occupied STRs only (Countylive 2021). Looking at Figure \@ref(fig:fig-3-2), we can see the number of new properties created on Airbnb and/or VRBO per day, both during the STA registration period and the STA registration moratorium. The number of listings being created started to decrease at the end of 2019. During the 10-month STA registration period, a total of `r n_created_reg` new STR listings operating out of housing units were created. In the following 7-month moratorium, `r n_created_mora` new listings were created, with an additional `r n_created_post_mora` in the partial moratorium period, spanning from June 2021 to the end of August (the end of the available data). Both the registration and the moratorium did not seem to have a direct effect on the creation of new STRs, which has remained similar in both periods studied. However, we can see that a resurgence of new listings being created occurred during the 2021 peak season.
 
 ``` {r fig-3-2, include = TRUE, fig.cap = '(ref:fig-3-2)', fig.align = "center"}
 
@@ -482,5 +485,91 @@ p_B_post_mora <-
 ```
 
 Out of the `r n_STA_post_mora` license applications that were received since the moratorium, one third (`r p_entire_home`) were for STAs operated out of an entire housing unit, with the remainder being owner-occupied STAs or traditional STA accommodations, such as B&Bs. About half (`r p_pending_post_mora`) of these applications were still pending and`r p_active_post_mora` of the applications have been approved. We have managed to identify `r PID_STA` applications out of the `r n_STA_post_mora` (more than half) whose 200-m buffers comprised at least one new property being created on STR platforms following the STA license application. Despite the registration moratorium, most of these newly-created properties were active during the moratorium, and yet only `r p_STA_PID_active` of the license applications found within the buffer have been approved. On average, the STR listings found within the properties having applied after the moratorium have been reserved `r p_R_post_mora` of the nights since their creation, available for reservations `r p_A_post_mora` of the nights, and blocked for reservations `r p_B_post_mora` of the time. 
+
+```{r STA_sales_ratio}
+
+sta_nightly_prices <- 
+daily %>% 
+  filter(status == "R") %>% 
+  mutate(yearmon = tsibble::yearmonth(date)) %>% 
+  group_by(yearmon) %>% 
+  summarize(nightly_price = mean(price)) %>% 
+  mutate(yearmon = as.Date(yearmon))
+
+sale_price <- 
+  home_sales %>% 
+  st_drop_geometry() %>% 
+  mutate(yearmon = tsibble::yearmonth(sale_date)) %>% 
+  group_by(yearmon) %>% 
+  summarize(avg_price = mean(sale_price, na.rm=T)) %>% 
+  mutate(yearmon = as.Date(yearmon)) %>% 
+  mutate(down_pay = avg_price*0.2,
+         P = avg_price - down_pay,
+         amort = 25,
+         mortgage_rate = 0.0175) %>% 
+  mutate(r = mortgage_rate / 12,
+         n = amort * 12) %>% 
+  mutate(monthly_payments = P * r * (((1 + r) ^ n) / (((1 + r) ^ n) - 1))) %>% 
+  mutate(maintenance = 700,
+         total_payments = (monthly_payments + maintenance) * 12,
+         affordable_income_2021 = total_payments / 0.3) %>% 
+  select(yearmon, monthly_payments)
+
+nights_booked_needed <- 
+  sta_nightly_prices %>% 
+  left_join(sale_price) %>% 
+  mutate(nights_needed = monthly_payments/nightly_price) 
+
+needed_to_afford_2018 <- 
+nights_booked_needed %>% 
+  filter(yearmon >= "2018-01-01", yearmon < "2019-01-01") %>%
+  summarize(mean(nights_needed)) %>% 
+  pull() %>% 
+  round(., digits = 2)
+
+needed_to_afford_2021 <- 
+nights_booked_needed %>% 
+  filter(yearmon >= "2021-01-01") %>%
+  summarize(mean(nights_needed, na.rm =T)) %>% 
+  pull() %>% 
+  round(., digits = 2)
+
+```
+
+```{r make_fig_3_3}
+
+figure_3_3_fun <- function(regular = "", condensed = "") {
+  
+nights_booked_needed %>%
+  filter(yearmon >= "2018-01-01") %>% 
+  ggplot()+ 
+  geom_line(aes(yearmon, y = nights_needed), size = 1, color = col_palette[1])+ 
+  geom_smooth(aes(yearmon, y = nights_needed), se = F, color = col_palette[2])+
+  ylab("Number of nights")+
+  xlab(NULL)+
+  theme_minimal()+
+  theme(panel.grid.minor.x = element_blank(),
+        text = element_text(face = "plain", family = regular))
+
+}
+
+if (build_figures) {
+  ggsave(here("output", "figures", "figure_3_3.pdf"), 
+         plot = figure_3_2_fun(), 
+         width = 9, height = 4.2, units = "in", useDingbats = FALSE)
+  
+  extrafont::embed_fonts(here("output", "figures", "figure_3_3.pdf"))
+}
+
+```
+
+If registration and the moratorium do not appear to have had a direct effect, what about the role of housing prices in the decline of STA activity? We compared monthly mortgage payments (calculated with the methodology explained in the previous chapter) with average per-night prices for STAs. In 2018, on average, an STA needed to have `r needed_to_afford_2018` nights booked per month to afford mortgage monthly payments, relative to the prices of houses sold in the same year. This number has since been steadily increasing, reaching `r needed_to_afford_2021` nights in 2021. STA nightly prices were rather stable before the pandemic, and Figure \@ref(fig:fig-3-3) shows that the profitability of STA was declining as housing prices were slightly rising. While after the pandemic, a property operating as an STA makes much more money, the increases in average prices per night still cannot keep up with the sales prices of second homes.
+
+``` {r fig-3-3, include = TRUE, fig.cap = '(ref:fig-3-3)', fig.align = "center"}
+
+figure_3_3_fun()
+
+```
+(ref:fig-3-3) _Number of nights needed to afford monthly mortgage payment_
 
 \newpage
