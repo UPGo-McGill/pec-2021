@@ -249,7 +249,7 @@ STA %>%
   
 ```
 
-```{r STA_portrait, include = TRUE}
+```{r STA_portrait}
 
 # Entire apt vs not entire apt
 n_entire_apt <- 
@@ -268,35 +268,6 @@ n_not_entire_apt <-
   filter(entire_apt == FALSE) %>% 
   pull(n)
 
-n_created_reg <- 
-  property %>% 
-  st_drop_geometry() %>% 
-  filter(housing == TRUE) %>% 
-  filter(created >= start_reg, created <= end_mora) %>% 
-  group_by(created >= start_mora) %>% 
-  summarize(n = n()) %>% 
-  set_names(c("during_mora", "n")) %>% 
-  filter(during_mora == FALSE) %>% 
-  pull(n)
-
-n_created_mora <- 
-  property %>% 
-  st_drop_geometry() %>% 
-  filter(housing == TRUE) %>% 
-  filter(created >= start_reg, created <= end_mora) %>% 
-  group_by(created >= start_mora) %>% 
-  summarize(n = n()) %>% 
-  set_names(c("during_mora", "n")) %>% 
-  filter(during_mora == TRUE) %>% 
-  pull(n)
-
-n_created_post_mora <- 
-  property %>% 
-  st_drop_geometry() %>% 
-  filter(housing == TRUE) %>% 
-  filter(created >= end_mora) %>% 
-  nrow()
-
 ```
 
 Out of the `r n_valid_STA_bc` STAs operating with a license during the 10 months in which the registration system was functioning, `r n_entire_apt` licenses were for entire-home properties, or housing units entirely operated as a STA. Most licensed accommodations (`r n_not_entire_apt`) were not entire housing units, but rather a portion of a property or a traditional short-term accommodation, such as a hotel or a camp site. One third (`r scales::percent(mean(STA$bedrooms == 3), 0.1)`) of licenses were issued for accommodations with 3 bedrooms. Close to a quarter (`r scales::percent(mean(STA$bedrooms == 2), 0.1)`) were for 2-bedroom accommodations and more than a quarter (`r scales::percent(mean(STA$bedrooms >= 4), 0.1)`) were for 4-or-more-bedroom accommodations. 
@@ -308,10 +279,8 @@ The previous two chapters have identified a strange pattern in Prince Edward Cou
 
 Given the previous discussion, there are two plausible candidates for this external factor. First, the fact that the County has put a moratorium on STA registrations means that it has been illegal to operate a new STA since September 2020. Potential STA hosts may have decided to delay or cancel their plans to open a new STA because they wish to follow the law. We can test this possibility by examining the creation of new STA listings before and after the moratorium came into effect; if the moratorium is a significant driver of STA host behaviour, there will be a disconinuity in this behaviour around the moratorium start date. Second, it is possible that possible new STAs have been crowded out by second-home sales. This could occur if potential STA hosts have been unable to purchase properties to convert to STAs because, even at the higher prevailing nightly prices, they cannot justify the prices which second-home purchasers are willing to pay. We can test this possibility by comparing STA nightly prices with home sales prices to see if STAs are becoming more or less lucrative, relative to the cost of housing.
 
-```{r make_fig_3_2}
+```{r created}
 
-figure_3_2_fun <- function(regular = "", condensed = "") {
-  
 created_dates <- 
   property %>% 
   st_drop_geometry() %>% 
@@ -328,31 +297,72 @@ created_dates <-
             tot_n = n(),
             avg = n() / as.numeric(max(created) - min(created) + 1))
 
-property %>% 
+created_table <- 
+  property %>% 
   st_drop_geometry() %>% 
   count(created) %>% 
+  filter(created >= start_2019)
+
+created_table <- 
+  tibble(
+  created = as.Date(as.Date("2019-01-01"):as.Date("2021-09-30"), 
+                    origin = "1970-01-01")) |> 
+  left_join(created_table) |> 
+  replace_na(list(n = 0)) |> 
   mutate(period = case_when(
     created < start_reg ~ "pre-reg",
     created < start_mora ~ "reg",
     created < end_mora ~ "moratorium",
-    created >= end_mora ~ "post-moratorium"
-  )) %>% 
-  filter(created >= start_2019) %>% 
+    created >= end_mora ~ "post-moratorium"))
+
+created_avg <- 
+  created_table |> 
+  group_by(period) |> 
+  summarize(avg = scales::comma(mean(n), 0.01))
+
+created_mora <- 
+  created_avg |> 
+  filter(period == "moratorium") |> 
+  pull(avg)
+
+created_reg <- 
+  created_avg |> 
+  filter(period == "reg") |> 
+  pull(avg)
+
+created_pre <- 
+  created_avg |> 
+  filter(period == "pre-reg") |> 
+  pull(avg)
+
+created_post <- 
+  created_avg |> 
+  filter(period == "post-moratorium") |> 
+  pull(avg)
+
+```
+
+```{r make_fig_3_2}
+
+figure_3_2_fun <- function(regular = "", condensed = "") {
+  
+created_table |> 
+  mutate(n = slide_dbl(n, mean, .before = 13)) |> 
   ggplot() +
   annotate("rect", xmin = start_reg, xmax = end_reg, fill = col_palette[1],
            ymin = -Inf, ymax = Inf, alpha = 0.2) +
   annotate("rect", xmin = start_mora, xmax = end_mora, fill = col_palette[2],
            ymin = -Inf, ymax = Inf, alpha = 0.2) +
-  geom_line(aes(created, n, colour = period), size = 0.4, alpha = 0.2) +
   geom_label(aes(x = mean(c(start_reg, start_mora)), y = 8,
-                label = "STA registration\nin effect", fill = "white"), 
+                 label = "STA registration\nin effect", fill = "white"), 
              colour = col_palette[1], inherit.aes = FALSE, hjust = 0.5) +
   geom_label(aes(x = mean(c(start_mora, end_mora)), y = 8,
-                label = "STA registration\nmoratorium", fill = "white"), 
+                 label = "STA registration\nmoratorium", fill = "white"), 
              colour = col_palette[2], inherit.aes = FALSE, hjust = 0.5) +
+  geom_line(aes(created, n, colour = period), size = 0.4) +
   geom_segment(aes(x = first_date, xend = last_date, y = avg, yend = avg,
                    colour = period, group = period), data = created_dates,
-               lwd = 2) +
+               lwd = 1) +
   scale_x_date(name = NULL) +
   scale_y_continuous(name = NULL, limits = c(0, 10)) +
   scale_colour_manual(values = col_palette[c(2, 3, 3, 1)]) +
@@ -372,7 +382,7 @@ if (build_figures) {
 
 ```
 
-Figure \@ref(fig:fig-3-2) shows the number of new properties created on Airbnb or Vrbo per day, both during the STA registration period and the STA registration moratorium. The number of listings being created started to decrease at the end of 2019. During the 10-month STA registration period, a total of `r n_created_reg` new STR listings operating out of housing units were created. In the following 7-month moratorium, `r n_created_mora` new listings were created, with an additional `r n_created_post_mora` in the partial partial moratorium period, spanning from June 2021 to the end of August (the end of the available data). Both the registration and the moratorium did not seem to have a direct effect on the creation of new STRs, which has remained similar in both periods studied. However, we can see that a resurgence of new listings being created occurred during the 2021 peak season.
+Figure \@ref(fig:fig-3-2) shows the number of new properties created on Airbnb or Vrbo per day, both during the STA registration period and the STA registration moratorium. From the beginning of 2019 until the registration system came online, a daily average of `r created_pre` STA listings were created on Airbnb and Vrbo. This number dropped significantly, to `r created_reg`, during the 10-month period during which STA registrations were required. But, importantly, the rate of new listings was almost identical—`r created_mora`—during the subsequent registration moratorium. If the moratorium were actually dissuading new STAs from being created, there would be some evidence of this fact in the rate of listing creation. Instead, there is nothing to distinguish the rate of listing creation before and during the registration moratorium. This strongly suggests that the moratorium has not been an important factor in the decline in STA listings during the pandemic.
 
 ``` {r fig-3-2, include = TRUE, fig.cap = '(ref:fig-3-2)', fig.align = "center"}
 
@@ -571,5 +581,10 @@ figure_3_3_fun()
 
 ```
 (ref:fig-3-3) _Average number of reserved STA nights needed to afford monthly mortgage payment_
+
+
+TKTK evidence of a new surge in STA activity:
+ (A potential complication is that, since the moratorium was partially lifted in June 2021, an average of `r created_post` new listings have been created each day. Given that dedicated, entire-home STAs remain subject to the moratorium, the most likely expl)
+
 
 \newpage
