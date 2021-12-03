@@ -1663,7 +1663,7 @@ figure_1_7_fun <- function(regular = "", condensed = "") {
 
 if (build_figures) {
   ggsave(here("output", "figures", "figure_1_7.pdf"), 
-         plot = figure_1_7_fun("Futura", "Futura Condensed"), 
+         plot = figure_1_7_fun(), 
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_1_7.pdf"))

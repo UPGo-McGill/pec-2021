@@ -473,7 +473,7 @@ sta_nightly_prices <-
   daily |> 
   filter(status == "R", listing_type == "Entire home/apt") |> 
   group_by(date) |> 
-  summarize(nightly_price = mean(price)) |> 
+  summarize(nightly_price = mean(price) * 0.75) |> 
   mutate(nightly_price = slide_dbl(nightly_price, mean, .before = 6)) |> 
   filter(date >= "2017-06-01")
 
@@ -545,7 +545,7 @@ if (build_figures) {
 
 ```
 
-If registration and the moratorium do not appear to have had a direct effect, what about the role of housing prices in the decline of STA activity? We compared monthly mortgage payments (calculated with the methodology explained in the previous chapter) with average per-night prices for STAs. In 2018, on average, an STA needed to have `r needed_to_afford_2018` nights booked per month to afford mortgage monthly payments, relative to the prices of houses sold in the same year. This number has since been steadily increasing, reaching `r needed_to_afford_2021` nights in 2021. STA nightly prices were rather stable before the pandemic, and Figure \@ref(fig:fig-3-3) shows that the profitability of STA was declining as housing prices were slightly rising. While after the pandemic, a property operating as an STA makes much more money, the increases in average prices per night still cannot keep up with the sales prices of second homes.
+If the registration moratorium cannot explain the puzzling divergence between STA demand and supply, the other plausible possibility is that potential new STAs have been crowded out by second-home sales. do not appear to have had a direct effect, what about the role of housing prices in the decline of STA activity? We test this possibility by comparing monthly carrying costs (calculated with the methodology explained in the previous chapter) with average per-night STA prices (assuming 25% overhead payments to property managers and cleaners) to determine the number of nights per month which an STA needs to be booked to cover the costs of an average home purchase. Figure \@ref(fig:fig-3-3) demonstrates that this figure has been steadily rising, which means the economics of operating an STA in Prince Edward County have become increasingly unfavourable over time. In 2018, on average, an STA needed to have `r needed_to_afford_2018` nights booked per month to afford monthly carrying costs of houses sold in the same year. This number reached `r needed_to_afford_2021` nights in 2021. To be clear, even though the curve shown in Figure \@ref(fig:fig-3-3) is relatively consistent, the underlying factors have changed over time. Prior to the pandemic STA nightly prices were stable, so, in the face of rising housing prices, the relative profitability of an STA was declining. During the pandemic, STA prices have risen incredibly quickly but housing prices have risen even more quickly, so STAs again lost financial ground. This pattern—particularly in combination with the finding that the registration moratorium did not meaningfully dissuade new STA activity—provides compelling evidence that the main cause of the divergence of STA demand and STA supply since the beginning of the pandemic has been competition from second-home sales. This finding has important implications for post-pandemic regulatory possibilities, as we will discuss in the next chapter.
 
 ``` {r fig-3-3, include = TRUE, fig.cap = '(ref:fig-3-3)', fig.align = "center"}
 
@@ -554,9 +554,6 @@ figure_3_3_fun()
 ```
 (ref:fig-3-3) _Average number of reserved STA nights needed to afford monthly mortgage payment_
 
-
-TKTK evidence of a new surge in STA activity:
- (A potential complication is that, since the moratorium was partially lifted in June 2021, an average of `r created_post` new listings have been created each day. Given that dedicated, entire-home STAs remain subject to the moratorium, the most likely expl)
-
+One final point that bears mentioning is that a number of separate data points suggest that the relatively low level of STA activity is in the midst of a reversal as of the end of Summer 2021. The financial favourability of STAs shown in Figure \@ref(fig:fig-3-3) has been improving through 2021—not soon enough to have meaningfully shifted investment decisions for the summer high season, but enough to alter these decisions on a forward-looking basis. Moreover, the rate of new listing creation which we tracked above in Figure \@ref(fig:fig-3-2) has been meaningfully higher since July 2021, at `r created_post` new listings created each day compared to `r created_mora` during the registration moratorium. Both of these facts imply that, in the absence of regulatory interventions or additional major market shocks, STA listings could be expected to grow rapidly in the year to come.
 
 \newpage
