@@ -44,13 +44,9 @@ options(tinytex.verbose = TRUE)
 
 **We evaluate scenarios for the reinstatement of Prince Edward County's short-term accommodation registration, in light of the housing situation and registration analysis, ranging from restrict the number of STA licenses emitted to allowing an unlimited amount of STA licenses for residents operating out of their primary residence. Two geographic scopes are suggested: one that would include only the towns, and one that would encompass all of Prince Edward County. The restrict scenarios would permit the issuance of between 200 or 800 STA licenses, depending on desired market size. The redistribute scenarios could benefit up to 1,700 home sharers operating for a few weeks during summer months. Financial incentives to entice STA operators to keep their listings onto the long-term rental market would not be a viable option for Prince Edward County as it would require up to \$2,520 in rent supplement, depending on location.**
 
-**Regulating short-term accommodations**
-
-TKTKTK The previous chapters show that the housing situation in Prince Edward County has changed drastically since the start of the Covid-19 pandemic. In the county, Covid is the principal driver of the current housing challenges. The pandemic caused STA accommodations to decline in quantity but drastically increase the nightly prices, making for highly profitable operations for the listings still active. The number and sale prices of homes have also skyrocketed, namely due to a booming remote work-induced demand for homes out of city centers and secondary homes purchases. Both the short-term accommodation and secondary home market act as a single market applying pressure to Prince Edward County's housing stock. In addition, the low influx of new construction causes increased pressure on the existing stock, calling for more locally-oriented housing units. This chapter provides regulatory pathways for the reinstatement of a STA registration system, in light of the county's need for a healthy housing market for residents.
-
 ## What are the key issues?
 
-Before we discuss our recommendations for regulatory reform of STAs in Prince Edward County, it is important to be clear about the key housing problems facing the County, and the extent to which regulating STAs can be part of the solution.
+On the basis of the previous analysis, this chapter provides regulatory pathways for the reinstatement of a STA registration system in Prince Edward County, in light of the County's need for a healthy housing market for residents. Before we discuss our recommendations for regulatory reform of STAs in Prince Edward County, though, it is important to be clear about the key housing problems facing the County, and the extent to which regulating STAs can be part of the solution.
 
 ### Covid-19 is the most important driver of housing issues
 
