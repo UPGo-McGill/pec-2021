@@ -23,10 +23,14 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- TRUE
+build_figures <- F
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
+qload(here("output", "/geometry.qsm"))
+street <- streets
+full_time_listings <- qread("output/full_time_listings.qs")
+STA <- qread("output/STA.qs")
 rent_sept <- qread("output/rent_sept.qs")
 
 options(tinytex.verbose = TRUE)
@@ -96,11 +100,139 @@ The "Redistribute" route would promote home-sharing in Prince Edward County by r
 
 ### 1- Redistribute, towns + townships
 
-With the all-encompassing redistribution scenario, the 35,000 reserved nights (earning \$15.9 million) in the summer of 2021 which occurred in commercially-operated STRs could support 1,700 home sharers operating between two to four weeks in the summer, earning \$9,500 as yearly additional income. With the grandfathering of the current 149 active secondary-home licenses, there would be 21,000 nights reserved, totaling \$6.2 million in revenue, distributted among 1,000 home sharers that would earn \$6,200 each on average. This supplementary income stream could at the same time help households with housing-relating costs, contributing to address affordability concerns in Prince Edward County.
+```{r redistribute_town_townships, include = F}
+pool_tt <- 
+daily %>% 
+  filter(date >= summer_start_2021, status == "R") %>% 
+  filter(property_ID %in% (full_time_listings %>% 
+                             filter(year_season == "Summer 2021") %>% 
+                             pull(property_ID)))
+
+total_nights_tt <- 
+pool_tt %>% 
+  nrow() %>% 
+  round(digit = -3)
+
+revenue_summer_2021_tt <- 
+  pool_tt %>% 
+  summarize(sum(price)) %>% 
+  pull() %>% 
+  scales::dollar(0.1, 1 / 1000000)
+
+new_home_sharers_tt <- 
+(total_nights_tt/28) %>% 
+  round(digit = -2) 
+
+earnings_per_cap_tt <- 
+  {(pool_tt %>% summarize(sum(price)) %>% pull())/new_home_sharers_tt} %>% 
+  round(digit = -2) %>% 
+  prettyNum(",") %>% 
+  paste0("$", .)
+
+grandfathered_tt <- 
+  STA %>% 
+  filter(status == "Active", entire_apt) %>% 
+  nrow()
+
+avg_nb_nights_freh_tt <- 
+pool_tt %>% 
+  group_by(property_ID) %>% 
+  summarize(nb_nights = n()) %>% 
+  summarize(mean(nb_nights)) %>% pull()
+
+
+total_nights_after_gf_tt <- {total_nights_tt-(grandfathered_tt*avg_nb_nights_freh_tt)} %>% 
+  round(digit = -3)
+
+revenue_summer_2021_after_gf_tt <- 
+  {(pool_tt %>% 
+  summarize(sum(price))) / total_nights_tt * total_nights_after_gf_tt} %>% 
+  pull() %>% 
+  scales::dollar(0.1, 1 / 1000000)
+
+new_home_sharers_after_gf_tt <- 
+(total_nights_after_gf_tt/28) %>% 
+  round(digit = -2)
+
+earnings_per_cap_after_gf_tt <- 
+  ({(pool_tt %>% 
+  summarize(sum(price))) / total_nights_tt * total_nights_after_gf_tt} /new_home_sharers_after_gf_tt) %>% 
+  round(digit = -2) %>% 
+  prettyNum(",") %>% 
+  paste0("$", .)
+  
+```
+
+With the all-encompassing redistribution scenario, the `r prettyNum(total_nights_tt, ",")` reserved nights (earning `r revenue_summer_2021_tt` million) in the summer of 2021 which occurred in commercially-operated STRs could support `r new_home_sharers_tt` home sharers operating between three to five weeks in the summer, earning `r earnings_per_cap_tt` as yearly additional income. With the grandfathering of the current `r grandfathered_tt` active secondary-home licenses, there would be `r prettyNum(total_nights_after_gf_tt, ",")` nights reserved, totaling `r revenue_summer_2021_after_gf_tt` million in revenue, distributed among `r new_home_sharers_after_gf_tt` home sharers that would earn `r earnings_per_cap_after_gf_tt` each on average. This supplementary income stream could at the same time help households with housing-relating costs, contributing to address affordability concerns in Prince Edward County.
 
 ### 2 - Redistribute, towns only
 
-If the redistribution model were to occur only in towns, the 14,500 reserved nights (\$5.5 million) directed to commercial STAs during the summer of 2021 could support 700 home sharers active for two to four weeks in the summer, for an average revenue of \$8,000 per household. With the grandfathering of 61 valid second-home licenses in towns, the number of reserved nights being redistributed to households would be 8,600 (\$2.4 million in revenue) to support 400 home sharers, each earning \$6,000. It is important to note that, in both situations where STA regulations were applied in towns only, the likely effect will be to displace most STA to the townships since the barriers to operate would be lower than in towns.
+```{r redistribute_town, include = F}
+pool_t <- 
+daily %>% 
+    filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
+  filter(date >= summer_start_2021, status == "R") %>% 
+  filter(property_ID %in% (full_time_listings %>% 
+                             filter(year_season == "Summer 2021") %>% 
+                             pull(property_ID)))
+
+total_nights_t <- 
+pool_t %>% 
+  nrow() %>% 
+  round(digit = -3)
+
+revenue_summer_2021_t <- 
+  pool_t %>% 
+  summarize(sum(price)) %>% 
+  pull() %>% 
+  scales::dollar(0.1, 1 / 1000000)
+
+new_home_sharers_t <- 
+(total_nights_t/28) %>% 
+  round(digit = -2) 
+
+earnings_per_cap_t <- 
+  {(pool_t %>% summarize(sum(price)) %>% pull())/new_home_sharers_t} %>% 
+  round(digit = -2) %>% 
+  prettyNum(",") %>% 
+  paste0("$", .)
+
+grandfathered_t <- 
+  STA %>% 
+    st_intersection((EW %>% filter(type != "Township"))) %>% 
+  filter(status == "Active", entire_apt) %>% 
+  nrow()
+
+avg_nb_nights_freh_t <- 
+pool_t %>% 
+  group_by(property_ID) %>% 
+  summarize(nb_nights = n()) %>% 
+  summarize(mean(nb_nights)) %>% pull()
+
+
+total_nights_after_gf_t <- {total_nights_t-(grandfathered_t*avg_nb_nights_freh_t)} %>% 
+  round(digit = -3)
+
+revenue_summer_2021_after_gf_t <- 
+  {(pool_t %>% 
+  summarize(sum(price))) / total_nights_t * total_nights_after_gf_t} %>% 
+  pull() %>% 
+  scales::dollar(0.1, 1 / 1000000)
+
+new_home_sharers_after_gf_t <- 
+(total_nights_after_gf_t/28) %>% 
+  round(digit = -2)
+
+earnings_per_cap_after_gf_t <- 
+  ({(pool_t %>% 
+  summarize(sum(price))) / total_nights_t * total_nights_after_gf_t} /new_home_sharers_after_gf_t) %>% 
+  round(digit = -2) %>% 
+  prettyNum(",") %>% 
+  paste0("$", .)
+  
+```
+
+If the redistribution model were to occur only in towns, the `r prettyNum(total_nights_t, ",")` reserved nights (`r revenue_summer_2021_t` million) directed to commercial STAs during the summer of 2021 could support `r new_home_sharers_t` home sharers active for three to five weeks in the summer, for an average revenue of `r earnings_per_cap_t` per household. With the grandfathering of `r grandfathered_t` valid second-home licenses in towns, the number of reserved nights being redistributed to households would be `r prettyNum(total_nights_after_gf_t, ",")` (`r revenue_summer_2021_after_gf_t` million in revenue) to support `r new_home_sharers_after_gf_t` home sharers, each earning `r earnings_per_cap_after_gf_t`. It is important to note that, in both situations where STA regulations were applied in towns only, the likely effect will be to displace most STA to the townships since the barriers to operate would be lower than in towns.
 
 ## Regulatory scenario #2: "Restrict"
 
@@ -110,11 +242,62 @@ Both the "Redistribute" and the "Restrict" models could be implemented on two ge
 
 ### 3 - Restrict, towns + townships
 
-Depending on which level of STA activity the county would like to sustain, a certain number of STA licenses could be emitted to commercial STA operations. For the enire county, 800 STA licenses would allow 2019 levels, and 500 licenses would maintain 2021, with fewer licenses leading to a shrinking of the STA market.
+```{r restrict_towns_townships , include = F}
+
+levels_2019_tt <- 
+daily %>% 
+  filter(listing_type == "Entire home/apt", 
+         date>= summer_start_2021-years(2), date <= summer_end_2021-years(2),
+         status == "R") %>% 
+  count(date, sort = T) %>% 
+  slice(1) %>%
+  pull(n) %>% 
+  round(., digits = -1)
+
+levels_2021_tt <- 
+daily %>% 
+  filter(listing_type == "Entire home/apt", 
+         date>= summer_start_2021, date <= summer_end_2021,
+         status == "R") %>% 
+  count(date, sort = T) %>% 
+  slice(1) %>%
+  pull(n) %>% 
+  round(., digits = -1)
+
+```
+
+
+Depending on which level of STA activity the county would like to sustain, a certain number of STA licenses could be emitted to commercial STA operations. For the enire county, `r levels_2019_tt` STA licenses would allow 2019 levels, and `r levels_2021_tt` licenses would maintain 2021, with fewer licenses leading to a shrinking of the STA market.
 
 ### 4 - Restrict, towns only
 
-If the restriction was to occur in towns only, there would need to be 300 STA licenses to allow 2019 levels, and 200 licenses to maintain 2021 levels.
+```{r restrict_towns, include = F}
+
+levels_2019_t <- 
+daily %>% 
+  filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
+  filter(listing_type == "Entire home/apt", 
+         date>= summer_start_2021-years(2), date <= summer_end_2021-years(2),
+         status == "R") %>% 
+  count(date, sort = T) %>% 
+  slice(1) %>%
+  pull(n) %>% 
+  round(., digits = -1)
+
+levels_2021_t <- 
+daily %>% 
+  filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
+  filter(listing_type == "Entire home/apt", 
+         date>= summer_start_2021, date <= summer_end_2021,
+         status == "R") %>% 
+  count(date, sort = T) %>% 
+  slice(1) %>%
+  pull(n) %>% 
+  round(., digits = -1)
+
+```
+
+If the restriction was to occur in towns only, there would need to be `r levels_2019_t` STA licenses to allow 2019 levels, and `r levels_2021_t` licenses to maintain 2021 levels.
 
 ## Less promising options
 
@@ -270,7 +453,7 @@ LTM_revenue_ward %>%
   mutate(surplus = round(mean_rev - mean_rent, -1)) %>% 
   st_as_sf()
 
-street <- qread("output/street.qs")
+# street <- qread("output/street.qs")
 
 figure_6_1_fun <- function(regular = "", condensed = "") {
   
