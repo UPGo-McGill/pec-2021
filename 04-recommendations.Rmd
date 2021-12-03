@@ -167,6 +167,10 @@ earnings_per_cap_after_gf_tt <-
 With the all-encompassing redistribution scenario, the `r prettyNum(total_nights_tt, ",")` reserved nights (earning `r revenue_summer_2021_tt` million) in the summer of 2021 which occurred in commercially-operated STRs could support `r new_home_sharers_tt` home sharers operating between three to five weeks in the summer, earning `r earnings_per_cap_tt` as yearly additional income. With the grandfathering of the current `r grandfathered_tt` active secondary-home licenses, there would be `r prettyNum(total_nights_after_gf_tt, ",")` nights reserved, totaling `r revenue_summer_2021_after_gf_tt` million in revenue, distributed among `r new_home_sharers_after_gf_tt` home sharers that would earn `r earnings_per_cap_after_gf_tt` each on average. This supplementary income stream could at the same time help households with housing-relating costs, contributing to address affordability concerns in Prince Edward County.
 
 ```{r make_fig_4_1}
+# remotes::install_github("hrbrmstr/waffle", force = TRUE)
+
+library(waffle)
+library(hrbrthemes)
 
 library(patchwork)
 
@@ -185,24 +189,22 @@ home_sharing_tt <-
   nrow()
 
 waffle_df <- 
-tibble(graph = "first", value = full_time_tt, group = "Removed FT properties") %>% 
+tibble(graph = "first", value = full_time_tt, group = "Moved from FT to home sharing") %>% 
   add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  add_row(graph = "second", value = new_home_sharers_tt, group = "New home sharing") %>%
-  add_row(graph = "third", value = full_time_tt-grandfathered_tt, group = "Removed FT properties") %>% 
+  add_row(graph = "second", value = new_home_sharers_tt, group = "Moved from FT to home sharing") %>%
+  add_row(graph = "third", value = full_time_tt-grandfathered_tt, group = "Moved from FT to home sharing") %>% 
   add_row(graph = "third", value = grandfathered_tt, group = "Remaining FT properties") %>% 
   add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  add_row(graph = "fourth", value = new_home_sharers_after_gf_tt, group = "New home sharing") %>% 
+  add_row(graph = "fourth", value = new_home_sharers_after_gf_tt, group = "Moved from FT to home sharing") %>% 
   add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
   add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
   mutate(value = value/10) %>% 
-  mutate(group = factor(group, levels = c("Remaining FT properties", "New home sharing",
-                           "Removed FT properties", "Existing home sharing"))) %>%
+  mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing", "Existing home sharing"))) %>%
   arrange(group)
 
 cols <- c("Remaining FT properties" = col_palette[1],
-          "Removed FT properties" = col_palette[5], 
-          "Existing home sharing" = col_palette[3], 
-          "New home sharing" = col_palette[2])
+          "Moved from FT to home sharing" = col_palette[2], 
+          "Existing home sharing" = col_palette[3])
 
 themes_waffle <- function(df, title) {
   ggplot(df, aes(fill=group, values = value))+
@@ -261,7 +263,7 @@ figure_4_1_fun <- function() {
 if (build_figures) {
   ggsave(here("output", "figures", "figure_4_1.pdf"), 
          plot = figure_4_1_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         width = 5, height = 8, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_4_1.pdf"))
 }
@@ -348,44 +350,44 @@ If the redistribution model were to occur only in towns, the `r prettyNum(total_
 ```{r make_fig_4_2}
 
 full_time_t <- 
-property %>% 
+  property %>% 
   filter(property_ID %in% filter(full_time_listings, year_season == "Summer 2021")$property_ID) %>% 
   filter(ward %in% (EW %>% filter(type != "Township"))$ward) %>% 
   nrow()
-  
+
 home_sharing_t <- 
   daily %>% 
   filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
   filter(date >= summer_start_2021, status == "R") %>% 
   filter(!property_ID %in% (full_time_listings %>% 
-                             filter(year_season == "Summer 2021") %>% 
-                             pull(property_ID))) %>% 
+                              filter(year_season == "Summer 2021") %>% 
+                              pull(property_ID))) %>% 
   distinct(property_ID) %>% 
   nrow()
 
 waffle_df <- 
-tibble(graph = "first", value = full_time_t, group = "Removed FT properties") %>% 
-  add_row(graph = "second", value = home_sharing_t, group = "Existing home sharing") %>% 
-  add_row(graph = "second", value = new_home_sharers_t, group = "New home sharing") %>%
-  add_row(graph = "third", value = full_time_t-grandfathered_t, group = "Removed FT properties") %>% 
-  add_row(graph = "third", value = grandfathered_t, group = "Remaining FT properties") %>% 
-  add_row(graph = "fourth", value = home_sharing_t, group = "Existing home sharing") %>% 
-  add_row(graph = "fourth", value = new_home_sharers_after_gf_t, group = "New home sharing") %>% 
-  add_row(graph = "antes_first", value = full_time_t, group = "Remaining FT properties") %>% 
-  add_row(graph = "antes_second", value = home_sharing_t, group = "Existing home sharing") %>% 
+  tibble(graph = "first", value = full_time_tt-full_time_t, group = "Remaining FT properties") %>% 
+  add_row(graph = "first", value = full_time_t, group = "Moved from FT to home sharing") %>% 
+  add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
+  add_row(graph = "second", value = new_home_sharers_t, group = "Moved from FT to home sharing") %>%
+  add_row(graph = "third", value = full_time_t-grandfathered_t, group = "Moved from FT to home sharing") %>% 
+  add_row(graph = "third", value = full_time_tt-full_time_t+grandfathered_t, group = "Remaining FT properties") %>% 
+  add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
+  add_row(graph = "fourth", value = new_home_sharers_after_gf_t, group = "Moved from FT to home sharing") %>% 
+  add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
+  add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
   mutate(value = value/10) %>% 
-  mutate(group = factor(group, levels = c("Remaining FT properties", "New home sharing",
-                           "Removed FT properties", "Existing home sharing"))) %>%
+  mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing",
+                                          "Existing home sharing"))) %>%
   arrange(group)
 
 cols <- c("Remaining FT properties" = col_palette[1],
-          "Removed FT properties" = col_palette[5], 
-          "Existing home sharing" = col_palette[3], 
-          "New home sharing" = col_palette[2])
+          "Moved from FT to home sharing" = col_palette[2], 
+          "Existing home sharing" = col_palette[3])
 
 themes_waffle <- function(df, title) {
   ggplot(df, aes(fill=group, values = value))+
-  geom_waffle(color = "white", size=1.125, n_rows = 8) +
+    geom_waffle(color = "white", size=1.125, n_rows = 8) +
     scale_x_discrete(expand=c(0,0)) +
     scale_y_discrete(expand=c(0,0)) +
     scale_fill_manual(values = cols)+
@@ -407,22 +409,22 @@ p02 <-
   themes_waffle(., NULL)
 
 p1 <- 
-waffle_df %>% 
+  waffle_df %>% 
   filter(graph == "first") %>% 
-  themes_waffle(., "Redistribute entirely")
+  themes_waffle(., "Redistribute only in towns")
 
 p2 <- 
-waffle_df %>% 
+  waffle_df %>% 
   filter(graph == "second") %>% 
   themes_waffle(., NULL)
 
 p3 <- 
-waffle_df %>% 
+  waffle_df %>% 
   filter(graph == "third") %>% 
-  themes_waffle(., "With grandfathering")
+  themes_waffle(., "Grandfathering in towns")
 
 p4 <- 
-waffle_df %>% 
+  waffle_df %>% 
   filter(graph == "fourth") %>% 
   themes_waffle(., NULL)
 
@@ -432,15 +434,17 @@ waffle_legend <-
 
 figure_4_2_fun <- function() {
   ((p01 | p02) /
-(p1 | p2) /
-(p3 | p4 ) /
-    waffle_legend)
+     (p1 | p2) /
+     (p3 | p4 ) /
+     waffle_legend)
 }
+
+
 
 if (build_figures) {
   ggsave(here("output", "figures", "figure_4_2.pdf"), 
          plot = figure_4_2_fun("Futura", "Futura Condensed"), 
-         width = 8, height = 5, units = "in", useDingbats = FALSE)
+         width = 5, height = 8, units = "in", useDingbats = FALSE)
   
   extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
 }
