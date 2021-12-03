@@ -90,7 +90,8 @@ Second, mandatory license display allows the regulation of STAs to shift away fr
 
 Subsection 34(9) of the Ontario Planning Act establishes a right to legal nonconforming use---or "grandfathering"---when the zoning bylaw is amended to prohibit a previous valid land use. To the extent that STAs are regulated through the zoning bylaw, grandfathering sets important limitations on the effectiveness of future policy changes. In particular, any change to the STA regulatory landscape which makes it more difficult to operate STAs will enormously benefit current STA operators, ultimately reducing the efficacy of the rules. Since the County's current STA regulations are enacted through the zoning bylaw, all existing licensed STAs will in theory be able to operate indefinitely, including after property sales, as legal nonconforming uses.
 
-The County should take reasonable steps to moderate the impact of grandfathering on its ability to set appropriate STA policy going forward. One promising avenue is to shift STA regulation out of land use and into business licensing. If a business license is required to advertise or operate an STA, this could provide the County with more flexibility about which conditions it chooses to impose on the granting and renewal of these licenses in a manner which sidesteps grandfathered land uses.
+The County should take reasonable steps to moderate the impact of grandfathering on its ability to set appropriate STA policy going forward. One promising avenue is to shift STA regulation out of land use and into business licensing. If a business license is required to advertise or operate an STA, this could provide the County with more flexibility about which conditions it chooses to impose on the granting and renewal of these licenses in a manner which sidesteps grandfathered land uses. In particular, if a license is required to _advertise_ an STA online, this is not a land-use question.
+
 
 ## Regulatory scenario #1: "Redistribute"
 
@@ -266,7 +267,6 @@ daily %>%
 
 ```
 
-
 Depending on which level of STA activity the county would like to sustain, a certain number of STA licenses could be emitted to commercial STA operations. For the enire county, `r levels_2019_tt` STA licenses would allow 2019 levels, and `r levels_2021_tt` licenses would maintain 2021, with fewer licenses leading to a shrinking of the STA market.
 
 ### 4 - Restrict, towns only
@@ -299,11 +299,8 @@ daily %>%
 
 If the restriction was to occur in towns only, there would need to be `r levels_2019_t` STA licenses to allow 2019 levels, and `r levels_2021_t` licenses to maintain 2021 levels.
 
-## Less promising options
+## Incentives to STA hosts?
 
-TKTK
-
-### Short-term incentive program
 
 ```{r short_term_incentive}
 
