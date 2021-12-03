@@ -29,10 +29,13 @@
 
 <!-- **REGISTRATION ANALYSIS** -->
 
-<!-- - Out of the 963 license applications, 423 were approved, with  total of 351 valid licenses operating prior the the moratorium. -->
-<!-- - Picton is the ward that received the most license applications, with 71, followed by Hallowell (60) and Wellington (54). -->
-<!-- - During the STA registration period, there was about 1 new STR listing created per day. During the moratorium, the rate of new listings being created on STR platforms remained substantially the same, showing that the registration and moratorium did not directly impact the creation of STA listings in the county, but rather the overall pandemic conditions. -->
-<!-- - 331 housing units that were sold since 2016 also applied for a STA license, indicating a strong connection between recent house sales and STR operations. -->
+<!-- - On average each day in 2020 and 2021, 67.5% of active STAs in the county were operating with a license.  -->
+<!-- - During the moratorium, STA listings that were created on platforms have been reserved on average 50.7% of the time, showing that STA operators did not respect the operation hiatus. -->
+<!-- - Picton is the ward that received the most license applications prior to the moratorium, with 71, followed by Hallowell (60) and Wellington (54). -->
+<!-- - Prior to the pandemic, an average of 1.28 STA listings were created daily on rental platforms. This number dropped to 0.58 during the registration period, but remained at 0.57 during the moratorium, suggesting that external platforms caused a decline in new STA creation. -->
+<!-- - Second-home sales acted as a competing factor to new STA creation: the extraordinary rise in home sale volume and price made it more difficult for STA operators to financially compete. -->
+<!-- - While it took 6.96 booked night per night to cover carrying costs of a housing units in 2018, this number increase by a third to reach 9.26 nights in 2021. -->
+<!-- - The rapid comeback of STA listings and high STA prices in the summer 2021 indicate, however, that the STA market is expected to grow rapidly in the year to come. -->
 
 
 <!-- **MOVING FORWARD: SHORT-TERM ACCOMMODATION REGULATION PATHWAYS IN PRINCE EDWARD COUNTY ** -->
