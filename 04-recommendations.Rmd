@@ -23,12 +23,12 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- F
+build_figures <- TRUE
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
-qload(here("output", "/geometry.qsm"))
-street <- streets
+# qload(here("output", "/geometry.qsm"))
+# street <- streets
 full_time_listings <- qread("output/full_time_listings.qs")
 STA <- qread("output/STA.qs")
 rent_sept <- qread("output/rent_sept.qs")
