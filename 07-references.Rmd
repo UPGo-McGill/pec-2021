@@ -4,7 +4,7 @@ ACTO. (2021). Tenant protection and rent regulation in Ontario. Advocacy Centre 
 
 Airbnb. (2020). Extenuating circumstances policy and the coronavirus. Airbnb. https://www.airbnb.ca/help/article/2701/extenuating-circumstances-policy-and-the-coronavirus-covid19
 
-Barron, K., Kung, E., & Proserpio, D. (2017). The Effect of Home-Sharing on House Prices and Rents: Evidence from Airbnb. https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3006832 
+Barron, K., Kung, E., & Proserpio, D. (2020). The Effect of Home-Sharing on House Prices and Rents: Evidence from Airbnb. https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3006832 
 
 Boeing, G., & Waddell, P. (2017). New insights into rental housing markets across the United States: Web scraping and analyzing craigslist rental listings. Journal of Planning Education and Research, 37(4), 457-476. https://doi.org/10.1177/0739456X16664789
 
