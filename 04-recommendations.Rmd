@@ -803,11 +803,11 @@ combined + plot_layout(guides = "collect")
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_2_3.pdf"), 
-         plot = figure_2_3_fun(), 
+  ggsave(here("output", "figures", "figure_4_3.pdf"), 
+         plot = figure_4_3_fun(), 
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_2_3.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_3.pdf"))
 }
 
 ```
