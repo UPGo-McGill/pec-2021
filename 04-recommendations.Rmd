@@ -50,11 +50,13 @@ TKTKTK The previous chapters show that the housing situation in Prince Edward Co
 
 ## What are the key issues?
 
-Before we discuss our recommendations for regulatory reform of STAs in Prince Edward County,
+Before we discuss our recommendations for regulatory reform of STAs in Prince Edward County, it is important to be clear about the key housing problems facing the County, and the extent to which regulating STAs can be part of the solution.
 
-### Covid is the most important driver of housing issues
+### Covid-19 is the most important driver of housing issues
 
-Prince Edward County had been on a worsening housing affordability trajectory well since before the Covid-19 pandemic began, but it is important to be clear that the recent skyrocketing purchase prices and residential rents are a direct consequence of the pandemic. The preceding chapters suggest that the most important single factor in the pandemic-era deterioration of housing affordability is the purchase of second homes
+Prince Edward County had been on a worsening housing affordability trajectory well since before the Covid-19 pandemic began, but the recent skyrocketing purchase prices and residential rents are a direct consequence of the pandemic. The preceding chapters suggest that the most important single factor in the pandemic-era deterioration of housing affordability is the purchase of second homes. This fact introduces a considerable amount of uncertainty into forward-looking regulatory reforms. The pandemic will not last forever; when it ends, will housing price growth slow down? Will it in fact reverse?
+
+The additional complexity with regard to STAs is that, as we will discuss momentarily, the evidence is clear that second-home demand has come at the expense of STA supply. If demand for second homes declines after the pandemic, that might signal a decline in demand for STAs as well, or it might shift the financial conditions of investment properties to make STAs a more attractive investment, driving a new surge in STA activity going forward. There is no easy answer here; the point is simply to underscore the high level of uncertainty in discussing Prince Edward County's post-pandemic housing market.
 
 ### STAs and second homes are a single market
 
@@ -82,11 +84,13 @@ Effective STA registration systems require mandatory licensing of all listings. 
 
 There are two reasons why this is a crucial feature of a registration system. First, it allows municipalities to connect the anonymous, online identities of STA hosts with the real-life identifies of property owners and property managers. If registration is mandatory but license numbers are not universally displayed, then the municipality faces the same incomplete information problem as when licensing is not fully mandatory.
 
-Second, mandatory license display allows the regulation of STAs to shift away from the land use to the advertisement of a rental, which dramatically simplifies enforcement options. If, for example, STA licenses are treated as business licenses, and the display of the license number is made a condition of the license, then TKTK
+Second, mandatory license display allows the regulation of STAs to shift away from the land use to the advertisement of a rental, which dramatically simplifies enforcement options. If, for example, STA licenses are business licenses which carry the condition of displaying the license number, then failure to display a license number is a violation which does not require an in-person inspection to substantiate. There will of course be other enforcement issues that will require visits from enforcement officers, but ensuring the basic integrity of the registration system will become much easier.
 
-### Reduce grandfathering of existing licenses whereever possible
+### Reduce grandfathering of existing licenses where possible
 
-TKTK Second, a successful STA registration system in the county should aim to reduce to the minimum or potentially eliminate grandfathering of STAs. Indeed, any change to the STA legal landscape will enormously benefit current STA operators, ultimately reducing the efficacy of the rules. Given the market conditions of present STAs, any unit which would not be subject to stricter rules would be in an advantageous position once the updated regulations come into effect.
+Subsection 34(9) of the Ontario Planning Act establishes a right to legal nonconforming use---or "grandfathering"---when the zoning bylaw is amended to prohibit a previous valid land use. To the extent that STAs are regulated through the zoning bylaw, grandfathering sets important limitations on the effectiveness of future policy changes. In particular, any change to the STA regulatory landscape which makes it more difficult to operate STAs will enormously benefit current STA operators, ultimately reducing the efficacy of the rules. Since the County's current STA regulations are enacted through the zoning bylaw, all existing licensed STAs will in theory be able to operate indefinitely, including after property sales, as legal nonconforming uses.
+
+The County should take reasonable steps to moderate the impact of grandfathering on its ability to set appropriate STA policy going forward. One promising avenue is to shift STA regulation out of land use and into business licensing. If a business license is required to advertise or operate an STA, this could provide the County with more flexibility about which conditions it chooses to impose on the granting and renewal of these licenses in a manner which sidesteps grandfathered land uses.
 
 ## Regulatory scenario #1: "Redistribute"
 
