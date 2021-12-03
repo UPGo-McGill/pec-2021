@@ -538,10 +538,8 @@ num_bedrooms <-
   select(property_ID, bedrooms)
 
 FREH_properties <- 
-  daily %>% 
-  filter(FREH_6) %>% 
-  distinct(property_ID) %>% 
-  pull()
+  full_time_listings %>% 
+  distinct(property_ID) %>% pull()
 
 LTM_revenue <- 
   daily %>% 
@@ -681,7 +679,7 @@ LTM_revenue_ward %>%
 
 # street <- qread("output/street.qs")
 
-figure_2_3_fun <- function(regular = "", condensed = "") {
+figure_4_3_fun <- function(regular = "", condensed = "") {
   
 townships <- 
 surplus_rent[surplus_rent$ward == "Township",] %>% 
@@ -795,10 +793,6 @@ wellington <-
   )+
   geom_sf_label(aes(label = scales::dollar(round(surplus))))+
   ggtitle("Wellington")
-
-
-
-library(patchwork)
 
 combined <- 
 (townships + picton) / (bloomfield + wellington) & 
