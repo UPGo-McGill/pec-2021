@@ -299,8 +299,11 @@ daily %>%
 
 If the restriction was to occur in towns only, there would need to be `r levels_2019_t` STA licenses to allow 2019 levels, and `r levels_2021_t` licenses to maintain 2021 levels.
 
-## Incentives to STA hosts?
+## Less promising regulatory options
 
+In addition to the two main "Redistribute" and "Restrict" regulatory options, we considered several others which have been proposed or implemented in other jurisdictions but which, in our opinion, are not plausible paths forward for Prince Edward County. We briefly discuss them here.
+
+### Incentives to STA hosts?
 
 ```{r short_term_incentive}
 
@@ -368,7 +371,9 @@ weighted.mean(rent_to_weight_mean$monthly_rent,
 
 ```
 
-Another option that has been considered by municipalities in Canada (such as Toronto - see Wachsmuth et al. 2021) and worldwide (deJong 2021) is a financial incentive in the form of a rent supplement given to STA operators to entice them to keep their STAs on the long-term rental market. This type of short-term rental management strategy was put forward since the pandemic, considering the number of tourist accommodations that had to return to long-term renting amidst the tourism collapse starting March 2020. We considered what rent supplements could mean as an option for Prince Edward County. A financial incentive could be given to STR hosts to bring STAs back onto the long-term rental market. This financial incentivee would need to be the equivalent of the difference between the average monthly STA revenue and the average Prince Edward County rent in order to be an appealing option for the hosts. To do so, we calculated monthly STA revenue average and average rents using September 2021 data. The averages were based on a weighted average proportional to the number of bedrooms found in both STAs and rental unis in the county. Commercial listings earned an average of `r avg_monthly_rev_LTM` a month, while the average monthly rent was of `r avg_monthly_rent` in September. It represents a difference of `r var_rev_rent` globally, with heightened differences in select wards (Figure \@ref(fig:fig-6-1)).
+Another STA regulatory option that has been considered by municipalities in Canada (such as Toronto; Wachsmuth et al. 2021) and worldwide (deJong 2021) is a financial incentive given to dedicated STA operators to entice them to rent their units on the long-term rental market. Under normal market conditions, it i
+
+This type of short-term rental management strategy was put forward since the pandemic, considering the number of tourist accommodations that had to return to long-term renting amidst the tourism collapse starting March 2020. We considered what rent supplements could mean as an option for Prince Edward County. A financial incentive could be given to STR hosts to bring STAs back onto the long-term rental market. To a first approximation, an effective financial incentive would need to roughly match the difference between monthly STA revenue and the long-term rents it would be possible to achieve. We approximate this difference by comparing the average monthly STA revenue for TKTK average and average rents using September 2021 data. The averages were based on a weighted average proportional to the number of bedrooms found in both STAs and rental unis in the county. Commercial listings earned an average of `r avg_monthly_rev_LTM` a month, while the average monthly rent was of `r avg_monthly_rent` in September. It represents a difference of `r var_rev_rent` globally, with heightened differences in select wards (Figure \@ref(fig:fig-6-1)).
 
 ```{r on_water, cache = TRUE, cache.lazy = FALSE}
 
@@ -395,7 +400,7 @@ water <- rbind(select(river, -everything()), select(ocean, -everything()))
 rm(ocean, river, city)
 ```
 
-```{r make_fig_6_1}
+```{r make_fig_4_2}
 
 weight_rent_sept <- 
 rent_sept %>% 
@@ -452,7 +457,7 @@ LTM_revenue_ward %>%
 
 # street <- qread("output/street.qs")
 
-figure_6_1_fun <- function(regular = "", condensed = "") {
+figure_4_2_fun <- function(regular = "", condensed = "") {
   
 townships <- 
 surplus_rent[surplus_rent$ward == "Township",] %>% 
@@ -580,22 +585,21 @@ combined + plot_layout(guides = "collect")
 }
 
 if (build_figures) {
-  ggsave(here("output", "figures", "figure_6_1.pdf"), 
-         plot = figure_6_1_fun("Futura", "Futura Condensed"), 
+  ggsave(here("output", "figures", "figure_4_2.pdf"), 
+         plot = figure_4_2_fun(), 
          width = 8, height = 5, units = "in", useDingbats = FALSE)
   
-  extrafont::embed_fonts(here("output", "figures", "figure_6_1.pdf"))
+  extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
 }
 
 ```
 
-```{r fig-6-1, include = TRUE, fig.cap = '(ref:fig-6-1)', fig.align = "center"}
+```{r fig-4-2, include = TRUE, fig.cap = '(ref:fig-4-2)', fig.align = "center"}
 
-figure_6_1_fun()
+figure_4_2_fun()
 
 ```
-
-(ref:fig-6-1) *Average monthly subsidy required for transitioning a STA onto the long-term rental market*
+(ref:fig-4-2) *Average monthly subsidy required for transitioning a STA onto the long-term rental market*
 
 ```{r short_term_incentive_2}
 
@@ -622,6 +626,8 @@ surplus_rent %>%
 While average rents are similar across the county, monthly STA revenue differs from a location to another. The only ward with substantially higher rents than average is Wellington. Figure \@ref(fig:fig-6-1) shows the average amount of monthly subsidy that would be necessary to turn a STA back onto the LTR market. On average, this short-term incentive program would cost the county `r subisdy_wellington` per unit in Wellington, and `r subisdy_outside_wellington` in the rest of the county. Such a subsidy would entail a great financial commitment for the county, and most likely not the most cost effective option to regulating the STA market. The main reason as to why the rent supplement option would not be viable in Prince Edward County is because the revenues earned by STA listing are much higher than average rents, creating large gaps to cover. In sum, a rent supplement option would not be sustainable nor preferable in the county.
 
 ### Restrictions on annual reservations
+
+Many municipalities have set annual limits on per-property STA reservations as a way to limit STA activities to more casual, home sharing operations. In theory this is a reasonable idea, but in practice the enforcement burden makes reservation limits nearly impossible to implement well. To prove that a given STA has exceeded an annual reservation limit of, e.g., 60 nights, it would be necessary for enforcement officers to make 61 visits.
 
 ### Land-use regulations
 
