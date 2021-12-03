@@ -10,6 +10,8 @@ The analysis in this report is based on a combination of private and public data
 
 - Data about property sales from Prince Edward County's real estate board. This data is used for the analysis of the County's housing market.
 
+- Data about Prince Edward County's private rental market, including location, number of bedrooms, and rent. The dataset includes the rent and size of 347 rental units across Prince Edward County for the month of September 2021. This data was provided by Mr. Charles Dowdall, Executive Director of Prince Edward County Affordable Housing Corporation.
+
 - Data about property regulation of short-term accommodations from Prince Edward County. We use this data to conduct the regulation compliance analysis for the purposes of determining the impact and effectiveness of Prince Edward County’s STA by-laws.
 
 _Data cleaning:_ We process the raw STR data we receive from AirDNA through an extensive data cleaning pipeline, the code for which is available at https://github.com/UPGo-McGill/strr.
