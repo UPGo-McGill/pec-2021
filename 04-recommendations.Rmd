@@ -845,11 +845,8 @@ While average rents are similar across the county, monthly STA revenue differs f
 
 ### Restrictions on annual reservations
 
-Many municipalities have set annual limits on per-property STA reservations as a way to limit STA activities to more casual, home sharing operations. In theory this is a reasonable idea, but in practice the enforcement burden makes reservation limits nearly impossible to implement well. To prove that a given STA has exceeded an annual reservation limit of, e.g., 60 nights, it would be necessary for enforcement officers to make 61 visits.
+Many municipalities have set annual limits on per-property STA reservations as a way to limit STA activities to more casual, home sharing operations. In theory this is a reasonable idea, but in practice the enforcement burden makes reservation limits nearly impossible to implement well. To prove that a given STA has exceeded an annual reservation limit of, e.g., 60 nights, it would be necessary for enforcement officers to make 61 visits. Moreover, in a strongly seasonal destination such as Prince Edward County, it could still be economically viable to operate an STA for only a relatively small portion of the year and hold the property otherwise vacant. So even if it were possible to enforce a limit on reservations, this would be unlikely to achieve the goal of shifting STA activity to home sharing.
 
-### Land-use regulations
-
-Other regulatory pathways were analyzed for the reinstatement of STA regulations in Prince Edward County. Regulating STA through land-use is a popular option in municipalities that have clear land use designations within their territory, such as commercial and residential zones. Full-time STAs are then allowed only in commercial zones, given their commercially-oriented nature. Such regulations are however more appropriate for urban setting with significant distinct zones, which is not necessarily the case in all Prince Edward County wards.
 
 ## Conclusions
 
