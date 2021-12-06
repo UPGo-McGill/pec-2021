@@ -27,13 +27,15 @@ build_figures <- TRUE
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
-# qload(here("output", "/geometry.qsm"))
-# street <- streets
 full_time_listings <- qread("output/full_time_listings.qs")
 STA <- qread("output/STA.qs")
 rent_sept <- qread("output/rent_sept.qs")
 
 options(tinytex.verbose = TRUE)
+
+library(extrafont)
+extrafont::loadfonts(quiet = TRUE)
+
 
 ```
 ```{r new_objects}
@@ -48,7 +50,7 @@ options(tinytex.verbose = TRUE)
 
 ## What are the key issues?
 
-On the basis of the previous analysis, this chapter provides regulatory pathways for the reinstatement of a STA registration system in Prince Edward County, in light of the County's need for a healthy housing market for residents. Before we discuss our recommendations for regulatory reform of STAs in Prince Edward County, though, it is important to be clear about the key housing problems facing the County, and the extent to which regulating STAs can be part of the solution.
+On the basis of the previous analysis, this chapter provides regulatory pathways for the reinstatement of a STA registration system in Prince Edward County. We identify a set of generic best practices which are likely to improve any regulatory system, and then lay out two reform models: a "Redistribute" model that entails redirecting STA activity away from dedicated commercial operations and towards home sharing instead, and a "Restrict" model that limits the number of STAs which are allowed to operate in order to limit the number of homes which are converted into STAs. Before we discuss our recommendations for regulatory reform of STAs in Prince Edward County, though, it is important to be clear about the key housing problems facing the County, and the extent to which regulating STAs can be part of the solution.
 
 ### Covid-19 is the most important driver of housing issues
 
@@ -89,16 +91,26 @@ Second, mandatory license display allows the regulation of STAs to shift away fr
 
 Subsection 34(9) of the Ontario Planning Act establishes a right to legal nonconforming use---or "grandfathering"---when the zoning bylaw is amended to prohibit a previous valid land use. To the extent that STAs are regulated through the zoning bylaw, grandfathering sets important limitations on the effectiveness of future policy changes. In particular, any change to the STA regulatory landscape which makes it more difficult to operate STAs will enormously benefit current STA operators, ultimately reducing the efficacy of the rules. Since the County's current STA regulations are enacted through the zoning bylaw, all existing licensed STAs will in theory be able to operate indefinitely, including after property sales, as legal nonconforming uses.
 
-The County should take reasonable steps to moderate the impact of grandfathering on its ability to set appropriate STA policy going forward. One promising avenue is to shift STA regulation out of land use and into business licensing. If a business license is required to advertise or operate an STA, this could provide the County with more flexibility about which conditions it chooses to impose on the granting and renewal of these licenses in a manner which sidesteps grandfathered land uses. In particular, if a license is required to _advertise_ an STA online, this is not a land-use question.
+The County should take reasonable steps to moderate the impact of grandfathering on its ability to set appropriate STA policy going forward. One promising avenue is to shift STA regulation out of land use and into business licensing. If a business license is required to advertise or operate an STA, this could provide the County with more flexibility about which conditions it chooses to impose on the granting and renewal of these licenses in a manner which sidesteps grandfathered land uses. In particular, if a license is required to _advertise_ an STA online, this is not a land-use question, and legal nonconforming uses would not be a relevant concept.
+
+## Two regulatory reform scenarios for Prince Edward County
+
+Based on the findings presented earlier in the report, we identified two plausible models for reforming Prince Edward County's STA registration system, which we call "Redistribute" and "Restrict". The "Redistribute" model entails adding a principal-residence requirement to the STA license, and thus implies redirecting STA activity away from dedicated commercial operations and towards home sharing instead. The "Restrict" model entails leaving the existing relatively unconditional license in place, but limiting the number of licenses which are issued, in order to limit the number of homes which are converted into STAs.
+
+Both of these models aim to preserve the important benefits of the tourist accommodation sector to the County's economy, while reducing the negative housing-affordability impacts of STAs. But they make different trade-offs to achieve these goals. The "Redistribute" model will be more disruptive to existing commercial STA operators, whose business model will no longer be permitted, but will consequently return more housing units to the long-term market and also provide much greater economic development opportunities for existing County residents. The "Restrict" model will be much less disruptive to existing STA operators, but as a result will have more modest impacts on housing supply.
+
+For each of these two models, we modeled a scenario where the rules apply to the entire County ("towns + townships") and a scenario where the rules apply only in the towns, for a total of four regulatory possibilities.
 
 
-## Regulatory scenario #1: "Redistribute"
+## Model #1: "Redistribute"
 
-Based on our findings and established priorities, we modeled four potential scenarios based on two sets of conditions. Prince Edward could either Redistribute or Restrict, and do so either in the townships only, or in the towns and townships (in the entire county).
+The "Redistribute" model aims to redirect STA activity in Prince Edward County away from full-time, dedicated STAs which remove housing from the long-term market towards part-time, home-sharing STAs which allow local residents to share in the economic benefits of tourism accommodation. The model achieves this goal by adding a principal-residence requirement to the STA license: only hosts operating out of their own home will be allowed to operate STAs.
 
-The "Redistribute" route would promote home-sharing in Prince Edward County by removing dedicated STAs and redistribute STA activity more broadly in the hands of more county households. The aim is to grow the size of the STA market in terms of operating accommodations, but to minimize the negative housing impacts associated with full time operations. The county would grant unlimited STA licenses, both only for a host's principal residence. This way, total STA revenues would be redistributed among Prince Edward County families, with local firms providing intermediary services such as property management.
+There are two important implications of the "Redistribute" model. The first is that there will be _more_ STA hosts than before, since a smaller number of full-time STAs will be replaced with a larger number of part-time STAs. However, because these hosts will be operating STAs out of their own homes, STAs will no longer be in a zero-sum relationship with housing supply, and thus the negative housing-market impacts of STAs will be significantly reduced.
 
-### 1- Redistribute, towns + townships
+The second implication of the "Redistribute" model is that the positive economic benefits of STAs will be much more equitably distributed among County residents. Currently, a substantial share of the County's STA listings are owned by non-locals. (It is impossible to measure this precisely, but as an absolutely minimal estimate, around 1 in 8 STA listings in the County is operated by a host which also operates listings outside the County.) This means that a substantial share of STA revenue leaves the County. Moreover, even for STAs which are locally owned, STA revenue is highly concentrated among a small number of operators—10% of STA hosts earn approximately half of all the revenue. If STAs can only be operated out of principal residences, this means that there will be no non-local STAs at all—so all STA revenue will stay in the County—and that revenue will be distributed more evenly among a larger number of part-time hosts. Finally, a shift to proportionately more home-sharing STAs would provide more opportunities for local firms to provide intermediary services such as property management and cleaning to a larger pool of STA hosts.
+
+### "Redistribute" (towns + townships)
 
 ```{r redistribute_town_townships, include = FALSE}
 
@@ -110,7 +122,7 @@ pool_tt <-
                              pull(property_ID)))
 
 total_nights_tt <- 
-pool_tt %>% 
+  pool_tt %>% 
   nrow() %>% 
   round(digit = -3)
 
@@ -121,8 +133,8 @@ revenue_summer_2021_tt <-
   scales::dollar(0.1, 1 / 1000000)
 
 new_home_sharers_tt <- 
-(total_nights_tt/28) %>% 
-  round(digit = -2) 
+  (nrow(pool_tt) / 28) %>% 
+  round(digit = -2)
 
 earnings_per_cap_tt <- 
   {(pool_tt %>% summarize(sum(price)) %>% pull())/new_home_sharers_tt} %>% 
@@ -136,148 +148,157 @@ grandfathered_tt <-
   nrow()
 
 avg_nb_nights_freh_tt <- 
-pool_tt %>% 
+  pool_tt %>% 
   group_by(property_ID) %>% 
   summarize(nb_nights = n()) %>% 
-  summarize(mean(nb_nights)) %>% pull()
+  summarize(mean(nb_nights)) %>% 
+  pull()
 
-total_nights_after_gf_tt <- {total_nights_tt-(grandfathered_tt*avg_nb_nights_freh_tt)} %>% 
+total_nights_after_gf_tt <- 
+  {total_nights_tt - (grandfathered_tt * avg_nb_nights_freh_tt)} %>% 
   round(digit = -3)
 
 revenue_summer_2021_after_gf_tt <- 
   {(pool_tt %>% 
-  summarize(sum(price))) / total_nights_tt * total_nights_after_gf_tt} %>% 
+      summarize(sum(price))) / nrow(pool_tt) * 
+      (total_nights_tt - (grandfathered_tt * avg_nb_nights_freh_tt))} %>% 
   pull() %>% 
   scales::dollar(0.1, 1 / 1000000)
 
 new_home_sharers_after_gf_tt <- 
-(total_nights_after_gf_tt/28) %>% 
+  ((total_nights_tt - (grandfathered_tt * avg_nb_nights_freh_tt)) / 28) %>% 
   round(digit = -2)
 
 earnings_per_cap_after_gf_tt <- 
   ({(pool_tt %>% 
-  summarize(sum(price))) / total_nights_tt * total_nights_after_gf_tt} /new_home_sharers_after_gf_tt) %>% 
-  round(digit = -2) %>% 
-  prettyNum(",") %>% 
-  paste0("$", .)
+       summarize(sum(price))) / total_nights_tt * 
+      (total_nights_tt - (grandfathered_tt * avg_nb_nights_freh_tt))} /
+     ((total_nights_tt - (grandfathered_tt * avg_nb_nights_freh_tt)) / 28)) %>% 
+  pull() %>%
+  scales::dollar(100)
   
 ```
-
-With the all-encompassing redistribution scenario, the `r prettyNum(total_nights_tt, ",")` reserved nights (earning `r revenue_summer_2021_tt` million) in the summer of 2021 which occurred in commercially-operated STRs could support `r new_home_sharers_tt` home sharers operating between three to five weeks in the summer, earning `r earnings_per_cap_tt` as yearly additional income. With the grandfathering of the current `r grandfathered_tt` active secondary-home licenses, there would be `r prettyNum(total_nights_after_gf_tt, ",")` nights reserved, totaling `r revenue_summer_2021_after_gf_tt` million in revenue, distributed among `r new_home_sharers_after_gf_tt` home sharers that would earn `r earnings_per_cap_after_gf_tt` each on average. This supplementary income stream could at the same time help households with housing-relating costs, contributing to address affordability concerns in Prince Edward County.
-
 ```{r make_fig_4_1}
 # remotes::install_github("hrbrmstr/waffle", force = TRUE)
 
-library(waffle)
-library(hrbrthemes)
-
-library(patchwork)
-
-full_time_tt <- 
-  full_time_listings %>% 
-  filter(year_season == "Summer 2021") %>% 
-  nrow()
-
-home_sharing_tt <- 
-  daily %>% 
-  filter(date >= summer_start_2021, status == "R") %>% 
-  filter(!property_ID %in% (full_time_listings %>% 
-                             filter(year_season == "Summer 2021") %>% 
-                             pull(property_ID))) %>% 
-  distinct(property_ID) %>% 
-  nrow()
-
-waffle_df <- 
-tibble(graph = "first", value = full_time_tt, group = "Moved from FT to home sharing") %>% 
-  add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  add_row(graph = "second", value = new_home_sharers_tt, group = "Moved from FT to home sharing") %>%
-  add_row(graph = "third", value = full_time_tt-grandfathered_tt, group = "Moved from FT to home sharing") %>% 
-  add_row(graph = "third", value = grandfathered_tt, group = "Remaining FT properties") %>% 
-  add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  add_row(graph = "fourth", value = new_home_sharers_after_gf_tt, group = "Moved from FT to home sharing") %>% 
-  add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
-  add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  mutate(value = value/10) %>% 
-  mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing", "Existing home sharing"))) %>%
-  arrange(group)
-
-cols <- c("Remaining FT properties" = col_palette[1],
-          "Moved from FT to home sharing" = col_palette[2], 
-          "Existing home sharing" = col_palette[3])
-
-themes_waffle <- function(df, title) {
-  ggplot(df, aes(fill=group, values = value))+
-  geom_waffle(color = "white", size=1.125, n_rows = 8) +
-    scale_x_discrete(expand=c(0,0)) +
-    scale_y_discrete(expand=c(0,0)) +
-    scale_fill_manual(values = cols)+
-    coord_equal() +
-    theme_ipsum_rc(grid="") +
-    theme_enhance_waffle()+
-    theme(legend.position = "none")+
-    ggtitle(title)
-}
-
-p01 <- 
-  waffle_df %>% 
-  filter(graph == "antes_first") %>% 
-  themes_waffle(., "No actions")
-
-p02 <- 
-  waffle_df %>% 
-  filter(graph == "antes_second") %>% 
-  themes_waffle(., NULL)
-
-p1 <- 
-waffle_df %>% 
-  filter(graph == "first") %>% 
-  themes_waffle(., "Redistribute entirely")
-
-p2 <- 
-waffle_df %>% 
-  filter(graph == "second") %>% 
-  themes_waffle(., NULL)
-
-p3 <- 
-waffle_df %>% 
-  filter(graph == "third") %>% 
-  themes_waffle(., "With grandfathering")
-
-p4 <- 
-waffle_df %>% 
-  filter(graph == "fourth") %>% 
-  themes_waffle(., NULL)
-
-waffle_legend <- 
-  cowplot::get_legend(themes_waffle(waffle_df, NA)+theme(legend.position = "bottom",
-                                                         legend.title = element_blank()))
-
+# library(waffle)
+# library(hrbrthemes)
+# library(patchwork)
+# 
+# full_time_tt <- 
+#   full_time_listings %>% 
+#   filter(year_season == "Summer 2021") %>% 
+#   nrow()
+# 
+# home_sharing_tt <- 
+#   daily %>% 
+#   filter(date >= summer_start_2021, status == "R") %>% 
+#   filter(!property_ID %in% (full_time_listings %>% 
+#                              filter(year_season == "Summer 2021") %>% 
+#                              pull(property_ID))) %>% 
+#   distinct(property_ID) %>% 
+#   nrow()
+# 
+# waffle_df <- 
+# tibble(graph = "first", value = full_time_tt, group = "Moved from FT to home sharing") %>% 
+#   add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
+#   add_row(graph = "second", value = new_home_sharers_tt, group = "Moved from FT to home sharing") %>%
+#   add_row(graph = "third", value = full_time_tt-grandfathered_tt, group = "Moved from FT to home sharing") %>% 
+#   add_row(graph = "third", value = grandfathered_tt, group = "Remaining FT properties") %>% 
+#   add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
+#   add_row(graph = "fourth", value = new_home_sharers_after_gf_tt, group = "Moved from FT to home sharing") %>% 
+#   add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
+#   add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
+#   mutate(value = value/10) %>% 
+#   mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing", "Existing home sharing"))) %>%
+#   arrange(group)
+# 
+# cols <- c("Remaining FT properties" = col_palette[1],
+#           "Moved from FT to home sharing" = col_palette[2], 
+#           "Existing home sharing" = col_palette[3])
+# 
+# themes_waffle <- function(df, title) {
+#   ggplot(df, aes(label = group, fill = group, values = value)) +
+#   geom_pictogram(color = "white", size = 5, n_rows = 8) +
+#   scale_label_pictogram(
+#     name = NULL,
+#     values = c("Moved from FT to home sharing" = "home", 
+#                "Existing home sharing" = "home")) +
+#     scale_x_discrete(expand = c(0, 0)) +
+#     scale_y_discrete(expand = c(0, 0)) +
+#     scale_fill_manual(values = cols) +
+#     coord_equal() +
+#     theme_enhance_waffle() +
+#     theme(legend.position = "none") +
+#     ggtitle(title)
+# }
+# 
+# p01 <- 
+#   waffle_df %>% 
+#   filter(graph == "antes_first") %>% 
+#   themes_waffle(., "No actions")
+# 
+# p02 <- 
+#   waffle_df %>% 
+#   filter(graph == "antes_second") %>% 
+#   themes_waffle(., NULL)
+# 
+# p1 <- 
+# waffle_df %>% 
+#   filter(graph == "first") %>% 
+#   themes_waffle(., "Redistribute entirely")
+# 
+# p2 <- 
+# waffle_df %>% 
+#   filter(graph == "second") %>% 
+#   themes_waffle(., NULL)
+# 
+# p3 <- 
+# waffle_df %>% 
+#   filter(graph == "third") %>% 
+#   themes_waffle(., "With grandfathering")
+# 
+# p4 <- 
+# waffle_df %>% 
+#   filter(graph == "fourth") %>% 
+#   themes_waffle(., NULL)
+# 
+# waffle_legend <- 
+#   cowplot::get_legend(themes_waffle(waffle_df, NA)+theme(legend.position = "bottom",
+#                                                          legend.title = element_blank()))
+# 
 figure_4_1_fun <- function() {
-  ((p01 | p02) /
-(p1 | p2) /
-(p3 | p4 ) /
-    waffle_legend)
+#   ((p01 | p02) /
+# (p1 | p2) /
+# (p3 | p4 ) /
+#     waffle_legend)
 }
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_4_1.pdf"), 
-         plot = figure_4_1_fun("Futura", "Futura Condensed"), 
-         width = 5, height = 8, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_4_1.pdf"))
-}
+# 
+# if (build_figures) {
+#   ggsave(here("output", "figures", "figure_4_1.pdf"), 
+#          plot = figure_4_1_fun(), 
+#          width = 8, height = 8, units = "in", useDingbats = FALSE)
+#   
+#   extrafont::embed_fonts(here("output", "figures", "figure_4_1.pdf"))
+# }
 
 ```
+
+The most straightforward way to implement the "Redistribute" model would be to establish a principal-residence requirement for all STA licenses in the County. This would create a cascade of changes in the STA market which are impossible to predict in advance, but we can estimate the magnitude of the transformation by examining the potential impacts on a static approximation of the STA market in Summer 2021.
+
+In Summer 2021, there were approximately `r prettyNum(total_nights_tt, ",")` reserved nights (earning `r revenue_summer_2021_tt` million) which occurred in commercially-operated STAs. If this activity were redistributed to principal-residence STAs, it could support `r scales::comma(new_home_sharers_tt)` home sharers operating between three to five weeks in the summer, each earning `r earnings_per_cap_tt` in additional annual income.
+
+Some of the existing full-time STA hosts are operating with a valid license, and they might therefore be permitted to continue operating as a legal nonconforming use. Under the conservative assumption that each of the `r grandfathered_tt` currently active secondary-home licenses belongs to an active full-time STA, and thus these STAs would stay in operation, there would have been `r prettyNum(total_nights_after_gf_tt, ",")` reserved nights (earning `r revenue_summer_2021_after_gf_tt` million) which occurred in commercially operated STAs which would no longer be permitted. This activity could support `r scales::comma(new_home_sharers_after_gf_tt)` home sharers each earning `r earnings_per_cap_after_gf_tt` annually. Figure \@ref(fig:fig-4-1) summarizes potential changes in STAs under these scenarios.
 
 ```{r fig-4-1, include = TRUE, fig.cap = '(ref:fig-4-1)', fig.align = "center"}
 
 figure_4_1_fun()
 
 ```
-
 (ref:fig-4-1) *Expected impact of redistribution regulations (in all the County) on the STA market*
 
-### 2 - Redistribute, towns only
+
+### "Redistribute" (towns only)
 
 ```{r redistribute_town, include = F}
 pool_t <- 
@@ -300,11 +321,11 @@ revenue_summer_2021_t <-
   scales::dollar(0.1, 1 / 1000000)
 
 new_home_sharers_t <- 
-(total_nights_t/28) %>% 
+(nrow(pool_t) / 28) %>% 
   round(digit = -2) 
 
 earnings_per_cap_t <- 
-  {(pool_t %>% summarize(sum(price)) %>% pull())/new_home_sharers_t} %>% 
+  {(pool_t %>% summarize(sum(price)) %>% pull()) / (nrow(pool_t) / 28)} %>% 
   round(digit = -2) %>% 
   prettyNum(",") %>% 
   paste0("$", .)
@@ -321,132 +342,137 @@ pool_t %>%
   summarize(nb_nights = n()) %>% 
   summarize(mean(nb_nights)) %>% pull()
 
-
-total_nights_after_gf_t <- {total_nights_t-(grandfathered_t*avg_nb_nights_freh_t)} %>% 
+total_nights_after_gf_t <- 
+  {nrow(pool_t) - (grandfathered_t*avg_nb_nights_freh_t)} %>% 
   round(digit = -3)
 
 revenue_summer_2021_after_gf_t <- 
   {(pool_t %>% 
-  summarize(sum(price))) / total_nights_t * total_nights_after_gf_t} %>% 
+  summarize(sum(price))) / nrow(pool_t) * 
+      {nrow(pool_t) - (grandfathered_t*avg_nb_nights_freh_t)}} %>% 
   pull() %>% 
   scales::dollar(0.1, 1 / 1000000)
 
 new_home_sharers_after_gf_t <- 
-(total_nights_after_gf_t/28) %>% 
+({nrow(pool_t) - (grandfathered_t*avg_nb_nights_freh_t)} / 28) %>% 
   round(digit = -2)
 
 earnings_per_cap_after_gf_t <- 
-  ({(pool_t %>% 
-  summarize(sum(price))) / total_nights_t * total_nights_after_gf_t} /new_home_sharers_after_gf_t) %>% 
-  round(digit = -2) %>% 
-  prettyNum(",") %>% 
-  paste0("$", .)
+  (pull({(pool_t %>% 
+  summarize(sum(price))) / nrow(pool_t) * 
+      {nrow(pool_t) - (grandfathered_t*avg_nb_nights_freh_t)}} / 
+    new_home_sharers_after_gf_t)) %>% 
+  scales::dollar(100)
   
 ```
 
-If the redistribution model were to occur only in towns, the `r prettyNum(total_nights_t, ",")` reserved nights (`r revenue_summer_2021_t` million) directed to commercial STAs during the summer of 2021 could support `r new_home_sharers_t` home sharers active for three to five weeks in the summer, for an average revenue of `r earnings_per_cap_t` per household. With the grandfathering of `r grandfathered_t` valid second-home licenses in towns, the number of reserved nights being redistributed to households would be `r prettyNum(total_nights_after_gf_t, ",")` (`r revenue_summer_2021_after_gf_t` million in revenue) to support `r new_home_sharers_after_gf_t` home sharers, each earning `r earnings_per_cap_after_gf_t`. It is important to note that, in both situations where STA regulations were applied in towns only, the likely effect will be to displace most STA to the townships since the barriers to operate would be lower than in towns.
+Because the negative housing-market impacts of dedicated STAs are particularly high in denser contexts where both permanent and seasonal workers are more likely to be looking for housing, one possibility is that the "Redistribute" model could be limited to Picton, Wellington and Bloomfield (what we call the "towns only" option). Under this scenario, in Summer 2021 there were `r prettyNum(total_nights_t, ",")` reserved nights (`r revenue_summer_2021_t` million in revenue) in commercial STAs. These could support `r new_home_sharers_t` new home sharers active for three to five weeks in the summer, for an average revenue of `r earnings_per_cap_t` per household. If the `r grandfathered_t` currently active second-home licenses in the towns were grandfathered in, the number of reserved nights being redistributed to households would be `r prettyNum(total_nights_after_gf_t, ",")` (`r revenue_summer_2021_after_gf_t` million in revenue) to support `r new_home_sharers_after_gf_t` home sharers, each earning `r earnings_per_cap_after_gf_t` annually. Figure \@ref(fig:fig-4-2) summarizes potential changes in STAs under these scenarios.
 
 ```{r make_fig_4_2}
 
-full_time_t <- 
-  property %>% 
-  filter(property_ID %in% filter(full_time_listings, year_season == "Summer 2021")$property_ID) %>% 
-  filter(ward %in% (EW %>% filter(type != "Township"))$ward) %>% 
-  nrow()
-
-home_sharing_t <- 
-  daily %>% 
-  filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
-  filter(date >= summer_start_2021, status == "R") %>% 
-  filter(!property_ID %in% (full_time_listings %>% 
-                              filter(year_season == "Summer 2021") %>% 
-                              pull(property_ID))) %>% 
-  distinct(property_ID) %>% 
-  nrow()
-
-waffle_df <- 
-  tibble(graph = "first", value = full_time_tt-full_time_t, group = "Remaining FT properties") %>% 
-  add_row(graph = "first", value = full_time_t, group = "Moved from FT to home sharing") %>% 
-  add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  add_row(graph = "second", value = new_home_sharers_t, group = "Moved from FT to home sharing") %>%
-  add_row(graph = "third", value = full_time_t-grandfathered_t, group = "Moved from FT to home sharing") %>% 
-  add_row(graph = "third", value = full_time_tt-full_time_t+grandfathered_t, group = "Remaining FT properties") %>% 
-  add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  add_row(graph = "fourth", value = new_home_sharers_after_gf_t, group = "Moved from FT to home sharing") %>% 
-  add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
-  add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-  mutate(value = value/10) %>% 
-  mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing",
-                                          "Existing home sharing"))) %>%
-  arrange(group)
-
-cols <- c("Remaining FT properties" = col_palette[1],
-          "Moved from FT to home sharing" = col_palette[2], 
-          "Existing home sharing" = col_palette[3])
-
-themes_waffle <- function(df, title) {
-  ggplot(df, aes(fill=group, values = value))+
-    geom_waffle(color = "white", size=1.125, n_rows = 8) +
-    scale_x_discrete(expand=c(0,0)) +
-    scale_y_discrete(expand=c(0,0)) +
-    scale_fill_manual(values = cols)+
-    coord_equal() +
-    theme_ipsum_rc(grid="") +
-    theme_enhance_waffle()+
-    theme(legend.position = "none")+
-    ggtitle(title)
-}
-
-p01 <- 
-  waffle_df %>% 
-  filter(graph == "antes_first") %>% 
-  themes_waffle(., "No actions")
-
-p02 <- 
-  waffle_df %>% 
-  filter(graph == "antes_second") %>% 
-  themes_waffle(., NULL)
-
-p1 <- 
-  waffle_df %>% 
-  filter(graph == "first") %>% 
-  themes_waffle(., "Redistribute only in towns")
-
-p2 <- 
-  waffle_df %>% 
-  filter(graph == "second") %>% 
-  themes_waffle(., NULL)
-
-p3 <- 
-  waffle_df %>% 
-  filter(graph == "third") %>% 
-  themes_waffle(., "Grandfathering in towns")
-
-p4 <- 
-  waffle_df %>% 
-  filter(graph == "fourth") %>% 
-  themes_waffle(., NULL)
-
-waffle_legend <- 
-  cowplot::get_legend(themes_waffle(waffle_df, NA)+theme(legend.position = "bottom",
-                                                         legend.title = element_blank()))
-
+# full_time_t <- 
+#   property %>% 
+#   filter(property_ID %in% filter(full_time_listings, year_season == "Summer 2021")$property_ID) %>% 
+#   filter(ward %in% (EW %>% filter(type != "Township"))$ward) %>% 
+#   nrow()
+# 
+# home_sharing_t <- 
+#   daily %>% 
+#   filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
+#   filter(date >= summer_start_2021, status == "R") %>% 
+#   filter(!property_ID %in% (full_time_listings %>% 
+#                               filter(year_season == "Summer 2021") %>% 
+#                               pull(property_ID))) %>% 
+#   distinct(property_ID) %>% 
+#   nrow()
+# 
+# waffle_df <- 
+#   tibble(graph = "first", value = full_time_tt-full_time_t, group = "Remaining FT properties") %>% 
+#   add_row(graph = "first", value = full_time_t, group = "Moved from FT to home sharing") %>% 
+#   add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
+#   add_row(graph = "second", value = new_home_sharers_t, group = "Moved from FT to home sharing") %>%
+#   add_row(graph = "third", value = full_time_t-grandfathered_t, group = "Moved from FT to home sharing") %>% 
+#   add_row(graph = "third", value = full_time_tt-full_time_t+grandfathered_t, group = "Remaining FT properties") %>% 
+#   add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
+#   add_row(graph = "fourth", value = new_home_sharers_after_gf_t, group = "Moved from FT to home sharing") %>% 
+#   add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
+#   add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
+#   mutate(value = value/10) %>% 
+#   mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing",
+#                                           "Existing home sharing"))) %>%
+#   arrange(group)
+# 
+# cols <- c("Remaining FT properties" = col_palette[1],
+#           "Moved from FT to home sharing" = col_palette[2], 
+#           "Existing home sharing" = col_palette[3])
+# 
+# themes_waffle <- function(df, title) {
+#   ggplot(df, aes(label = group, fill = group, values = value)) +
+#   geom_pictogram(color = "white", size = 5, n_rows = 8) +
+#   scale_label_pictogram(
+#     name = NULL,
+#     values = c("Moved from FT to home sharing" = "home", 
+#                "Existing home sharing" = "home")) +
+#     scale_x_discrete(expand = c(0, 0)) +
+#     scale_y_discrete(expand = c(0, 0)) +
+#     scale_fill_manual(values = cols) +
+#     coord_equal() +
+#     theme_enhance_waffle() +
+#     theme(legend.position = "none") +
+#     ggtitle(title)
+# }
+# 
+# p01 <- 
+#   waffle_df %>% 
+#   filter(graph == "antes_first") %>% 
+#   themes_waffle(., "No actions")
+# 
+# p02 <- 
+#   waffle_df %>% 
+#   filter(graph == "antes_second") %>% 
+#   themes_waffle(., NULL)
+# 
+# p1 <- 
+#   waffle_df %>% 
+#   filter(graph == "first") %>% 
+#   themes_waffle(., "Redistribute only in towns")
+# 
+# p2 <- 
+#   waffle_df %>% 
+#   filter(graph == "second") %>% 
+#   themes_waffle(., NULL)
+# 
+# p3 <- 
+#   waffle_df %>% 
+#   filter(graph == "third") %>% 
+#   themes_waffle(., "Grandfathering in towns")
+# 
+# p4 <- 
+#   waffle_df %>% 
+#   filter(graph == "fourth") %>% 
+#   themes_waffle(., NULL)
+# 
+# waffle_legend <- 
+#   cowplot::get_legend(themes_waffle(waffle_df, NA) + 
+#                         theme(legend.position = "bottom", 
+#                               legend.title = element_blank()))
+# 
 figure_4_2_fun <- function() {
-  ((p01 | p02) /
-     (p1 | p2) /
-     (p3 | p4 ) /
-     waffle_legend)
+#   ((p01 | p02) /
+#      (p1 | p2) /
+#      (p3 | p4 ) /
+#      waffle_legend)
 }
-
-
-
-if (build_figures) {
-  ggsave(here("output", "figures", "figure_4_2.pdf"), 
-         plot = figure_4_2_fun("Futura", "Futura Condensed"), 
-         width = 5, height = 8, units = "in", useDingbats = FALSE)
-  
-  extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
-}
+# 
+# 
+# 
+# if (build_figures) {
+#   ggsave(here("output", "figures", "figure_4_2.pdf"), 
+#          plot = figure_4_2_fun(), 
+#          width = 8, height = 8, units = "in", useDingbats = FALSE)
+#   
+#   extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
+# }
 
 ```
 
@@ -455,18 +481,18 @@ if (build_figures) {
 figure_4_2_fun()
 
 ```
+(ref:fig-4-2) *Expected impact of redistribution regulations (only in Towns) on the STA market*
 
-(ref:fig-6-2) *Expected impact of redistribution regulations (only in Towns) on the STA market*
 
-## Regulatory scenario #2: "Restrict"
+## Model #2: "Restrict"
 
-The "Restrict" route would control the number of STAs in Prince Edward County by restricting the number of STA licenses being granted, but still allowing commercial operations. Restricting the number of licenses would shrink the STA market in order to shrink the negative housing impacts, concentrating STA activity in fewer and bigger operations. The "Restrict" models would use high license fees to ensure that licenses are used by hosts willing to operate at a high frequency, thereby ensuring an active STA market to address tourist demand.
+The "Restrict" model aims to leave the existing structure of the STA market in Prince Edward County largely intact, but to limit the total number of STAs and thus also limit the number of homes which are converted into STAs. The model achieves this goal by leaving the currently permissive license criteria in place, but also setting a cap on the number of licenses which will be issued. Compared to the "Redistribute" model, this would be a smaller change to the status quo and a simpler program to administer, but it would also have a correspondingly smaller effect on the negative housing-market impacts of STAs, and would not be expected to produce the same local-economic-development benefits as "Redistribute". 
 
-Both the "Redistribute" and the "Restrict" models could be implemented on two geographic scales: either in the towns only, or both in the towns and townships, covering all Prince Edward County. The flexibility in geographic covering is meant to either focus STA regulation efforts in towns where housing types are more adequate for full time residents, or apply regulation all over to ensure that no STA activiy displacement occurs from the towns to the townships. The impact of the four policy options are the following:
+The "Restrict" model implies an STA market where there are fewer STA listings but these listings operate more intensively. This suggests that STA prices would continue on the high trajectory of the last 18 months, since external demand for STA accommodations will be channeled into a smaller number of offerings. It also implies that STA activity would be concentrated in a smaller number of hands, since the economic value of an STA license would be quite high. We would expect to see very few casual home sharers operating under the "Restrict" model, and would expect to see consolidations of existing STA operators into larger entities to realize greater economies of scale.
 
-### 3 - Restrict, towns + townships
+Under the "Restrict" model, it would be important to ensure that all STA licenses are being actively used, because defunct licenses would limit the municipality's ability to affect STA market outcomes by changing the license quotas. This would suggest a high-fee business model, where, for example, licenses require relatively extensive in-person inspections and supporting documentation, and cost recovery is correspondingly high.
 
-```{r restrict_towns_townships , include = F}
+```{r restrict, include = F}
 
 levels_2019_tt <- 
 daily %>% 
@@ -487,14 +513,6 @@ daily %>%
   slice(1) %>%
   pull(n) %>% 
   round(., digits = -1)
-
-```
-
-Depending on which level of STA activity the county would like to sustain, a certain number of STA licenses could be emitted to commercial STA operations. For the enire county, `r levels_2019_tt` STA licenses would allow 2019 levels, and `r levels_2021_tt` licenses would maintain 2021, with fewer licenses leading to a shrinking of the STA market.
-
-### 4 - Restrict, towns only
-
-```{r restrict_towns, include = F}
 
 levels_2019_t <- 
 daily %>% 
@@ -518,9 +536,20 @@ daily %>%
   pull(n) %>% 
   round(., digits = -1)
 
+
 ```
 
-If the restriction was to occur in towns only, there would need to be `r levels_2019_t` STA licenses to allow 2019 levels, and `r levels_2021_t` licenses to maintain 2021 levels.
+The precise impacts of the "Restrict" scenario would depend on the number of licenses which the County issued. For example, setting a total cap of `r levels_2019_tt` licenses across the entire municipality would allow the STA market to function at its 2019 level with little to no improvement of housing-market outcomes. `r levels_2021_tt` licenses would future STA activity at  2021 levels. A smaller license quota would imply a shrinking STA market. If license amounts were only restricted in the towns, then `r levels_2019_t` licenses would allow 2019 levels of activity, and `r levels_2021_t` licenses would allow 2021 levels.
+
+The current number of active secondary-residence STA licenses is well below any plausible forward-looking "Restrict" license quota, so the grandfathering of existing licenses would not be an impediment to implenting the "Restrict" model.
+
+
+## Comparing the scenarios
+
+The "Redistribute" and "Restrict" models represent two different ways of balancing the positive and negative aspects of STA activity in Prince Edward County. The former attempts to steer STA activity towards more casual home sharing, to reduce the number of housing units converted to dedicated STAs while offering a new economic opportunity for local residents. But it would be a relatively disruptive change to the existing STA market. The latter, by contrast, is a more modest intervention which largely preserves the existing STA market but reduces its total size in order to reduce its negative impacts. It is a simpler model, and it is also likely to have more modest effects.
+
+Our judgment is that the "Redistribute" model represents the best balance of developing the STA markets' positive aspects and mitigating its negative aspects. And, while we have presented estimations for the impacts of both a "towns + townships" and a "towns only" version of these models, in practice the likely effect of a "towns only" regulatory model will be to displace most STAs to the townships, rather than affecting the overall size or character of the market.
+
 
 ## Less promising regulatory options
 
@@ -592,10 +621,6 @@ weighted.mean(rent_to_weight_mean$monthly_rent,
 
 ```
 
-Another STA regulatory option that has been considered by municipalities in Canada (such as Toronto; Wachsmuth et al. 2021) and worldwide (deJong 2021) is a financial incentive given to dedicated STA operators to entice them to rent their units on the long-term rental market. Under normal market conditions, it i
-
-This type of short-term rental management strategy was put forward since the pandemic, considering the number of tourist accommodations that had to return to long-term renting amidst the tourism collapse starting March 2020. We considered what rent supplements could mean as an option for Prince Edward County. A financial incentive could be given to STR hosts to bring STAs back onto the long-term rental market. To a first approximation, an effective financial incentive would need to roughly match the difference between monthly STA revenue and the long-term rents it would be possible to achieve. We approximate this difference by comparing the average monthly STA revenue for TKTK average and average rents using September 2021 data. The averages were based on a weighted average proportional to the number of bedrooms found in both STAs and rental unis in the county. Commercial listings earned an average of `r avg_monthly_rev_LTM` a month, while the average monthly rent was of `r avg_monthly_rent` in September. It represents a difference of `r var_rev_rent` globally, with heightened differences in select wards (Figure \@ref(fig:fig-6-1)).
-
 ```{r on_water, cache = TRUE, cache.lazy = FALSE}
 
 qload(here("output", "geometry.qsm"), nthreads = availableCores())
@@ -621,7 +646,7 @@ water <- rbind(select(river, -everything()), select(ocean, -everything()))
 rm(ocean, river, city)
 ```
 
-```{r make_fig_2_3}
+```{r make_fig_4_3}
 
 weight_rent_sept <- 
 rent_sept %>% 
@@ -676,8 +701,6 @@ LTM_revenue_ward %>%
   mutate(surplus = round(mean_rev - mean_rent, -1)) %>% 
   st_as_sf()
 
-# street <- qread("output/street.qs")
-
 figure_4_3_fun <- function(regular = "", condensed = "") {
   
 townships <- 
@@ -689,7 +712,7 @@ surplus_rent[surplus_rent$ward == "Township",] %>%
     lwd = 0,
     colour = "white"
   ) +
-  geom_sf(data = street, colour = "white", alpha = 0.2) +
+  geom_sf(data = streets, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
   scale_fill_stepsn(
     name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
@@ -718,7 +741,7 @@ picton <-
     lwd = 0,
     colour = "white"
   ) +
-  geom_sf(data = street, colour = "white", alpha = 0.2) +
+  geom_sf(data = streets, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
   scale_fill_stepsn(
     name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
@@ -746,7 +769,7 @@ bloomfield <-
     lwd = 0,
     colour = "white"
   ) +
-  geom_sf(data = street, colour = "white", alpha = 0.2) +
+  geom_sf(data = streets, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
   scale_fill_stepsn(
     name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
@@ -774,7 +797,7 @@ wellington <-
     lwd = 0,
     colour = "white"
   ) +
-  geom_sf(data = street, colour = "white", alpha = 0.2) +
+  geom_sf(data = streets, colour = "white", alpha = 0.2) +
   geom_sf(data = water, fill = "white", colour = "transparent") +
   scale_fill_stepsn(
     name = "Monthly dif. btw avg. rent\nand avg. full-time STA revenue",
@@ -811,12 +834,9 @@ if (build_figures) {
 
 ```
 
-```{r fig-4-3, include = TRUE, fig.cap = '(ref:fig-4-3)', fig.align = "center"}
+Another STA regulatory option that has been considered by municipalities in Canada (such as Toronto; Wachsmuth et al. 2021) and worldwide (deJong 2021) is a financial incentive to dedicated STA operators to entice them to rent their units on the long-term rental market. Under normal market conditions, STAs operating in strong markets are able to earn considerably more money than they could earn as long-term rentals. But, since the start of the Covid-19 pandemic, many of these markets have seen the gap between STA and long-term rental revenue narrow or even reverse, raising the question of whether it would be financially feasible to encourage STA hosts to return their units to the housing market.
 
-figure_4_3_fun()
-
-```
-(ref:fig-4-3) *Average monthly subsidy required for transitioning a STA onto the long-term rental market*
+To analyze the viability of financial incentives to STA hosts in Prince Edward County, we compare average STA revenues with average residential rents. To a first approximation, an effective financial incentive would need to roughly match the difference between monthly STA revenue and the long-term rents it would be possible to achieve in that housing unit. We approximate this difference by taking the average monthly revenue of full-time STAs over the last twelve months and average residential rents from September 2021, and weighing each proportionally to the number of bedrooms found in both STAs and rental units in the County. Across the County, full-time STA listings earned an average of `r avg_monthly_rev_LTM` a month, while the average monthly rent was of `r avg_monthly_rent` in September. This is a difference of `r var_rev_rent`.
 
 ```{r short_term_incentive_2}
 
@@ -826,8 +846,7 @@ surplus_rent %>%
   filter(ward != "Wellington") %>% 
   summarize(mean(surplus)) %>% 
   pull() %>% 
-  round(-1) %>% 
-  scales::dollar()
+  scales::dollar(10)
 
 subisdy_wellington <- 
 surplus_rent %>% 
@@ -835,12 +854,19 @@ surplus_rent %>%
   filter(ward == "Wellington") %>% 
   summarize(mean(surplus)) %>% 
   pull() %>% 
-  round(-1) %>% 
-  scales::dollar()
+  scales::dollar(10)
 
 ```
 
-While average rents are similar across the county, monthly STA revenue differs from a location to another. The only ward with substantially higher rents than average is Wellington. Figure \@ref(fig:fig-6-1) shows the average amount of monthly subsidy that would be necessary to turn a STA back onto the LTR market. On average, this short-term incentive program would cost the county `r subisdy_wellington` per unit in Wellington, and `r subisdy_outside_wellington` in the rest of the county. Such a subsidy would entail a great financial commitment for the county, and most likely not the most cost effective option to regulating the STA market. The main reason as to why the rent supplement option would not be viable in Prince Edward County is because the revenues earned by STA listing are much higher than average rents, creating large gaps to cover. In sum, a rent supplement option would not be sustainable nor preferable in the county.
+Figure \@ref(fig:fig-4-3) shows the average amount of monthly subsidy that would be necessary to induce an STA back onto the long-term market for each electoral ward. While average rents are similar across the County, monthly STA revenue differs substantially from one location to another. The only ward with substantially higher rents than average is Wellington. An incentive program would cost the County `r subisdy_wellington` per unit in Wellington each month, and `r subisdy_outside_wellington` in the rest of the county. The scale of this financial commitment makes it highly unlikely that an incentive program would be an effective use of public funds. The underlying cause is relatively straightforward; in other jurisdictions that have implemented or considered implementing an incentive scheme, STA profitability has declined during the pandemic—often quite substantially—and as a result the size of the necessary incentive is smaller now than it would have been before the pandemic. In Prince Edward County, by contrast, STA prices have skyrocketed in the last 18 months, and so the necessary financial incentives have grown correspondingly much larger.
+
+```{r fig-4-3, include = TRUE, fig.cap = '(ref:fig-4-3)', fig.align = "center"}
+
+figure_4_3_fun()
+
+```
+(ref:fig-4-3) *Average monthly subsidy required for transitioning an STA onto the long-term rental market*
+
 
 ### Restrictions on annual reservations
 
@@ -849,6 +875,10 @@ Many municipalities have set annual limits on per-property STA reservations as a
 
 ## Conclusions
 
-In all, STA regulation enables the monitoring and control of STA activity in the county. However, as seen in this report, the secondary home market also plays a big role in the current housing situation in Prince Edward County. The volume and sale prices of homes in the past two years combined with the declining percentage of sales associated to new STA listings show that the pressure on the market can increasingly be attributed to second homes. Since the simplest substitute for a commercial STA is a second home, both the Redistribute and the Restrict regulatory options will likely increase second home supply. STA regulations is thus only one piece of the puzzle when it comes to housing availability and affordability in the county. In terms of managing secondary homes, there is unfortunately no magic bullet besides building more housing in typologies which are well-suited to local residents but less well-suited to second homes.
+This chapter has presented two models for STA licensing—a "Redistribute" model that entails redirecting STA activity away from dedicated commercial operations and towards home sharing instead, and a "Restrict" model that limits the number of STAs which are allowed to operate in order to limit the number of homes which are converted into STAs—alongside a set of other recommendations for regulatory reform. Our own judgement is that the "Redistribute" model applied County-wide provides the best balance of developing the positive impacts of STAs while mitigating the negative impacts, but each of the models represents a different set of trade-offs about which reasonable opinions may differ.
+
+To conclude, however, we wish to reiterate an important constraint facing Prince Edward County in any attempt to regulate STAs, which is the dominance of second-home sales in the current housing market. Our analysis has indicating the ways in which STAs have contributed to a worsening housing affordability context for the County, but it has equally indicated that the single most important explanation for the pandemic-era explosion in housing prices and rents has been a second-home induced demand shock. Since the simplest substitute for a full-time STA is a second home, an implication of this fact is that both the "Redistribute" and "Restrict" models will likely clear room in the housing market which will be occupied primarily by an increase in second-home purchases. There is unfortunately no magic bullet capable of addressing this problem; although, as we noted above, one promising option is building more housing in typologies which are well-suited to local residents but less well-suited to second homes.
+
+STA regulation should thus be understood as one piece of a larger system of necessary regulatory reform which would preserve and expand residents' access to affordable housing options in Prince Edward County. 
 
 \newpage
