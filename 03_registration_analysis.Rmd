@@ -198,7 +198,10 @@ compliance %>%
   group_by(category) %>%
   mutate(n = slide_dbl(n, mean, .before = 6, .complete = TRUE)) %>%
   ungroup() %>%
-  mutate(label = if_else(date == "2021-07-01", category, NA_character_)) %>% 
+  mutate(label = case_when(
+    date == "2020-03-13" & category == "Active, possibly expired" ~ category,
+    date == "2021-07-10" & category != "Active, possibly expired" ~ category, 
+    TRUE ~ NA_character_)) %>% 
   ggplot() +
   geom_line(aes(date, n, colour = category), size = 1) +
   geom_label(aes(date, n, label = label, colour = category)) +

@@ -1094,6 +1094,7 @@ ward_table |>
     n_2019 = round(n_2019, -1),
     n_2021 = round(n_2021, -1)) |> 
   select(ward, n_2019, pct_2019, n_2021, pct_2021) |> 
+  arrange(desc(n_2019)) |> 
   set_names(c("Ward", "Full-time STAs (Summer 2019)", 
               "As % of housing (Summer 2019)",
               "Full-time STAs (Summer 2021)", 
