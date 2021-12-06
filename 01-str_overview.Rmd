@@ -22,7 +22,7 @@ knitr::opts_chunk$set(warning = FALSE)
 mtime <- function(files) lapply(Sys.glob(files), function(x) file.info(x)$mtime)
 
 # Set this to TRUE to output PDF figures
-build_figures <- TRUE
+build_figures <- F
 
 qload(here("output", "/geometry.qsm"))
 qload(here("output", "/str_processed.qsm"))
@@ -641,7 +641,7 @@ active_yoy_revenue_2019 <-
 active_yoy_change <- 
   daily %>% 
   filter(status != "B", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>% 
+         !c(date >= str_replace(max(daily$date), "^\\d{4}", "2019") & date <= end_2020)) %>% 
   group_by(year_2021 = date >= start_2021) %>% 
   summarize(active_listings = n() / yday(max(date)),
             revenue = sum(price[status == "R"])  / yday(max(date)), .groups = "drop") %>% 
@@ -1295,7 +1295,7 @@ listing_growth_2019 <-
 listing_growth_2021 <- 
   daily %>% 
   filter(status != "B", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>% 
+         !c(date >= str_replace(max(daily$date), "^\\d{4}", "2019") & date <= end_2020)) %>% 
   group_by(year_2021 = date >= start_2021) %>% 
   summarize(n = n() / yday(max(date))) %>% 
   summarize(change = (n[2] - n[1]) / n[1])  %>% 
@@ -1315,7 +1315,7 @@ Overall, the year-over-year change in average daily active listings from 2018 to
 reservation_change_2021 <- 
   daily %>%
   filter(status == "R", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>%
+         !c(date >= str_replace(max(daily$date), "^\\d{4}", "2019") & date <= end_2020)) %>%
   group_by(year_2021 = date >= start_2021) %>%
   summarize(n = n() / yday(max(date))) %>%
   summarize(change = (n[2] - n[1]) / n[1]) %>% 
@@ -1336,7 +1336,7 @@ reservation_change_2019 <-
 reservation_count_2021 <- 
   daily %>%
   filter(status == "R", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>%
+         !c(date >= str_replace(max(daily$date), "^\\d{4}", "2019") & date <= end_2020)) %>%
   group_by(year_2021 = date >= start_2021) %>%
   summarize(n = n() / yday(max(date))) %>% 
   mutate(n = round(n, -1)) %>% 
@@ -1355,7 +1355,7 @@ reservation_count_2019 <-
 active_yoy_revenue_2021 <- 
   daily %>%
   filter(status == "R", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>%
+         !c(date >= str_replace(max(daily$date), "^\\d{4}", "2019") & date <= end_2020)) %>%
   group_by(year_2021 = date >= start_2021) %>%
   summarize(revenue = sum(price) / yday(max(date))) %>%
   summarize(change = (revenue[2] - revenue[1]) / revenue[1]) %>% 
