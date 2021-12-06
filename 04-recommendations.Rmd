@@ -36,11 +36,9 @@ rent_sept <- qread("output/rent_sept.qs")
 options(tinytex.verbose = TRUE)
 
 ```
-
 ```{r new_objects}
 
 ```
-
 ```{r exec_summ}
 
 
@@ -69,6 +67,7 @@ An implication of our analysis in this report is that, in Prince Edward County, 
 The basic fact of the County's curent housing dilemma is that the pandemic has caused a surge in non-local housing demand which local supply can only meet through dramatic price increases. Even if local County residents vastly outnumber non-local second home purchasers, the latter's demand will drive prices at the margins far beyond the ability of local County incomes to afford. This will be true across nearly the entirety of the residential spectrum: seasonal service workers will be priced out of rental apartments, but even well-paid professionals such as doctors will be priced out of the ownership market. As long as high non-local demand remains in place, there will be no easy answers to housing affordability questions.
 
 While in general the simplest answer to spiking demand for a commodity (in this case housing) is to add more supply, this is a long-term solution to a problem which has an important short-term component. However, to the extent that additional housing supply is permitted in the County, one promising avenue is to direct that supply to housing typologies which are better suited for local demand than for non-local demand. At the top of this list would be multifamily housing, and particularly multifamily purpose-built rental housing in Picton and Wellington. Rental apartments in these areas would help meet the need for housing for service workers while being less likely to be diverted into the second-home market.
+
 
 ## Regulatory best practices
 
@@ -101,9 +100,10 @@ The "Redistribute" route would promote home-sharing in Prince Edward County by r
 
 ### 1- Redistribute, towns + townships
 
-```{r redistribute_town_townships, include = F}
+```{r redistribute_town_townships, include = FALSE}
+
 pool_tt <- 
-daily %>% 
+  daily %>% 
   filter(date >= summer_start_2021, status == "R") %>% 
   filter(property_ID %in% (full_time_listings %>% 
                              filter(year_season == "Summer 2021") %>% 
@@ -140,7 +140,6 @@ pool_tt %>%
   group_by(property_ID) %>% 
   summarize(nb_nights = n()) %>% 
   summarize(mean(nb_nights)) %>% pull()
-
 
 total_nights_after_gf_tt <- {total_nights_tt-(grandfathered_tt*avg_nb_nights_freh_tt)} %>% 
   round(digit = -3)

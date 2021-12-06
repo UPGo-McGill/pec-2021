@@ -106,7 +106,7 @@ daily_variation <-
 EW_breakdown <- 
   daily %>% 
   filter(status != "B", date >= start_2019, 
-         !c(date >= start_2020 & date <= end_2020)) %>% 
+         !c(date >= "2019-09-30" & date <= end_2020)) %>%
   group_by(date, ward) %>% 
   summarize(n = n(),
             revenue = sum(price[status == "R"])) %>% 
@@ -861,7 +861,7 @@ EW_breakdown %>%
               {. / sum(EW$dwellings)} %>% 
               scales::percent(0.1)},
           daily_rev = daily_rev,
-          rev_growth_2019_2021 = paste0("-", active_yoy_revenue),
+          rev_growth_2019_2021 = active_yoy_revenue,
           .before = 1) %>% 
   filter(!is.na(ward)) %>%
   set_names(c("Ward", 
