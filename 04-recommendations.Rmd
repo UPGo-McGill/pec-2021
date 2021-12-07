@@ -38,13 +38,6 @@ extrafont::loadfonts(quiet = TRUE)
 
 
 ```
-```{r new_objects}
-
-```
-```{r exec_summ}
-
-
-```
 
 **We evaluate scenarios for the reinstatement of Prince Edward County's short-term accommodation registration, in light of the housing situation and registration analysis, ranging from restrict the number of STA licenses emitted to allowing an unlimited amount of STA licenses for residents operating out of their primary residence. Two geographic scopes are suggested: one that would include only the towns, and one that would encompass all of Prince Edward County. The restrict scenarios would permit the issuance of between 200 or 800 STA licenses, depending on desired market size. The redistribute scenarios could benefit up to 1,700 home sharers operating for a few weeks during summer months. Financial incentives to entice STA operators to keep their listings onto the long-term rental market would not be a viable option for Prince Edward County as it would require up to \$2,520 in rent supplement, depending on location.**
 
@@ -179,8 +172,10 @@ earnings_per_cap_after_gf_tt <-
   
 ```
 ```{r make_fig_4_1}
-# remotes::install_github("hrbrmstr/waffle", force = TRUE)
 
+## Fonts don't work properly, so this code needs to be run from RStudio to generate figure
+
+# remotes::install_github("hrbrmstr/waffle", force = TRUE)
 # library(waffle)
 # library(hrbrthemes)
 # library(patchwork)
@@ -194,94 +189,56 @@ earnings_per_cap_after_gf_tt <-
 #   daily %>% 
 #   filter(date >= summer_start_2021, status == "R") %>% 
 #   filter(!property_ID %in% (full_time_listings %>% 
-#                              filter(year_season == "Summer 2021") %>% 
-#                              pull(property_ID))) %>% 
+#                               filter(year_season == "Summer 2021") %>% 
+#                               pull(property_ID))) %>% 
 #   distinct(property_ID) %>% 
 #   nrow()
 # 
-# waffle_df <- 
-# tibble(graph = "first", value = full_time_tt, group = "Moved from FT to home sharing") %>% 
-#   add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-#   add_row(graph = "second", value = new_home_sharers_tt, group = "Moved from FT to home sharing") %>%
-#   add_row(graph = "third", value = full_time_tt-grandfathered_tt, group = "Moved from FT to home sharing") %>% 
-#   add_row(graph = "third", value = grandfathered_tt, group = "Remaining FT properties") %>% 
-#   add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
-#   add_row(graph = "fourth", value = new_home_sharers_after_gf_tt, group = "Moved from FT to home sharing") %>% 
-#   add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
-#   add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-#   mutate(value = value/10) %>% 
-#   mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing", "Existing home sharing"))) %>%
-#   arrange(group)
+# waffle_df <-
+#   tibble(scenario = "Current market", group = "Current full-time", 
+#          value = full_time_tt) |> 
+#   add_row(scenario = "Current market", group = "Current home sharing", 
+#           value = home_sharing_tt) |> 
+#   add_row(scenario = "Redistribute (towns + townships)", 
+#           group = "New home sharing", value = new_home_sharers_tt) |> 
+#   add_row(scenario = "Redistribute (towns + townships)", 
+#           group = "Current home sharing", value = home_sharing_tt) |> 
+#   add_row(scenario = "With grandfathering", group = "Current full-time",
+#           value = grandfathered_tt) |> 
+#   add_row(scenario = "With grandfathering", group = "New home sharing",
+#           value = new_home_sharers_after_gf_tt) |> 
+#   add_row(scenario = "With grandfathering", group = "Current home sharing",
+#           value = home_sharing_tt) |> 
+#   mutate(value = value / 10) |> 
+#   mutate(group = factor(
+#     group, levels = c("Current full-time", "New home sharing", 
+#                       "Current home sharing")))
 # 
-# cols <- c("Remaining FT properties" = col_palette[1],
-#           "Moved from FT to home sharing" = col_palette[2], 
-#           "Existing home sharing" = col_palette[3])
+# cols <- c("Current full-time" = col_palette[6],
+#           "New home sharing" = col_palette[2], 
+#           "Current home sharing" = col_palette[5])
 # 
-# themes_waffle <- function(df, title) {
-#   ggplot(df, aes(label = group, fill = group, values = value)) +
-#   geom_pictogram(color = "white", size = 5, n_rows = 8) +
-#   scale_label_pictogram(
-#     name = NULL,
-#     values = c("Moved from FT to home sharing" = "home", 
-#                "Existing home sharing" = "home")) +
-#     scale_x_discrete(expand = c(0, 0)) +
-#     scale_y_discrete(expand = c(0, 0)) +
-#     scale_fill_manual(values = cols) +
-#     coord_equal() +
-#     theme_enhance_waffle() +
-#     theme(legend.position = "none") +
-#     ggtitle(title)
-# }
+# labels <- c("Current full-time" = "home",
+#             "New home sharing" = "home", 
+#             "Current home sharing" = "home")
 # 
-# p01 <- 
-#   waffle_df %>% 
-#   filter(graph == "antes_first") %>% 
-#   themes_waffle(., "No actions")
-# 
-# p02 <- 
-#   waffle_df %>% 
-#   filter(graph == "antes_second") %>% 
-#   themes_waffle(., NULL)
-# 
-# p1 <- 
-# waffle_df %>% 
-#   filter(graph == "first") %>% 
-#   themes_waffle(., "Redistribute entirely")
-# 
-# p2 <- 
-# waffle_df %>% 
-#   filter(graph == "second") %>% 
-#   themes_waffle(., NULL)
-# 
-# p3 <- 
-# waffle_df %>% 
-#   filter(graph == "third") %>% 
-#   themes_waffle(., "With grandfathering")
-# 
-# p4 <- 
-# waffle_df %>% 
-#   filter(graph == "fourth") %>% 
-#   themes_waffle(., NULL)
-# 
-# waffle_legend <- 
-#   cowplot::get_legend(themes_waffle(waffle_df, NA)+theme(legend.position = "bottom",
-#                                                          legend.title = element_blank()))
-# 
-figure_4_1_fun <- function() {
-#   ((p01 | p02) /
-# (p1 | p2) /
-# (p3 | p4 ) /
-#     waffle_legend)
-}
-# 
-# if (build_figures) {
-#   ggsave(here("output", "figures", "figure_4_1.pdf"), 
-#          plot = figure_4_1_fun(), 
-#          width = 8, height = 8, units = "in", useDingbats = FALSE)
-#   
-#   extrafont::embed_fonts(here("output", "figures", "figure_4_1.pdf"))
-# }
-
+# waffle_df |> 
+#   ggplot(aes(label = group, colour = group, fill = group, values = value)) +
+#   geom_pictogram(size = 3.2, n_rows = 8) +
+#   scale_label_pictogram(name = NULL, values = labels) +
+#   scale_x_discrete(expand = c(0, 0)) +
+#   scale_y_discrete(expand = c(0, 0)) +
+#   scale_colour_manual(values = cols, guide = "none") +
+#   scale_fill_manual(values = cols, guide = "none") +
+#   guides(label = guide_legend(override.aes = list(colour = "green",
+#                                                   fill = "blue"))) +
+#   coord_equal() +
+#   facet_wrap(vars(scenario), nrow = 3) +
+#   theme_minimal() +
+#   theme_enhance_waffle() +
+#   theme(legend.position = "bottom", panel.background = element_blank(),
+#         strip.text = element_text(size = 12, hjust = 0))
+ 
 ```
 
 The most straightforward way to implement the "Redistribute" model would be to establish a principal-residence requirement for all STA licenses in the County. This would create a cascade of changes in the STA market which are impossible to predict in advance, but we can estimate the magnitude of the transformation by examining the potential impacts on a static approximation of the STA market in Summer 2021.
@@ -290,11 +247,6 @@ In Summer 2021, there were approximately `r prettyNum(total_nights_tt, ",")` res
 
 Some of the existing full-time STA hosts are operating with a valid license, and they might therefore be permitted to continue operating as a legal nonconforming use. Under the conservative assumption that each of the `r grandfathered_tt` currently active secondary-home licenses belongs to an active full-time STA, and thus these STAs would stay in operation, there would have been `r prettyNum(total_nights_after_gf_tt, ",")` reserved nights (earning `r revenue_summer_2021_after_gf_tt` million) which occurred in commercially operated STAs which would no longer be permitted. This activity could support `r scales::comma(new_home_sharers_after_gf_tt)` home sharers each earning `r earnings_per_cap_after_gf_tt` annually. Figure \@ref(fig:fig-4-1) summarizes potential changes in STAs under these scenarios.
 
-```{r fig-4-1, include = TRUE, fig.cap = '(ref:fig-4-1)', fig.align = "center"}
-
-figure_4_1_fun()
-
-```
 (ref:fig-4-1) *Expected impact of redistribution regulations (in all the County) on the STA market*
 
 
@@ -370,117 +322,74 @@ Because the negative housing-market impacts of dedicated STAs are particularly h
 
 ```{r make_fig_4_2}
 
-# full_time_t <- 
-#   property %>% 
-#   filter(property_ID %in% filter(full_time_listings, year_season == "Summer 2021")$property_ID) %>% 
-#   filter(ward %in% (EW %>% filter(type != "Township"))$ward) %>% 
+### Fonts don't work
+
+# full_time_t <-
+#   property %>%
+#   filter(property_ID %in% filter(full_time_listings, 
+#                                  year_season == "Summer 2021")$property_ID) %>%
+#   filter(ward %in% (EW %>% filter(type != "Township"))$ward) %>%
 #   nrow()
 # 
-# home_sharing_t <- 
-#   daily %>% 
-#   filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
-#   filter(date >= summer_start_2021, status == "R") %>% 
-#   filter(!property_ID %in% (full_time_listings %>% 
-#                               filter(year_season == "Summer 2021") %>% 
-#                               pull(property_ID))) %>% 
-#   distinct(property_ID) %>% 
+# home_sharing_t <-
+#   daily %>%
+#   filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>%
+#   filter(date >= summer_start_2021, status == "R") %>%
+#   filter(!property_ID %in% (full_time_listings %>%
+#                               filter(year_season == "Summer 2021") %>%
+#                               pull(property_ID))) %>%
+#   distinct(property_ID) %>%
 #   nrow()
 # 
-# waffle_df <- 
-#   tibble(graph = "first", value = full_time_tt-full_time_t, group = "Remaining FT properties") %>% 
-#   add_row(graph = "first", value = full_time_t, group = "Moved from FT to home sharing") %>% 
-#   add_row(graph = "second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-#   add_row(graph = "second", value = new_home_sharers_t, group = "Moved from FT to home sharing") %>%
-#   add_row(graph = "third", value = full_time_t-grandfathered_t, group = "Moved from FT to home sharing") %>% 
-#   add_row(graph = "third", value = full_time_tt-full_time_t+grandfathered_t, group = "Remaining FT properties") %>% 
-#   add_row(graph = "fourth", value = home_sharing_tt, group = "Existing home sharing") %>% 
-#   add_row(graph = "fourth", value = new_home_sharers_after_gf_t, group = "Moved from FT to home sharing") %>% 
-#   add_row(graph = "antes_first", value = full_time_tt, group = "Remaining FT properties") %>% 
-#   add_row(graph = "antes_second", value = home_sharing_tt, group = "Existing home sharing") %>% 
-#   mutate(value = value/10) %>% 
-#   mutate(group = factor(group, levels = c("Remaining FT properties", "Moved from FT to home sharing",
-#                                           "Existing home sharing"))) %>%
-#   arrange(group)
+# waffle_df_t <-
+#   tibble(scenario = "Current market", group = "Current full-time", 
+#          value = full_time_tt) |> 
+#   add_row(scenario = "Current market", group = "Current home sharing", 
+#           value = home_sharing_tt) |> 
+#   add_row(scenario = "Redistribute (towns only)",
+#           group = "Current full-time", value = full_time_tt - full_time_t) |> 
+#   add_row(scenario = "Redistribute (towns only)", 
+#           group = "New home sharing", value = new_home_sharers_t) |> 
+#   add_row(scenario = "Redistribute (towns only)", 
+#           group = "Current home sharing", value = home_sharing_tt) |> 
+#   add_row(scenario = "With grandfathering", group = "Current full-time",
+#           value = full_time_tt + grandfathered_t - full_time_t) |> 
+#   add_row(scenario = "With grandfathering", group = "New home sharing",
+#           value = new_home_sharers_after_gf_t) |> 
+#   add_row(scenario = "With grandfathering", group = "Current home sharing",
+#           value = home_sharing_tt) |> 
+#   mutate(value = value / 10) |> 
+#   mutate(group = factor(
+#     group, levels = c("Current full-time", "New home sharing", 
+#                       "Current home sharing")))
 # 
-# cols <- c("Remaining FT properties" = col_palette[1],
-#           "Moved from FT to home sharing" = col_palette[2], 
-#           "Existing home sharing" = col_palette[3])
+# cols <- c("Current full-time" = col_palette[6],
+#           "New home sharing" = col_palette[2], 
+#           "Current home sharing" = col_palette[5])
 # 
-# themes_waffle <- function(df, title) {
-#   ggplot(df, aes(label = group, fill = group, values = value)) +
-#   geom_pictogram(color = "white", size = 5, n_rows = 8) +
-#   scale_label_pictogram(
-#     name = NULL,
-#     values = c("Moved from FT to home sharing" = "home", 
-#                "Existing home sharing" = "home")) +
-#     scale_x_discrete(expand = c(0, 0)) +
-#     scale_y_discrete(expand = c(0, 0)) +
-#     scale_fill_manual(values = cols) +
-#     coord_equal() +
-#     theme_enhance_waffle() +
-#     theme(legend.position = "none") +
-#     ggtitle(title)
-# }
+# labels <- c("Current full-time" = "home",
+#             "New home sharing" = "home", 
+#             "Current home sharing" = "home")
 # 
-# p01 <- 
-#   waffle_df %>% 
-#   filter(graph == "antes_first") %>% 
-#   themes_waffle(., "No actions")
-# 
-# p02 <- 
-#   waffle_df %>% 
-#   filter(graph == "antes_second") %>% 
-#   themes_waffle(., NULL)
-# 
-# p1 <- 
-#   waffle_df %>% 
-#   filter(graph == "first") %>% 
-#   themes_waffle(., "Redistribute only in towns")
-# 
-# p2 <- 
-#   waffle_df %>% 
-#   filter(graph == "second") %>% 
-#   themes_waffle(., NULL)
-# 
-# p3 <- 
-#   waffle_df %>% 
-#   filter(graph == "third") %>% 
-#   themes_waffle(., "Grandfathering in towns")
-# 
-# p4 <- 
-#   waffle_df %>% 
-#   filter(graph == "fourth") %>% 
-#   themes_waffle(., NULL)
-# 
-# waffle_legend <- 
-#   cowplot::get_legend(themes_waffle(waffle_df, NA) + 
-#                         theme(legend.position = "bottom", 
-#                               legend.title = element_blank()))
-# 
-figure_4_2_fun <- function() {
-#   ((p01 | p02) /
-#      (p1 | p2) /
-#      (p3 | p4 ) /
-#      waffle_legend)
-}
-# 
-# 
-# 
-# if (build_figures) {
-#   ggsave(here("output", "figures", "figure_4_2.pdf"), 
-#          plot = figure_4_2_fun(), 
-#          width = 8, height = 8, units = "in", useDingbats = FALSE)
-#   
-#   extrafont::embed_fonts(here("output", "figures", "figure_4_2.pdf"))
-# }
+# waffle_df_t |>
+#   ggplot(aes(label = group, colour = group, fill = group, values = value)) +
+#   geom_pictogram(size = 3.2, n_rows = 8) +
+#   scale_label_pictogram(name = NULL, values = labels) +
+#   scale_x_discrete(expand = c(0, 0)) +
+#   scale_y_discrete(expand = c(0, 0)) +
+#   scale_colour_manual(values = cols, guide = "none") +
+#   scale_fill_manual(values = cols, guide = "none") +
+#   guides(label = guide_legend(override.aes = list(colour = "green",
+#                                                   fill = "blue"))) +
+#   coord_equal() +
+#   facet_wrap(vars(scenario), nrow = 3) +
+#   theme_minimal() +
+#   theme_enhance_waffle() +
+#   theme(legend.position = "bottom", panel.background = element_blank(),
+#         strip.text = element_text(size = 12, hjust = 0))
 
 ```
 
-```{r fig-4-2, include = TRUE, fig.cap = '(ref:fig-4-2)', fig.align = "center"}
-
-figure_4_2_fun()
-
-```
 (ref:fig-4-2) *Expected impact of redistribution regulations (only in Towns) on the STA market*
 
 
@@ -492,49 +401,49 @@ The "Restrict" model implies an STA market where there are fewer STA listings bu
 
 Under the "Restrict" model, it would be important to ensure that all STA licenses are being actively used, because defunct licenses would limit the municipality's ability to affect STA market outcomes by changing the license quotas. This would suggest a high-fee business model, where, for example, licenses require relatively extensive in-person inspections and supporting documentation, and cost recovery is correspondingly high.
 
-```{r restrict, include = F}
+```{r restrict, include = FALSE}
 
 levels_2019_tt <- 
 daily %>% 
   filter(listing_type == "Entire home/apt", 
-         date>= summer_start_2021-years(2), date <= summer_end_2021-years(2),
+         date >= summer_start_2021 - years(2), 
+         date <= summer_end_2021 - years(2),
          status == "R") %>% 
-  count(date, sort = T) %>% 
+  count(date, sort = TRUE) %>% 
   slice(1) %>%
   pull(n) %>% 
-  round(., digits = -1)
+  round(digits = -1)
 
 levels_2021_tt <- 
-daily %>% 
-  filter(listing_type == "Entire home/apt", 
-         date>= summer_start_2021, date <= summer_end_2021,
-         status == "R") %>% 
-  count(date, sort = T) %>% 
+  daily %>% 
+  filter(listing_type == "Entire home/apt", date >= summer_start_2021, 
+         date <= summer_end_2021, status == "R") %>% 
+  count(date, sort = TRUE) %>% 
   slice(1) %>%
   pull(n) %>% 
-  round(., digits = -1)
+  round(digits = -1)
 
 levels_2019_t <- 
-daily %>% 
+  daily %>% 
   filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
   filter(listing_type == "Entire home/apt", 
-         date>= summer_start_2021-years(2), date <= summer_end_2021-years(2),
+         date >= summer_start_2021 - years(2), 
+         date <= summer_end_2021 - years(2),
          status == "R") %>% 
-  count(date, sort = T) %>% 
+  count(date, sort = TRUE) %>% 
   slice(1) %>%
   pull(n) %>% 
-  round(., digits = -1)
+  round(digits = -1)
 
 levels_2021_t <- 
-daily %>% 
+  daily %>% 
   filter(ward %in% (EW %>% filter(type != "Township") %>% pull(ward))) %>% 
-  filter(listing_type == "Entire home/apt", 
-         date>= summer_start_2021, date <= summer_end_2021,
-         status == "R") %>% 
-  count(date, sort = T) %>% 
+  filter(listing_type == "Entire home/apt", date >= summer_start_2021, 
+         date <= summer_end_2021, status == "R") %>% 
+  count(date, sort = TRUE) %>% 
   slice(1) %>%
   pull(n) %>% 
-  round(., digits = -1)
+  round(digits = -1)
 
 
 ```
